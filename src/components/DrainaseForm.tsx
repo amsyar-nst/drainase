@@ -34,6 +34,7 @@ import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefa
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadImageToCloudinary } from "@/lib/cloudinary-upload"; // Import the new utility
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -120,7 +121,7 @@ export const DrainaseForm = () => {
             namaJalan: kegiatan.nama_jalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto0: kegiatan.foto_0_url || null,
+            foto0: kegiatan.foto_0_url || null, // These will now be URLs from Cloudinary
             foto50: kegiatan.foto_50_url || null,
             foto100: kegiatan.foto_100_url || null,
             foto0Url: kegiatan.foto_0_url || undefined,
@@ -289,24 +290,10 @@ export const DrainaseForm = () => {
     });
   };
 
-  const uploadFile = async (file: File, path: string): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('laporan-photos')
-        .upload(path, file, { upsert: true });
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('laporan-photos')
-        .getPublicUrl(data.path);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Gagal mengunggah file');
-      return null;
-    }
+  // Modified uploadFile to use Cloudinary
+  const uploadFile = async (file: File, laporanId: string, kegiatanId: string, type: string): Promise<string | null> => {
+    const folder = `laporan-drainase/${laporanId}/${kegiatanId}`;
+    return uploadImageToCloudinary(file, folder);
   };
 
   const handlePreview = async () => {
@@ -363,15 +350,15 @@ export const DrainaseForm = () => {
 
       // Save kegiatan
       for (const kegiatan of formData.kegiatans) {
-        // Upload photos
+        // Upload photos to Cloudinary
         const foto0Url = kegiatan.foto0 
-          ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/foto0.jpg`))
+          ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, currentLaporanId, kegiatan.id, 'foto0'))
           : (kegiatan.foto0Url || null);
         const foto50Url = kegiatan.foto50 
-          ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/foto50.jpg`))
+          ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, currentLaporanId, kegiatan.id, 'foto50'))
           : (kegiatan.foto50Url || null);
         const foto100Url = kegiatan.foto100 
-          ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/foto100.jpg`))
+          ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, currentLaporanId, kegiatan.id, 'foto100'))
           : (kegiatan.foto100Url || null);
 
         // Insert kegiatan
