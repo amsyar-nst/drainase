@@ -130,22 +130,14 @@ export const DrainaseTersierForm = () => {
         
         let alatArray: Alat[] = [];
         if (k.alat_yang_dibutuhkan) {
-          if (Array.isArray(k.alat_yang_dibutuhkan) && k.alat_yang_dibutuhkan.length > 0) {
-            if (typeof k.alat_yang_dibutuhkan[0] === 'object') {
-              alatArray = k.alat_yang_dibutuhkan as Alat[];
-            } else {
-              alatArray = (k.alat_yang_dibutuhkan as string[]).map(nama => ({ nama, jumlah: 1 }));
-            }
-          }
+          // Assuming alat_yang_dibutuhkan is stored as JSONB array of {nama: string, jumlah: number}
+          alatArray = k.alat_yang_dibutuhkan as Alat[];
         }
 
         let penanggungjawabArray: string[] = [];
         if (k.penanggungjawab) {
-          if (typeof k.penanggungjawab === 'string') {
-            penanggungjawabArray = k.penanggungjawab.split(', ');
-          } else if (Array.isArray(k.penanggungjawab)) {
-            penanggungjawabArray = k.penanggungjawab;
-          }
+          // Assuming penanggungjawab is stored as TEXT[]
+          penanggungjawabArray = k.penanggungjawab as string[];
         }
 
         return {
@@ -157,14 +149,14 @@ export const DrainaseTersierForm = () => {
           kota: lokasiParts[3] || "Kota Medan",
           jenisSedimen: k.jenis_sedimen || "",
           alatYangDibutuhkan: alatArray,
-          useUpt: (k.kebutuhan_tenaga_kerja || 0) > 0,
-          uptCount: k.kebutuhan_tenaga_kerja || 0,
-          useP3su: false,
-          p3suCount: 0,
-          rencanaPanjang: k.panjang || "",
-          rencanaVolume: k.volume || "",
-          realisasiPanjang: k.panjang || "",
-          realisasiVolume: k.volume || "",
+          useUpt: (k.upt_count || 0) > 0, // Use upt_count
+          uptCount: k.upt_count || 0, // Use upt_count
+          useP3su: (k.p3su_count || 0) > 0, // Use p3su_count
+          p3suCount: k.p3su_count || 0, // Use p3su_count
+          rencanaPanjang: k.rencana_panjang || "", // Use rencana_panjang
+          rencanaVolume: k.rencana_volume || "", // Use rencana_volume
+          realisasiPanjang: k.realisasi_panjang || "", // Use realisasi_panjang
+          realisasiVolume: k.realisasi_volume || "", // Use realisasi_volume
           sisaTargetHari: k.sisa_target || "",
           penanggungjawab: penanggungjawabArray,
           keterangan: k.keterangan || "",
@@ -326,6 +318,7 @@ export const DrainaseTersierForm = () => {
 
         if (updateError) throw updateError;
 
+        // Delete existing activities before inserting new ones to handle updates
         const { error: deleteError } = await supabase
           .from("kegiatan_drainase_tersier")
           .delete()
@@ -348,12 +341,15 @@ export const DrainaseTersierForm = () => {
         hari_tanggal: format(kegiatan.hariTanggal, "yyyy-MM-dd"),
         lokasi: `${kegiatan.namaJalan}, ${kegiatan.kecamatan}, ${kegiatan.kelurahan}, ${kegiatan.kota}`,
         jenis_sedimen: kegiatan.jenisSedimen,
-        alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan.map(a => a.nama),
-        kebutuhan_tenaga_kerja: kegiatan.useUpt ? kegiatan.uptCount : 0,
-        panjang: kegiatan.rencanaPanjang,
-        volume: kegiatan.rencanaVolume,
+        alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan, // Store as JSONB
+        upt_count: kegiatan.useUpt ? kegiatan.uptCount : 0, // New column
+        p3su_count: kegiatan.useP3su ? kegiatan.p3suCount : 0, // New column
+        rencana_panjang: kegiatan.rencanaPanjang, // New column
+        rencana_volume: kegiatan.rencanaVolume, // New column
+        realisasi_panjang: kegiatan.realisasiPanjang, // New column
+        realisasi_volume: kegiatan.realisasiVolume, // New column
         sisa_target: kegiatan.sisaTargetHari,
-        penanggungjawab: kegiatan.penanggungjawab.join(", "),
+        penanggungjawab: kegiatan.penanggungjawab, // Store as TEXT[]
         keterangan: kegiatan.keterangan,
       }));
 
@@ -814,7 +810,7 @@ export const DrainaseTersierForm = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">{kegiatan.jenisSedimen}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {kegiatan.alatYangDibutuhkan.map((alat) => alat.nama).join(", ")}
+                          {kegiatan.alatYangDibutuhkan.map((alat) => `${alat.nama} (${alat.jumlah})`).join(", ")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex gap-2">

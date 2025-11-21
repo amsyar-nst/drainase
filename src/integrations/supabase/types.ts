@@ -93,64 +93,61 @@ export type Database = {
       }
       kegiatan_drainase_tersier: {
         Row: {
-          alat_yang_dibutuhkan: string[] | null
+          alat_yang_dibutuhkan: Json | null // Changed to Json for JSONB
           created_at: string
           hari_tanggal: string
           id: string
           jenis_sedimen: string | null
-          kebutuhan_tenaga_kerja: number | null
           keterangan: string | null
           laporan_id: string
-          lebar: string | null
           lokasi: string
-          panjang: string | null
-          penanggungjawab: string | null
+          p3su_count: number | null // New column
+          penanggungjawab: string[] | null // Changed to string[]
+          realisasi_panjang: string | null // New column
+          realisasi_volume: string | null // New column
+          rencana_panjang: string | null // Renamed
+          rencana_volume: string | null // Renamed
           sisa_target: string | null
-          target_penyelesaian: string | null
-          tinggi: string | null
           updated_at: string
-          volume: string | null
-          volume_per_hari: string | null
+          upt_count: number | null // New column
         }
         Insert: {
-          alat_yang_dibutuhkan?: string[] | null
+          alat_yang_dibutuhkan?: Json | null // Changed to Json for JSONB
           created_at?: string
           hari_tanggal: string
           id?: string
           jenis_sedimen?: string | null
-          kebutuhan_tenaga_kerja?: number | null
           keterangan?: string | null
           laporan_id: string
-          lebar?: string | null
           lokasi: string
-          panjang?: string | null
-          penanggungjawab?: string | null
+          p3su_count?: number | null // New column
+          penanggungjawab?: string[] | null // Changed to string[]
+          realisasi_panjang?: string | null // New column
+          realisasi_volume?: string | null // New column
+          rencana_panjang?: string | null // Renamed
+          rencana_volume?: string | null // Renamed
           sisa_target?: string | null
-          target_penyelesaian?: string | null
-          tinggi?: string | null
           updated_at?: string
-          volume?: string | null
-          volume_per_hari?: string | null
+          upt_count?: number | null // New column
         }
         Update: {
-          alat_yang_dibutuhkan?: string[] | null
+          alat_yang_dibutuhkan?: Json | null // Changed to Json for JSONB
           created_at?: string
           hari_tanggal?: string
           id?: string
           jenis_sedimen?: string | null
-          kebutuhan_tenaga_kerja?: number | null
           keterangan?: string | null
           laporan_id?: string
-          lebar?: string | null
           lokasi?: string
-          panjang?: string | null
-          penanggungjawab?: string | null
+          p3su_count?: number | null // New column
+          penanggungjawab?: string[] | null // Changed to string[]
+          realisasi_panjang?: string | null // New column
+          realisasi_volume?: string | null // New column
+          rencana_panjang?: string | null // Renamed
+          rencana_volume?: string | null // Renamed
           sisa_target?: string | null
-          target_penyelesaian?: string | null
-          tinggi?: string | null
           updated_at?: string
-          volume?: string | null
-          volume_per_hari?: string | null
+          upt_count?: number | null // New column
         }
         Relationships: [
           {
