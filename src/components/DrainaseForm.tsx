@@ -75,6 +75,11 @@ export const DrainaseForm = () => {
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
+  // Expose currentKegiatan to window for debugging
+  useEffect(() => {
+    (window as any).currentKegiatan = currentKegiatan;
+  }, [currentKegiatan]);
+
   useEffect(() => {
     if (id) {
       loadLaporan(id);
