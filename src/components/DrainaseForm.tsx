@@ -34,7 +34,7 @@ import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefa
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToCloudinary } from "@/lib/cloudinary-upload"; // Import the new utility
+import { uploadImageToFirebaseStorage } from "@/lib/firebase-storage-upload"; // Import the new utility
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -126,7 +126,7 @@ export const DrainaseForm = () => {
             namaJalan: kegiatan.nama_jalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto0: kegiatan.foto_0_url || null, // These will now be URLs from Cloudinary
+            foto0: kegiatan.foto_0_url || null, // These will now be URLs from Firebase Storage
             foto50: kegiatan.foto_50_url || null,
             foto100: kegiatan.foto_100_url || null,
             foto0Url: kegiatan.foto_0_url || undefined,
@@ -295,10 +295,10 @@ export const DrainaseForm = () => {
     });
   };
 
-  // Modified uploadFile to use Cloudinary
+  // Modified uploadFile to use Firebase Storage
   const uploadFile = async (file: File, laporanId: string, kegiatanId: string, type: string): Promise<string | null> => {
     const folder = `laporan-drainase/${laporanId}/${kegiatanId}`;
-    return uploadImageToCloudinary(file, folder);
+    return uploadImageToFirebaseStorage(file, folder);
   };
 
   const handlePreview = async () => {
@@ -360,7 +360,7 @@ export const DrainaseForm = () => {
 
       // Save kegiatan
       for (const kegiatan of formData.kegiatans) {
-        // Upload photos to Cloudinary
+        // Upload photos to Firebase Storage
         const foto0Url = kegiatan.foto0 
           ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, currentLaporanId, kegiatan.id, 'foto0'))
           : (kegiatan.foto0Url || null);
