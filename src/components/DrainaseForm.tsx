@@ -174,7 +174,7 @@ export const DrainaseForm = () => {
 
   const addKegiatan = () => {
     const newKegiatan: KegiatanDrainase = {
-      id: Date.now().toString(),
+      id: "temp-" + Date.now().toString(), // Use a temporary ID for new activities
       namaJalan: "",
       kecamatan: "",
       kelurahan: "",
@@ -323,7 +323,7 @@ export const DrainaseForm = () => {
           })
           .eq('id', currentLaporanId);
 
-        if (updateError) throw updateError;
+        if (updateError) throw new Error(`Gagal memperbarui laporan: ${updateError.message}`);
 
         // Delete existing kegiatan, materials, and peralatan
         const { error: deleteError } = await supabase
@@ -331,7 +331,7 @@ export const DrainaseForm = () => {
           .delete()
           .eq('laporan_id', currentLaporanId);
 
-        if (deleteError) throw deleteError;
+        if (deleteError) throw new Error(`Gagal menghapus kegiatan lama: ${deleteError.message}`);
       } else {
         // Create new laporan
         const { data: laporanData, error: laporanError } = await supabase
@@ -343,9 +343,14 @@ export const DrainaseForm = () => {
           .select()
           .single();
 
-        if (laporanError) throw laporanError;
+        if (laporanError) throw new Error(`Gagal membuat laporan baru: ${laporanError.message}`);
         currentLaporanId = laporanData.id;
         setLaporanId(currentLaporanId);
+      }
+
+      // Ensure currentLaporanId is available before proceeding
+      if (!currentLaporanId) {
+        throw new Error("ID Laporan tidak tersedia setelah penyimpanan awal.");
       }
 
       // Save kegiatan
@@ -386,7 +391,7 @@ export const DrainaseForm = () => {
           .select()
           .single();
 
-        if (kegiatanError) throw kegiatanError;
+        if (kegiatanError) throw new Error(`Gagal menyimpan kegiatan: ${kegiatanError.message}`);
 
         // Insert materials
         const materialsToInsert = kegiatan.materials.map(m => ({
@@ -400,7 +405,7 @@ export const DrainaseForm = () => {
           .from('material_kegiatan')
           .insert(materialsToInsert);
 
-        if (materialsError) throw materialsError;
+        if (materialsError) throw new Error(`Gagal menyimpan material: ${materialsError.message}`);
 
         // Insert peralatan
         const peralatanToInsert = kegiatan.peralatans.map(p => ({
@@ -413,13 +418,14 @@ export const DrainaseForm = () => {
           .from('peralatan_kegiatan')
           .insert(peralatanToInsert);
 
-        if (peralatanError) throw peralatanError;
+        if (peralatanError) throw new Error(`Gagal menyimpan peralatan: ${peralatanError.message}`);
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-    } catch (error) {
+      navigate('/laporan'); // Navigate to the list page after successful save
+    } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Gagal menyimpan laporan');
+      toast.error(`Gagal menyimpan laporan: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
