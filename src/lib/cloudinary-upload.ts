@@ -4,6 +4,10 @@ const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 export const uploadImageToCloudinary = async (file: File, folder: string): Promise<string | null> => {
+  // DEBUG: Log the environment variables being used
+  console.log("DEBUG: CLOUDINARY_CLOUD_NAME:", CLOUDINARY_CLOUD_NAME);
+  console.log("DEBUG: CLOUDINARY_UPLOAD_PRESET:", CLOUDINARY_UPLOAD_PRESET);
+
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
     toast.error("Cloudinary environment variables are not set.");
     console.error("Cloudinary environment variables VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET must be set.");
