@@ -1,8 +1,0 @@
-[
-      {
-        "origin": ["http://localhost:32100", "https://lovable.dev"],
-        "method": ["GET", "PUT", "POST", "DELETE"],
-        "maxAgeSeconds": 3600,
-        "responseHeader": ["Content-Type"]
-      }
-    ]
