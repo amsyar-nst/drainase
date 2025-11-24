@@ -34,7 +34,8 @@ import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefa
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToFirebaseStorage } from "@/lib/firebase-storage-upload"; // Import the new utility
+import { uploadImageToFirebaseStorage } from "@/lib/firebase-storage-upload";
+import { compressImage } from "@/lib/image-compressor"; // Import the new utility
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -295,10 +296,19 @@ export const DrainaseForm = () => {
     });
   };
 
-  // Modified uploadFile to use Firebase Storage
+  // Modified uploadFile to use Firebase Storage and image compression
   const uploadFile = async (file: File, laporanId: string, kegiatanId: string, type: string): Promise<string | null> => {
+    if (!file) return null;
+
+    // Compress the image before uploading
+    const compressedFile = await compressImage(file);
+    if (!compressedFile) {
+      toast.error(`Gagal mengompres foto ${type}.`);
+      return null;
+    }
+
     const folder = `laporan-drainase/${laporanId}/${kegiatanId}`;
-    return uploadImageToFirebaseStorage(file, folder);
+    return uploadImageToFirebaseStorage(compressedFile, folder);
   };
 
   const handlePreview = async () => {
