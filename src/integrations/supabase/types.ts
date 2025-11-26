@@ -28,7 +28,7 @@ export type Database = {
           kecamatan: string
           kelurahan: string
           keterangan: string | null
-          koordinator: string | null
+          koordinator: string[] | null /* Changed from string | null to string[] | null */
           laporan_id: string
           lebar_rata_rata: string | null
           nama_jalan: string
@@ -50,7 +50,7 @@ export type Database = {
           kecamatan: string
           kelurahan: string
           keterangan?: string | null
-          koordinator?: string | null
+          koordinator?: string[] | null /* Changed from string | null to string[] | null */
           laporan_id: string
           lebar_rata_rata?: string | null
           nama_jalan: string
@@ -72,7 +72,7 @@ export type Database = {
           kecamatan?: string
           kelurahan?: string
           keterangan?: string | null
-          koordinator?: string | null
+          koordinator?: string[] | null /* Changed from string | null to string[] | null */
           laporan_id?: string
           lebar_rata_rata?: string | null
           nama_jalan?: string
@@ -242,6 +242,59 @@ export type Database = {
           },
         ]
       }
+      operasional_alat_berat_kegiatan: {
+        Row: {
+          bio_solar_jumlah: string | null
+          bio_solar_satuan: string | null
+          created_at: string | null
+          dexlite_jumlah: string | null
+          dexlite_satuan: string | null
+          id: string
+          jenis: string
+          jumlah: number
+          kegiatan_id: string
+          keterangan: string | null
+          pertalite_jumlah: string | null
+          pertalite_satuan: string | null
+        }
+        Insert: {
+          bio_solar_jumlah?: string | null
+          bio_solar_satuan?: string | null
+          created_at?: string | null
+          dexlite_jumlah?: string | null
+          dexlite_satuan?: string | null
+          id?: string
+          jenis: string
+          jumlah: number
+          kegiatan_id: string
+          keterangan?: string | null
+          pertalite_jumlah?: string | null
+          pertalite_satuan?: string | null
+        }
+        Update: {
+          bio_solar_jumlah?: string | null
+          bio_solar_satuan?: string | null
+          created_at?: string | null
+          dexlite_jumlah?: string | null
+          dexlite_satuan?: string | null
+          id?: string
+          jenis?: string
+          jumlah?: number
+          kegiatan_id?: string
+          keterangan?: string | null
+          pertalite_jumlah?: string | null
+          pertalite_satuan?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operasional_alat_berat_kegiatan_kegiatan_id_fkey"
+            columns: ["kegiatan_id"]
+            isOneToOne: false
+            referencedRelation: "kegiatan_drainase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       peralatan_kegiatan: {
         Row: {
           created_at: string
@@ -249,6 +302,7 @@ export type Database = {
           jumlah: number
           kegiatan_id: string
           nama: string
+          satuan: string | null
         }
         Insert: {
           created_at?: string
@@ -256,6 +310,7 @@ export type Database = {
           jumlah: number
           kegiatan_id: string
           nama: string
+          satuan?: string | null
         }
         Update: {
           created_at?: string
@@ -263,6 +318,7 @@ export type Database = {
           jumlah?: number
           kegiatan_id?: string
           nama?: string
+          satuan?: string | null
         }
         Relationships: [
           {
@@ -270,6 +326,38 @@ export type Database = {
             columns: ["kegiatan_id"]
             isOneToOne: false
             referencedRelation: "kegiatan_drainase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

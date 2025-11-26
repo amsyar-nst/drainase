@@ -50,6 +50,9 @@ export const DrainaseForm = () => {
       foto0: null,
       foto50: null,
       foto100: null,
+      foto0Url: undefined,
+      foto50Url: undefined,
+      foto100Url: undefined,
       jenisSaluran: "",
       jenisSedimen: "",
       aktifitasPenanganan: "",
@@ -183,7 +186,7 @@ export const DrainaseForm = () => {
               bioSolarSatuan: o.bio_solar_satuan || "Liter",
               keterangan: o.keterangan || "",
             })),
-            koordinator: kegiatan.koordinator ? (kegiatan.koordinator as string).split(', ').filter(Boolean) : [], // Parse comma-separated string to array
+            koordinator: kegiatan.koordinator || [], // Load array directly
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
           };
@@ -366,7 +369,7 @@ export const DrainaseForm = () => {
       return publicUrl;
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Gagal mengunggah file');
+      toast.error('Gagal mengunggah file: ' + error.message); // Display error message
       return null;
     }
   };
@@ -401,10 +404,22 @@ export const DrainaseForm = () => {
         if (updateError) throw updateError;
 
         // Delete existing related data to re-insert
-        await supabase.from('material_kegiatan').delete().in('kegiatan_id', formData.kegiatans.map(k => k.id));
-        await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', formData.kegiatans.map(k => k.id));
-        await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', formData.kegiatans.map(k => k.id));
-        await supabase.from('kegiatan_drainase').delete().eq('laporan_id', currentLaporanId);
+        // Fetch all kegiatan IDs associated with this laporan
+        const { data: existingKegiatanIds, error: fetchKegiatanIdsError } = await supabase
+          .from('kegiatan_drainase')
+          .select('id')
+          .eq('laporan_id', currentLaporanId);
+
+        if (fetchKegiatanIdsError) throw fetchKegiatanIdsError;
+
+        const idsToDelete = existingKegiatanIds.map(k => k.id);
+
+        if (idsToDelete.length > 0) {
+          await supabase.from('material_kegiatan').delete().in('kegiatan_id', idsToDelete);
+          await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', idsToDelete);
+          await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', idsToDelete);
+          await supabase.from('kegiatan_drainase').delete().in('id', idsToDelete);
+        }
 
       } else {
         // Create new laporan
@@ -453,7 +468,7 @@ export const DrainaseForm = () => {
             lebar_rata_rata: kegiatan.lebarRataRata,
             rata_rata_sedimen: kegiatan.rataRataSedimen,
             volume_galian: kegiatan.volumeGalian,
-            koordinator: kegiatan.koordinator.join(', '), // Store array as comma-separated string
+            koordinator: kegiatan.koordinator, // Pass array directly
             jumlah_phl: kegiatan.jumlahPHL,
             keterangan: kegiatan.keterangan,
           })
@@ -514,9 +529,9 @@ export const DrainaseForm = () => {
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
       navigate('/laporan'); // Redirect to list after saving
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Gagal menyimpan laporan');
+      toast.error('Gagal menyimpan laporan: ' + error.message);
     } finally {
       setIsSaving(false);
     }
