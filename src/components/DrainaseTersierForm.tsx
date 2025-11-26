@@ -34,6 +34,7 @@ import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { Json } from "@/integrations/supabase/types"; // Import Json type
 
 const bulanOptions = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -341,7 +342,7 @@ export const DrainaseTersierForm = () => {
         hari_tanggal: format(kegiatan.hariTanggal, "yyyy-MM-dd"),
         lokasi: `${kegiatan.namaJalan}, ${kegiatan.kecamatan}, ${kegiatan.kelurahan}, ${kegiatan.kota}`,
         jenis_sedimen: kegiatan.jenisSedimen,
-        alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan, // Store as JSONB
+        alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan as Json, // Explicitly cast to Json
         upt_count: kegiatan.useUpt ? kegiatan.uptCount : 0, // New column
         p3su_count: kegiatan.useP3su ? kegiatan.p3suCount : 0, // New column
         rencana_panjang: kegiatan.rencanaPanjang, // New column
@@ -583,7 +584,7 @@ export const DrainaseTersierForm = () => {
                     id="upt"
                     checked={currentKegiatan.useUpt}
                     onCheckedChange={(checked) =>
-                      setCurrentKegiatan({ ...currentKegiatan, useUpt: checked || false, uptCount: 0 })
+                      setCurrentKegiatan({ ...currentKegiatan, useUpt: checked as boolean, uptCount: 0 })
                     }
                   />
                   <Label htmlFor="upt">UPT</Label>
@@ -607,7 +608,7 @@ export const DrainaseTersierForm = () => {
                     id="p3su"
                     checked={currentKegiatan.useP3su}
                     onCheckedChange={(checked) =>
-                      setCurrentKegiatan({ ...currentKegiatan, useP3su: checked || false, p3suCount: 0 })
+                      setCurrentKegiatan({ ...currentKegiatan, useP3su: checked as boolean, p3suCount: 0 })
                     }
                   />
                   <Label htmlFor="p3su">P3SU</Label>
