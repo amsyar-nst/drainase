@@ -126,6 +126,19 @@ export const satuanOptions = [
   "Buah"
 ];
 
+export const alatBeratOptions = [
+  "Excavator",
+  "Backhoe Loader",
+  "Bulldozer",
+  "Grader",
+  "Vibro Roller",
+  "Dump Truck",
+  "Crane",
+  "Wheel Loader",
+  "Skid Steer Loader",
+  "Asphalt Finisher"
+];
+
 // Mapping material types to default units (case-insensitive)
 export const materialDefaultUnits: Record<string, string> = {
   "pasir": "M³",
