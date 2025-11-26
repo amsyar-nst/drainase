@@ -212,11 +212,9 @@ const SelectKegiatanDialog: React.FC<SelectKegiatanDialogProps> = ({
           <Button variant="outline" onClick={onClose}>
             Batal
           </Button>
-          <Button onClick={() => handleGeneratePdf(false)} disabled={selectedKegiatanIds.size === 0}>
-            Cetak PDF
-          </Button>
+          {/* Tombol "Cetak PDF" dihapus */}
           <Button onClick={() => handleGeneratePdf(true)} disabled={selectedKegiatanIds.size === 0}>
-            Unduh PDF
+            Cetak/Unduh PDF
           </Button>
         </DialogFooter>
       </DialogContent>
