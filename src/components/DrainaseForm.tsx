@@ -1,32 +1,39 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { List } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { kecamatanKelurahanData, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
+import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan } from "@/types/laporan";
+import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToSupabaseStorage } from "@/lib/supabase-storage-upload";
-import { compressImage } from "@/lib/image-compressor";
-
-// Import modular components
-import { LaporanInfoSection } from "./drainase-form/LaporanInfoSection";
-import { KegiatanNavigation } from "./drainase-form/KegiatanNavigation";
-import { KegiatanDetailsSection } from "./drainase-form/KegiatanDetailsSection";
-import { PhotoUploadSection } from "./drainase-form/PhotoUploadSection";
-import { JenisSaluranSedimenSection } from "./drainase-form/JenisSaluranSedimenSection";
-import { ActivityMeasurementsSection } from "./drainase-form/ActivityMeasurementsSection";
-import { MaterialsSection } from "./drainase-form/MaterialsSection";
-import { PeralatanSection } from "./drainase-form/PeralatanSection";
-import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection"; // New import
-import { KoordinatorPHLSection } from "./drainase-form/KoordinatorPHLSection";
-import { KeteranganSection } from "./drainase-form/KeteranganSection";
-import { FormActions } from "./drainase-form/FormActions";
-import { PdfPreviewDialog } from "./drainase-form/PdfPreviewDialog";
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -48,11 +55,9 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      isVolumeGalianManuallySet: false,
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }], // Initialize new property
-      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }], // Initialize new property
-      operasionalAlatBerats: [{ id: "1", jenis: "", jumlah: 1 }], // Initialize new property
-      koordinator: [], // Changed to empty array
+      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
+      peralatans: [{ id: "1", nama: "", jumlah: 1 }],
+      koordinator: "",
       jumlahPHL: 1,
       keterangan: "",
     }]
@@ -75,39 +80,10 @@ export const DrainaseForm = () => {
     }
   }, [id]);
 
-  const updateCurrentKegiatan = useCallback((updates: Partial<KegiatanDrainase>) => {
-    setFormData(prevData => {
-      const newKegiatans = [...prevData.kegiatans];
-      newKegiatans[currentKegiatanIndex] = { ...newKegiatans[currentKegiatanIndex], ...updates };
-      return { ...prevData, kegiatans: newKegiatans };
-    });
-  }, [currentKegiatanIndex]);
-
-  // Effect to calculate volumeGalian automatically
-  useEffect(() => {
-    const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
-    const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
-    const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
-
-    const calculatedVolume = (panjang * lebar * tinggi).toFixed(2); // Keep 2 decimal places
-
-    // Only auto-update if it hasn't been manually set OR if the calculated volume is different
-    // and the manual flag is not set
-    if (!currentKegiatan.isVolumeGalianManuallySet && currentKegiatan.volumeGalian !== calculatedVolume) {
-      updateCurrentKegiatan({ volumeGalian: calculatedVolume });
-    }
-  }, [
-    currentKegiatan.panjangPenanganan,
-    currentKegiatan.lebarRataRata,
-    currentKegiatan.rataRataSedimen,
-    currentKegiatan.volumeGalian,
-    currentKegiatan.isVolumeGalianManuallySet,
-    updateCurrentKegiatan,
-  ]);
-
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
     try {
+      // Fetch laporan
       const { data: laporanData, error: laporanError } = await supabase
         .from('laporan_drainase')
         .select('*')
@@ -123,6 +99,7 @@ export const DrainaseForm = () => {
 
       setLaporanId(laporanId);
 
+      // Fetch kegiatan
       const { data: kegiatanData, error: kegiatanError } = await supabase
         .from('kegiatan_drainase')
         .select('*')
@@ -130,12 +107,12 @@ export const DrainaseForm = () => {
 
       if (kegiatanError) throw kegiatanError;
 
+      // Load kegiatan with materials and peralatan
       const kegiatansWithDetails = await Promise.all(
         (kegiatanData || []).map(async (kegiatan) => {
-          const [materialsRes, peralatanRes, operasionalAlatBeratRes] = await Promise.all([
+          const [materialsRes, peralatanRes] = await Promise.all([
             supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id) // Fetch new data
+            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
           ]);
 
           return {
@@ -156,26 +133,18 @@ export const DrainaseForm = () => {
             lebarRataRata: kegiatan.lebar_rata_rata || "",
             rataRataSedimen: kegiatan.rata_rata_sedimen || "",
             volumeGalian: kegiatan.volume_galian || "",
-            isVolumeGalianManuallySet: false, // Default to false when loading
             materials: (materialsRes.data || []).map(m => ({
               id: m.id,
               jenis: m.jenis,
               jumlah: m.jumlah,
-              satuan: m.satuan,
-              keterangan: m.keterangan || "", // Load new property
+              satuan: m.satuan
             })),
             peralatans: (peralatanRes.data || []).map(p => ({
               id: p.id,
               nama: p.nama,
-              jumlah: p.jumlah,
-              satuan: p.satuan || "Unit", // Load new property
+              jumlah: p.jumlah
             })),
-            operasionalAlatBerats: (operasionalAlatBeratRes.data || []).map(o => ({ // Load new data
-              id: o.id,
-              jenis: o.jenis,
-              jumlah: o.jumlah,
-            })),
-            koordinator: (kegiatan.koordinator || []) as string[], // Load as array
+            koordinator: kegiatan.koordinator || "",
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
           };
@@ -196,9 +165,15 @@ export const DrainaseForm = () => {
     }
   };
 
-  const addKegiatan = useCallback(() => {
+  const updateCurrentKegiatan = (updates: Partial<KegiatanDrainase>) => {
+    const newKegiatans = [...formData.kegiatans];
+    newKegiatans[currentKegiatanIndex] = { ...currentKegiatan, ...updates };
+    setFormData({ ...formData, kegiatans: newKegiatans });
+  };
+
+  const addKegiatan = () => {
     const newKegiatan: KegiatanDrainase = {
-      id: "temp-" + Date.now().toString(),
+      id: Date.now().toString(),
       namaJalan: "",
       kecamatan: "",
       kelurahan: "",
@@ -212,58 +187,129 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      isVolumeGalianManuallySet: false,
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
-      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }],
-      operasionalAlatBerats: [{ id: "1", jenis: "", jumlah: 1 }], // Initialize new property
-      koordinator: [], // Changed to empty array
+      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
+      peralatans: [{ id: "1", nama: "", jumlah: 1 }],
+      koordinator: "",
       jumlahPHL: 1,
       keterangan: "",
     };
-    setFormData(prevData => ({ ...prevData, kegiatans: [...prevData.kegiatans, newKegiatan] }));
+    setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
-  }, [formData.kegiatans.length]);
+  };
 
-  const removeKegiatan = useCallback((index: number) => {
+  const removeKegiatan = (index: number) => {
     if (formData.kegiatans.length > 1) {
-      setFormData(prevData => {
-        const newKegiatans = prevData.kegiatans.filter((_, i) => i !== index);
-        if (currentKegiatanIndex >= newKegiatans.length) {
-          setCurrentKegiatanIndex(newKegiatans.length - 1);
-        }
-        return { ...prevData, kegiatans: newKegiatans };
-      });
+      const newKegiatans = formData.kegiatans.filter((_, i) => i !== index);
+      setFormData({ ...formData, kegiatans: newKegiatans });
+      if (currentKegiatanIndex >= newKegiatans.length) {
+        setCurrentKegiatanIndex(newKegiatans.length - 1);
+      }
     }
-  }, [formData.kegiatans.length, currentKegiatanIndex]);
+  };
 
-  const handleKecamatanChange = useCallback((value: string) => {
+  const handleKecamatanChange = (value: string) => {
     setSelectedKecamatan(value);
     const kecData = kecamatanKelurahanData.find((k) => k.kecamatan === value);
     if (kecData) {
       setKelurahanOptions(kecData.kelurahan);
       updateCurrentKegiatan({ kecamatan: value, kelurahan: "" });
     }
-  }, [updateCurrentKegiatan]);
+  };
 
-  const handleKelurahanChange = useCallback((value: string) => {
+  const handleKelurahanChange = (value: string) => {
     updateCurrentKegiatan({ kelurahan: value });
-  }, [updateCurrentKegiatan]);
+  };
 
-  const uploadFile = useCallback(async (file: File, laporanId: string, kegiatanId: string, type: string): Promise<string | null> => {
-    if (!file) return null;
+  const addMaterial = () => {
+    const newMaterial: Material = {
+      id: Date.now().toString(),
+      jenis: "",
+      jumlah: "",
+      satuan: "M³",
+    };
+    updateCurrentKegiatan({
+      materials: [...currentKegiatan.materials, newMaterial],
+    });
+  };
 
-    const compressedFile = await compressImage(file);
-    if (!compressedFile) {
-      toast.error(`Gagal mengompres foto ${type}.`);
+  const removeMaterial = (id: string) => {
+    if (currentKegiatan.materials.length > 1) {
+      updateCurrentKegiatan({
+        materials: currentKegiatan.materials.filter((m) => m.id !== id),
+      });
+    }
+  };
+
+  const updateMaterial = (id: string, field: keyof Material, value: string) => {
+    updateCurrentKegiatan({
+      materials: currentKegiatan.materials.map((m) => {
+        if (m.id === id) {
+          const updatedMaterial = { ...m, [field]: value };
+          
+          // Auto-fill satuan when jenis changes
+          if (field === "jenis" && value) {
+            const normalizedJenis = value.toLowerCase().trim();
+            const defaultUnit = materialDefaultUnits[normalizedJenis];
+            if (defaultUnit) {
+              updatedMaterial.satuan = defaultUnit;
+            }
+          }
+          
+          return updatedMaterial;
+        }
+        return m;
+      }),
+    });
+  };
+
+  const addPeralatan = () => {
+    const newPeralatan: Peralatan = {
+      id: Date.now().toString(),
+      nama: "",
+      jumlah: 1,
+    };
+    updateCurrentKegiatan({
+      peralatans: [...currentKegiatan.peralatans, newPeralatan],
+    });
+  };
+
+  const removePeralatan = (id: string) => {
+    if (currentKegiatan.peralatans.length > 1) {
+      updateCurrentKegiatan({
+        peralatans: currentKegiatan.peralatans.filter((p) => p.id !== id),
+      });
+    }
+  };
+
+  const updatePeralatan = (id: string, field: keyof Peralatan, value: string | number) => {
+    updateCurrentKegiatan({
+      peralatans: currentKegiatan.peralatans.map((p) =>
+        p.id === id ? { ...p, [field]: value } : p
+      ),
+    });
+  };
+
+  const uploadFile = async (file: File, path: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('laporan-photos')
+        .upload(path, file, { upsert: true });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('laporan-photos')
+        .getPublicUrl(data.path);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Gagal mengunggah file');
       return null;
     }
+  };
 
-    const bucketName = "drainase-images";
-    const folderPath = `laporan-drainase/${laporanId}/${kegiatanId}`;
-    return uploadImageToSupabaseStorage(compressedFile, bucketName, folderPath);
-  }, []);
-
-  const handlePreview = useCallback(async () => {
+  const handlePreview = async () => {
     try {
       const blob = await generatePDF(formData, false);
       const url = URL.createObjectURL(blob);
@@ -273,14 +319,15 @@ export const DrainaseForm = () => {
       console.error('Preview error:', error);
       toast.error('Gagal membuat preview PDF');
     }
-  }, [formData]);
+  };
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     setIsSaving(true);
     try {
       let currentLaporanId = laporanId;
 
       if (currentLaporanId) {
+        // Update existing laporan
         const { error: updateError } = await supabase
           .from('laporan_drainase')
           .update({
@@ -289,26 +336,17 @@ export const DrainaseForm = () => {
           })
           .eq('id', currentLaporanId);
 
-        if (updateError) throw new Error(`Gagal memperbarui laporan: ${updateError.message}`);
+        if (updateError) throw updateError;
 
-        // Delete existing related data before inserting new ones to handle updates
-        const { data: kegiatanIds, error: fetchKegiatanError } = await supabase
-          .from("kegiatan_drainase")
-          .select("id")
-          .eq("laporan_id", currentLaporanId);
+        // Delete existing kegiatan, materials, and peralatan
+        const { error: deleteError } = await supabase
+          .from('kegiatan_drainase')
+          .delete()
+          .eq('laporan_id', currentLaporanId);
 
-        if (fetchKegiatanError) throw fetchKegiatanError;
-
-        if (kegiatanIds && kegiatanIds.length > 0) {
-          const idsToDelete = kegiatanIds.map(k => k.id);
-          
-          await supabase.from("material_kegiatan").delete().in("kegiatan_id", idsToDelete);
-          await supabase.from("peralatan_kegiatan").delete().in("kegiatan_id", idsToDelete);
-          await supabase.from("operasional_alat_berat_kegiatan").delete().in("kegiatan_id", idsToDelete); // Delete new table data
-          await supabase.from("kegiatan_drainase").delete().eq("laporan_id", currentLaporanId);
-        }
-
+        if (deleteError) throw deleteError;
       } else {
+        // Create new laporan
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
           .insert({
@@ -318,23 +356,35 @@ export const DrainaseForm = () => {
           .select()
           .single();
 
-        if (laporanError) throw new Error(`Gagal membuat laporan baru: ${laporanError.message}`);
+        if (laporanError) throw laporanError;
         currentLaporanId = laporanData.id;
         setLaporanId(currentLaporanId);
       }
 
-      if (!currentLaporanId) {
-        throw new Error("ID Laporan tidak tersedia setelah penyimpanan awal.");
-      }
-
+      // Save kegiatan
       for (const kegiatan of formData.kegiatans) {
-        const { data: kegiatanData, error: kegiatanInsertError } = await supabase
+        // Upload photos
+        const foto0Url = kegiatan.foto0 
+          ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/foto0.jpg`))
+          : (kegiatan.foto0Url || null);
+        const foto50Url = kegiatan.foto50 
+          ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/foto50.jpg`))
+          : (kegiatan.foto50Url || null);
+        const foto100Url = kegiatan.foto100 
+          ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/foto100.jpg`))
+          : (kegiatan.foto100Url || null);
+
+        // Insert kegiatan
+        const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .insert({
             laporan_id: currentLaporanId,
             nama_jalan: kegiatan.namaJalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
+            foto_0_url: foto0Url,
+            foto_50_url: foto50Url,
+            foto_100_url: foto100Url,
             jenis_saluran: kegiatan.jenisSaluran,
             jenis_sedimen: kegiatan.jenisSedimen,
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
@@ -342,96 +392,60 @@ export const DrainaseForm = () => {
             lebar_rata_rata: kegiatan.lebarRataRata,
             rata_rata_sedimen: kegiatan.rataRataSedimen,
             volume_galian: kegiatan.volumeGalian,
-            koordinator: kegiatan.koordinator, // Save as array
+            koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
             keterangan: kegiatan.keterangan,
           })
           .select()
           .single();
 
-        if (kegiatanInsertError) throw new Error(`Gagal menyimpan kegiatan: ${kegiatanInsertError.message}`);
+        if (kegiatanError) throw kegiatanError;
 
-        const kegiatanDbId = kegiatanData.id;
-
-        const foto0Url = kegiatan.foto0 
-          ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, currentLaporanId, kegiatanDbId, 'foto0'))
-          : (kegiatan.foto0Url || null);
-        const foto50Url = kegiatan.foto50 
-          ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, currentLaporanId, kegiatanDbId, 'foto50'))
-          : (kegiatan.foto50Url || null);
-        const foto100Url = kegiatan.foto100 
-          ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, currentLaporanId, kegiatanDbId, 'foto100'))
-          : (kegiatan.foto100Url || null);
-
-        const { error: updatePhotoError } = await supabase
-          .from('kegiatan_drainase')
-          .update({
-            foto_0_url: foto0Url,
-            foto_50_url: foto50Url,
-            foto_100_url: foto100Url,
-          })
-          .eq('id', kegiatanDbId);
-
-        if (updatePhotoError) throw new Error(`Gagal memperbarui URL foto kegiatan: ${updatePhotoError.message}`);
-
+        // Insert materials
         const materialsToInsert = kegiatan.materials.map(m => ({
-          kegiatan_id: kegiatanDbId,
+          kegiatan_id: kegiatanData.id,
           jenis: m.jenis,
           jumlah: m.jumlah,
           satuan: m.satuan,
-          keterangan: m.keterangan, // Save new property
         }));
 
         const { error: materialsError } = await supabase
           .from('material_kegiatan')
           .insert(materialsToInsert);
 
-        if (materialsError) throw new Error(`Gagal menyimpan material: ${materialsError.message}`);
+        if (materialsError) throw materialsError;
 
+        // Insert peralatan
         const peralatanToInsert = kegiatan.peralatans.map(p => ({
-          kegiatan_id: kegiatanDbId,
+          kegiatan_id: kegiatanData.id,
           nama: p.nama,
           jumlah: p.jumlah,
-          satuan: p.satuan, // Save new property
         }));
 
         const { error: peralatanError } = await supabase
           .from('peralatan_kegiatan')
           .insert(peralatanToInsert);
 
-        if (peralatanError) throw new Error(`Gagal menyimpan peralatan: ${peralatanError.message}`);
-
-        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.map(o => ({ // Save new data
-          kegiatan_id: kegiatanDbId,
-          jenis: o.jenis,
-          jumlah: o.jumlah,
-        }));
-
-        const { error: operasionalAlatBeratError } = await supabase
-          .from('operasional_alat_berat_kegiatan')
-          .insert(operasionalAlatBeratsToInsert);
-
-        if (operasionalAlatBeratError) throw new Error(`Gagal menyimpan operasional alat berat: ${operasionalAlatBeratError.message}`);
+        if (peralatanError) throw peralatanError;
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/laporan');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Save error:', error);
-      toast.error(`Gagal menyimpan laporan: ${error.message}`);
+      toast.error('Gagal menyimpan laporan');
     } finally {
       setIsSaving(false);
     }
-  }, [laporanId, formData, navigate, uploadFile]);
+  };
 
-  const handleDownload = useCallback(async () => {
+  const handleDownload = async () => {
     try {
       await generatePDF(formData, true);
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Gagal mendownload PDF');
     }
-  }, [formData]);
+  };
 
   if (isLoading) {
     return (
@@ -459,80 +473,476 @@ export const DrainaseForm = () => {
           </Button>
         </div>
 
-        <KegiatanNavigation
-          kegiatans={formData.kegiatans}
-          currentKegiatanIndex={currentKegiatanIndex}
-          setCurrentKegiatanIndex={setCurrentKegiatanIndex}
-          addKegiatan={addKegiatan}
-          removeKegiatan={removeKegiatan}
-        />
-
-        <Card className="p-6 space-y-6">
-          <LaporanInfoSection formData={formData} setFormData={setFormData} />
-
-          <KegiatanDetailsSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-            kelurahanOptions={kelurahanOptions}
-            handleKecamatanChange={handleKecamatanChange}
-            handleKelurahanChange={handleKelurahanChange}
-          />
-
-          <PhotoUploadSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-            setShowPreview={setShowPreview}
-            setPreviewUrl={setPreviewUrl}
-          />
-
-          <JenisSaluranSedimenSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
-
-          <ActivityMeasurementsSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
-
-          <MaterialsSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
-
-          <PeralatanSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
-
-          <OperasionalAlatBeratSection // New section
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
-
-          <KoordinatorPHLSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
-
-          <KeteranganSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
-
-          <FormActions
-            handlePreview={handlePreview}
-            handleSave={handleSave}
-            handleDownload={handleDownload}
-            isSaving={isSaving}
-          />
+        {/* Activity Navigation */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2 flex-wrap">
+              {formData.kegiatans.map((_, index) => (
+                <Button
+                  key={index}
+                  variant={currentKegiatanIndex === index ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentKegiatanIndex(index)}
+                >
+                  Kegiatan {index + 1}
+                </Button>
+              ))}
+              <Button variant="outline" size="sm" onClick={addKegiatan}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah
+              </Button>
+            </div>
+            {formData.kegiatans.length > 1 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => removeKegiatan(currentKegiatanIndex)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </Card>
 
-        <PdfPreviewDialog
-          showPreview={showPreview}
-          setShowPreview={setShowPreview}
-          previewUrl={previewUrl}
-        />
+        <Card className="p-6 space-y-6">
+          {/* Tanggal */}
+          <div className="space-y-2">
+            <Label htmlFor="tanggal">Tanggal</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="tanggal"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.tanggal && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.tanggal ? format(formData.tanggal, "PPP", { locale: idLocale }) : "Pilih tanggal"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.tanggal}
+                  onSelect={(date) => date && setFormData({ ...formData, tanggal: date })}
+                  initialFocus
+                  locale={idLocale}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Lokasi */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="nama-jalan">Nama Jalan</Label>
+              <Input
+                id="nama-jalan"
+                value={currentKegiatan.namaJalan}
+                onChange={(e) => updateCurrentKegiatan({ namaJalan: e.target.value })}
+                placeholder="Masukkan nama jalan"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="kecamatan">Kecamatan</Label>
+              <Select value={currentKegiatan.kecamatan} onValueChange={handleKecamatanChange}>
+                <SelectTrigger id="kecamatan">
+                  <SelectValue placeholder="Pilih kecamatan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {kecamatanKelurahanData.map((item) => (
+                    <SelectItem key={item.kecamatan} value={item.kecamatan}>
+                      {item.kecamatan}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="kelurahan">Kelurahan</Label>
+              <Select
+                value={currentKegiatan.kelurahan}
+                onValueChange={handleKelurahanChange}
+                disabled={!kelurahanOptions.length}
+              >
+                <SelectTrigger id="kelurahan">
+                  <SelectValue placeholder="Pilih kelurahan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {kelurahanOptions.map((kel) => (
+                    <SelectItem key={kel} value={kel}>
+                      {kel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Photos */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="foto-0">Foto 0%</Label>
+              <Input
+                id="foto-0"
+                type="file"
+                accept="image/*"
+                onChange={(e) => updateCurrentKegiatan({ foto0: e.target.files?.[0] || null })}
+              />
+              {(currentKegiatan.foto0 || currentKegiatan.foto0Url) && (
+                <div className="mt-2">
+                  <img 
+                    src={
+                      currentKegiatan.foto0 instanceof File 
+                        ? URL.createObjectURL(currentKegiatan.foto0)
+                        : currentKegiatan.foto0Url || ''
+                    } 
+                    alt="Foto 0%" 
+                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
+                    onClick={() => {
+                      const url = currentKegiatan.foto0 instanceof File 
+                        ? URL.createObjectURL(currentKegiatan.foto0)
+                        : currentKegiatan.foto0Url || '';
+                      setPreviewUrl(url);
+                      setShowPreview(true);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="foto-50">Foto 50%</Label>
+              <Input
+                id="foto-50"
+                type="file"
+                accept="image/*"
+                onChange={(e) => updateCurrentKegiatan({ foto50: e.target.files?.[0] || null })}
+              />
+              {(currentKegiatan.foto50 || currentKegiatan.foto50Url) && (
+                <div className="mt-2">
+                  <img 
+                    src={
+                      currentKegiatan.foto50 instanceof File 
+                        ? URL.createObjectURL(currentKegiatan.foto50)
+                        : currentKegiatan.foto50Url || ''
+                    } 
+                    alt="Foto 50%" 
+                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
+                    onClick={() => {
+                      const url = currentKegiatan.foto50 instanceof File 
+                        ? URL.createObjectURL(currentKegiatan.foto50)
+                        : currentKegiatan.foto50Url || '';
+                      setPreviewUrl(url);
+                      setShowPreview(true);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="foto-100">Foto 100%</Label>
+              <Input
+                id="foto-100"
+                type="file"
+                accept="image/*"
+                onChange={(e) => updateCurrentKegiatan({ foto100: e.target.files?.[0] || null })}
+              />
+              {(currentKegiatan.foto100 || currentKegiatan.foto100Url) && (
+                <div className="mt-2">
+                  <img 
+                    src={
+                      currentKegiatan.foto100 instanceof File 
+                        ? URL.createObjectURL(currentKegiatan.foto100)
+                        : currentKegiatan.foto100Url || ''
+                    } 
+                    alt="Foto 100%" 
+                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
+                    onClick={() => {
+                      const url = currentKegiatan.foto100 instanceof File 
+                        ? URL.createObjectURL(currentKegiatan.foto100)
+                        : currentKegiatan.foto100Url || '';
+                      setPreviewUrl(url);
+                      setShowPreview(true);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Jenis Saluran & Sedimen */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
+              <Select
+                value={currentKegiatan.jenisSaluran}
+                onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "" })}
+              >
+                <SelectTrigger id="jenis-saluran">
+                  <SelectValue placeholder="Pilih jenis saluran" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Terbuka">Terbuka</SelectItem>
+                  <SelectItem value="Tertutup">Tertutup</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
+              <Select
+                value={currentKegiatan.jenisSedimen}
+                onValueChange={(value) => updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "" })}
+              >
+                <SelectTrigger id="jenis-sedimen">
+                  <SelectValue placeholder="Pilih jenis sedimen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Padat">Padat</SelectItem>
+                  <SelectItem value="Cair">Cair</SelectItem>
+                  <SelectItem value="Padat & Cair">Padat & Cair</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Aktifitas & Measurements */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
+              <Input
+                id="aktifitas"
+                value={currentKegiatan.aktifitasPenanganan}
+                onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
+                placeholder="Contoh: Pembersihan dan Pengerukan"
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
+                <Input
+                  id="panjang"
+                  value={currentKegiatan.panjangPenanganan}
+                  onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
+                <Input
+                  id="lebar"
+                  value={currentKegiatan.lebarRataRata}
+                  onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
+                <Input
+                  id="sedimen"
+                  value={currentKegiatan.rataRataSedimen}
+                  onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="volume">Volume Galian (M³)</Label>
+                <Input
+                  id="volume"
+                  value={currentKegiatan.volumeGalian}
+                  onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Materials */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Material yang Digunakan</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah
+              </Button>
+            </div>
+            {currentKegiatan.materials.map((material) => (
+              <div key={material.id} className="grid gap-4 md:grid-cols-4 items-end">
+                <div className="space-y-2">
+                  <Label>Jenis Material</Label>
+                  <Input
+                    value={material.jenis}
+                    onChange={(e) => updateMaterial(material.id, "jenis", e.target.value)}
+                    placeholder="Contoh: Pasir"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Jumlah</Label>
+                  <Input
+                    value={material.jumlah}
+                    onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Satuan</Label>
+                  <Select
+                    value={material.satuan}
+                    onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {satuanOptions.map((satuan) => (
+                        <SelectItem key={satuan} value={satuan}>
+                          {satuan}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => removeMaterial(material.id)}
+                  disabled={currentKegiatan.materials.length === 1}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Peralatan */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Peralatan yang Digunakan</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah
+              </Button>
+            </div>
+            {currentKegiatan.peralatans.map((peralatan) => (
+              <div key={peralatan.id} className="grid gap-4 md:grid-cols-3 items-end">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Nama Peralatan</Label>
+                  <Input
+                    value={peralatan.nama}
+                    onChange={(e) => updatePeralatan(peralatan.id, "nama", e.target.value)}
+                    placeholder="Contoh: Excavator"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Jumlah</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={peralatan.jumlah}
+                    onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => removePeralatan(peralatan.id)}
+                  disabled={currentKegiatan.peralatans.length === 1}
+                  className="md:col-start-3"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Koordinator & PHL */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="koordinator">Koordinator</Label>
+              <Select
+                value={currentKegiatan.koordinator}
+                onValueChange={(value) => updateCurrentKegiatan({ koordinator: value })}
+              >
+                <SelectTrigger id="koordinator">
+                  <SelectValue placeholder="Pilih koordinator" />
+                </SelectTrigger>
+                <SelectContent>
+                  {koordinatorOptions.map((koordinator) => (
+                    <SelectItem key={koordinator} value={koordinator}>
+                      {koordinator}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
+              <Input
+                id="jumlah-phl"
+                type="number"
+                min="1"
+                value={currentKegiatan.jumlahPHL}
+                onChange={(e) => updateCurrentKegiatan({ jumlahPHL: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+          </div>
+
+          {/* Keterangan */}
+          <div className="space-y-2">
+            <Label htmlFor="keterangan">Keterangan</Label>
+            <Textarea
+              id="keterangan"
+              value={currentKegiatan.keterangan}
+              onChange={(e) => updateCurrentKegiatan({ keterangan: e.target.value })}
+              placeholder="Catatan tambahan (opsional)"
+              rows={4}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-4 pt-4">
+            <Button onClick={handlePreview} variant="outline" className="flex-1">
+              <Eye className="mr-2 h-4 w-4" />
+              Preview PDF
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} className="flex-1">
+              {isSaving ? (
+                <>Menyimpan...</>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Simpan
+                </>
+              )}
+            </Button>
+            <Button onClick={handleDownload} variant="default" className="flex-1">
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+          </div>
+        </Card>
+
+        {/* Preview Dialog */}
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>Preview PDF</DialogTitle>
+              <DialogDescription>
+                Preview laporan sebelum download
+              </DialogDescription>
+            </DialogHeader>
+            {previewUrl && (
+              <iframe
+                src={previewUrl}
+                className="w-full h-[70vh] border rounded"
+                title="PDF Preview"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

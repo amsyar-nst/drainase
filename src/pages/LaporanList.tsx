@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer, FileDown } from "lucide-react";
+import { Trash2, Edit, Plus, FileDown } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -19,7 +19,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
-import SelectKegiatanDialog from "@/components/SelectKegiatanDialog"; // Import the new dialog
 
 interface LaporanItem {
   id: string;
@@ -33,8 +32,6 @@ const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isSelectKegiatanDialogOpen, setIsSelectKegiatanDialogOpen] = useState(false);
-  const [selectedLaporanForPdf, setSelectedLaporanForPdf] = useState<{ id: string; tanggal: Date } | null>(null);
   const navigate = useNavigate();
 
   const fetchLaporans = async () => {
@@ -77,44 +74,15 @@ const LaporanList = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Delete related materials, peralatan, and operasional_alat_berat first (due to foreign key constraints)
-      const { data: kegiatanIds, error: fetchKegiatanError } = await supabase
+      // Delete kegiatan first (cascade should handle materials and peralatan)
+      const { error: kegiatanError } = await supabase
         .from("kegiatan_drainase")
-        .select("id")
+        .delete()
         .eq("laporan_id", id);
 
-      if (fetchKegiatanError) throw fetchKegiatanError;
+      if (kegiatanError) throw kegiatanError;
 
-      if (kegiatanIds && kegiatanIds.length > 0) {
-        const idsToDelete = kegiatanIds.map(k => k.id);
-        
-        const { error: materialError } = await supabase
-          .from("material_kegiatan")
-          .delete()
-          .in("kegiatan_id", idsToDelete);
-        if (materialError) throw materialError;
-
-        const { error: peralatanError } = await supabase
-          .from("peralatan_kegiatan")
-          .delete()
-          .in("kegiatan_id", idsToDelete);
-        if (peralatanError) throw peralatanError;
-
-        const { error: operasionalAlatBeratError } = await supabase // New delete
-          .from("operasional_alat_berat_kegiatan")
-          .delete()
-          .in("kegiatan_id", idsToDelete);
-        if (operasionalAlatBeratError) throw operasionalAlatBeratError;
-
-        // Then delete kegiatans
-        const { error: kegiatanError } = await supabase
-          .from("kegiatan_drainase")
-          .delete()
-          .eq("laporan_id", id);
-        if (kegiatanError) throw kegiatanError;
-      }
-
-      // Finally, delete laporan
+      // Delete laporan
       const { error: laporanError } = await supabase
         .from("laporan_drainase")
         .delete()
@@ -130,11 +98,6 @@ const LaporanList = () => {
     } finally {
       setDeleteId(null);
     }
-  };
-
-  const handleOpenSelectKegiatanDialog = (laporanId: string, tanggal: string) => {
-    setSelectedLaporanForPdf({ id: laporanId, tanggal: new Date(tanggal) });
-    setIsSelectKegiatanDialogOpen(true);
   };
 
   if (loading) {
@@ -195,15 +158,6 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleOpenSelectKegiatanDialog(laporan.id, laporan.tanggal)}
-                              className="gap-2"
-                            >
-                              <Printer className="h-4 w-4" />
-                              Cetak/Unduh
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
                               onClick={() => navigate(`/edit/${laporan.id}`)}
                               className="gap-2"
                             >
@@ -237,7 +191,6 @@ const LaporanList = () => {
               <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
               <AlertDialogDescription>
                 Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan.
-                Semua kegiatan, material, peralatan, dan operasional alat berat yang terkait dengan laporan ini juga akan dihapus.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -251,15 +204,6 @@ const LaporanList = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {selectedLaporanForPdf && (
-          <SelectKegiatanDialog
-            isOpen={isSelectKegiatanDialogOpen}
-            onClose={() => setIsSelectKegiatanDialogOpen(false)}
-            laporanId={selectedLaporanForPdf.id}
-            laporanTanggal={selectedLaporanForPdf.tanggal}
-          />
-        )}
       </div>
     </>
   );

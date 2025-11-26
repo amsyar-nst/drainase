@@ -1,12 +1,8 @@
-import { LaporanDrainase, KegiatanDrainase } from "@/types/laporan";
+import { LaporanDrainase } from "@/types/laporan";
 import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { id } from "date-fns/locale";
 
-export const generatePDF = async (
-  data: LaporanDrainase,
-  downloadNow: boolean = true,
-  kegiatansToRender?: KegiatanDrainase[] // New optional parameter
-): Promise<Blob> => {
+export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
 
   // Convert images to base64
   const getBase64 = (file: File | string | null): Promise<string> => {
@@ -25,11 +21,9 @@ export const generatePDF = async (
     });
   };
 
-  const activitiesToUse = kegiatansToRender && kegiatansToRender.length > 0 ? kegiatansToRender : data.kegiatans;
-
   // Convert all images for all activities
   const kegiatansWithImages = await Promise.all(
-    activitiesToUse.map(async (kegiatan) => ({
+    data.kegiatans.map(async (kegiatan) => ({
       ...kegiatan,
       foto0Base64: await getBase64(kegiatan.foto0),
       foto50Base64: await getBase64(kegiatan.foto50),
@@ -42,7 +36,7 @@ export const generatePDF = async (
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Laporan Drainase - ${format(data.tanggal, "dd MMMM yyyy", { locale: idLocale })}</title>
+      <title>Laporan Drainase - ${format(data.tanggal, "dd MMMM yyyy", { locale: id })}</title>
       <style>
         @page {
           size: 330mm 215mm;
@@ -125,13 +119,13 @@ export const generatePDF = async (
           border: 1px solid #000;
         }
 
-        .material-list, .equipment-list, .heavy-equipment-list {
+        .material-list, .equipment-list {
           margin: 0;
           padding: 0;
           list-style: none;
         }
 
-        .material-list li, .equipment-list li, .heavy-equipment-list li {
+        .material-list li, .equipment-list li {
           margin-bottom: 2px;
           font-size: 6pt;
         }
@@ -190,7 +184,7 @@ export const generatePDF = async (
         <div class="report-title">LAPORAN HARIAN PEMELIHARAAN DRAINASE</div>
       </div>
 
-      <div class="period">Periode : ${format(data.tanggal, "MMMM yyyy", { locale: idLocale })}</div>
+      <div class="period">Periode : ${format(data.tanggal, "MMMM yyyy", { locale: id })}</div>
 
       <table>
         <thead>
@@ -206,9 +200,8 @@ export const generatePDF = async (
             <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
             <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
-            <th colspan="4">Material / Bahan</th>
-            <th colspan="3">Peralatan & Alat Berat</th>
-            <th colspan="2">Operasional Alat Berat</th>
+            <th colspan="3">Material / Bahan</th>
+            <th colspan="2">Peralatan & Alat Berat</th>
             <th colspan="2">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
@@ -216,10 +209,6 @@ export const generatePDF = async (
             <th class="photo-cell">0%</th>
             <th class="photo-cell">50%</th>
             <th class="photo-cell">100%</th>
-            <th style="width: 80px;">Jenis</th>
-            <th class="number-col">Jlh.</th>
-            <th class="number-col">Sat.</th>
-            <th style="width: 60px;">Ket.</th>
             <th style="width: 80px;">Jenis</th>
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
@@ -233,7 +222,7 @@ export const generatePDF = async (
           ${kegiatansWithImages.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
-              <td>${format(data.tanggal, "EEEE", { locale: idLocale })}<br/>${format(data.tanggal, "dd/MM/yyyy", { locale: idLocale })}</td>
+              <td>${format(data.tanggal, "EEEE", { locale: id })}<br/>${format(data.tanggal, "dd/MM/yyyy", { locale: id })}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 ${kegiatan.foto0Base64 ? `<img src="${kegiatan.foto0Base64}" alt="Foto 0%" />` : ''}
@@ -273,13 +262,6 @@ export const generatePDF = async (
                 </ul>
               </td>
               <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.keterangan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.nama}</li>
@@ -293,28 +275,7 @@ export const generatePDF = async (
                   `).join('')}
                 </ul>
               </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.satuan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>
-                <ul class="heavy-equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(operasional => `
-                    <li>${operasional.jenis}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="heavy-equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(operasional => `
-                    <li>${operasional.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>${kegiatan.koordinator.join(', ') || '-'}</td>
+              <td>${kegiatan.koordinator}</td>
               <td class="center">${kegiatan.jumlahPHL}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>

@@ -3,27 +3,12 @@ export interface Material {
   jenis: string;
   jumlah: string;
   satuan: string;
-  keterangan: string; // New property
 }
 
 export interface Peralatan {
   id: string;
   nama: string;
   jumlah: number;
-  satuan: string; // New property
-}
-
-export interface OperasionalAlatBerat { // New interface
-  id: string;
-  jenis: string;
-  jumlah: number;
-  dexliteJumlah: string; // New property for Dexlite quantity
-  dexliteSatuan: string; // New property for Dexlite unit
-  pertaliteJumlah: string; // New property for Pertalite quantity
-  pertaliteSatuan: string; // New property for Pertalite unit
-  bioSolarJumlah: string; // New property for Bio Solar quantity
-  bioSolarSatuan: string; // New property for Bio Solar unit
-  keterangan: string; // New property for general notes
 }
 
 export interface KegiatanDrainase {
@@ -44,11 +29,9 @@ export interface KegiatanDrainase {
   lebarRataRata: string;
   rataRataSedimen: string;
   volumeGalian: string;
-  isVolumeGalianManuallySet?: boolean;
   materials: Material[];
   peralatans: Peralatan[];
-  operasionalAlatBerats: OperasionalAlatBerat[]; // New property
-  koordinator: string[]; // Changed to array of strings
+  koordinator: string;
   jumlahPHL: number;
   keterangan: string;
 }

@@ -123,20 +123,7 @@ export const satuanOptions = [
   "Lbr",
   "Kg",
   "Unit",
-  "Buah",
-  "Jam", // Added for operational equipment
-  "Hari" // Added for operational equipment
-];
-
-export const alatBeratOptions = [ // New options for heavy equipment
-  "Excavator",
-  "Backhoe Loader",
-  "Dump Truck",
-  "Bulldozer",
-  "Grader",
-  "Vibro Roller",
-  "Crane",
-  "Loader"
+  "Buah"
 ];
 
 // Mapping material types to default units (case-insensitive)
