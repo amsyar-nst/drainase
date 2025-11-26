@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
 import { alatBeratOptions } from "@/data/kecamatan-kelurahan";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface OperasionalAlatBeratSectionProps {
   currentKegiatan: KegiatanDrainase;
@@ -16,8 +18,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   currentKegiatan,
   updateCurrentKegiatan,
 }) => {
-  // State to manage custom input for each operasional item
-  const [customJenisAlatBerat, setCustomJenisAlatBerat] = useState<Record<string, string>>({});
+  const [openPopover, setOpenPopover] = useState<Record<string, boolean>>({});
 
   const addOperasionalAlatBerat = () => {
     const newOperasional: OperasionalAlatBerat = {
@@ -35,8 +36,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       updateCurrentKegiatan({
         operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.filter((o) => o.id !== id),
       });
-      // Also remove custom input state if it exists
-      setCustomJenisAlatBerat(prev => {
+      setOpenPopover(prev => {
         const newState = { ...prev };
         delete newState[id];
         return newState;
@@ -52,24 +52,14 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
     });
   };
 
-  const handleJenisAlatBeratChange = (id: string, value: string) => {
-    if (value === "custom") {
-      // Set the jenis to an empty string or a placeholder to indicate custom input
-      updateOperasionalAlatBerat(id, "jenis", "");
-      setCustomJenisAlatBerat(prev => ({ ...prev, [id]: "" }));
-    } else {
-      updateOperasionalAlatBerat(id, "jenis", value);
-      setCustomJenisAlatBerat(prev => {
-        const newState = { ...prev };
-        delete newState[id]; // Remove custom input state if a predefined option is selected
-        return newState;
-      });
-    }
+  const handleJenisInputChange = (id: string, value: string) => {
+    updateOperasionalAlatBerat(id, "jenis", value);
+    setOpenPopover(prev => ({ ...prev, [id]: true })); // Open popover on input change
   };
 
-  const handleCustomJenisAlatBeratChange = (id: string, value: string) => {
-    setCustomJenisAlatBerat(prev => ({ ...prev, [id]: value }));
-    updateOperasionalAlatBerat(id, "jenis", value);
+  const handleSelectJenis = (id: string, selectedJenis: string) => {
+    updateOperasionalAlatBerat(id, "jenis", selectedJenis);
+    setOpenPopover(prev => ({ ...prev, [id]: false })); // Close popover on selection
   };
 
   return (
@@ -85,31 +75,46 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
         <div key={operasional.id} className="grid gap-4 md:grid-cols-3 items-end">
           <div className="space-y-2 md:col-span-2">
             <Label>Jenis Alat Berat</Label>
-            <Select
-              value={alatBeratOptions.includes(operasional.jenis) ? operasional.jenis : "custom"}
-              onValueChange={(value) => handleJenisAlatBeratChange(operasional.id, value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih jenis alat berat" />
-              </SelectTrigger>
-              <SelectContent>
-                {alatBeratOptions.map((jenis) => (
-                  <SelectItem key={jenis} value={jenis}>
-                    {jenis}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Lainnya (Input Manual)</SelectItem>
-              </SelectContent>
-            </Select>
-            {(!alatBeratOptions.includes(operasional.jenis) || operasional.jenis === "") && (
-              <Input
-                type="text"
-                placeholder="Masukkan jenis alat berat manual"
-                value={customJenisAlatBerat[operasional.id] !== undefined ? customJenisAlatBerat[operasional.id] : operasional.jenis}
-                onChange={(e) => handleCustomJenisAlatBeratChange(operasional.id, e.target.value)}
-                className="mt-2"
-              />
-            )}
+            <Popover open={openPopover[operasional.id]} onOpenChange={(open) => setOpenPopover(prev => ({ ...prev, [operasional.id]: open }))}>
+              <PopoverTrigger asChild>
+                <Input
+                  type="text"
+                  placeholder="Pilih atau masukkan jenis alat berat"
+                  value={operasional.jenis}
+                  onChange={(e) => handleJenisInputChange(operasional.id, e.target.value)}
+                  onFocus={() => setOpenPopover(prev => ({ ...prev, [operasional.id]: true }))}
+                />
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-50">
+                <Command>
+                  <CommandInput placeholder="Cari jenis alat berat..." value={operasional.jenis} onValueChange={(value) => handleJenisInputChange(operasional.id, value)} />
+                  <CommandList>
+                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                    <CommandGroup>
+                      {alatBeratOptions
+                        .filter(
+                          (jenis) =>
+                            operasional.jenis === "" ||
+                            jenis.toLowerCase().includes(operasional.jenis.toLowerCase())
+                        )
+                        .map((jenis) => (
+                          <CommandItem
+                            key={jenis}
+                            value={jenis}
+                            onSelect={() => handleSelectJenis(operasional.id, jenis)}
+                            className={cn(
+                              "cursor-pointer",
+                              operasional.jenis === jenis && "bg-accent text-accent-foreground"
+                            )}
+                          >
+                            {jenis}
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label>Jumlah</Label>
