@@ -34,7 +34,7 @@ import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefa
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToSupabaseStorage } from "@/lib/supabase-storage-upload"; // Updated import
+import { uploadImageToSupabaseStorage } from "@/lib/supabase-storage-upload";
 import { compressImage } from "@/lib/image-compressor";
 
 export const DrainaseForm = () => {
@@ -341,7 +341,7 @@ export const DrainaseForm = () => {
 
         if (updateError) throw new Error(`Gagal memperbarui laporan: ${updateError.message}`);
 
-        // Delete existing kegiatan, materials, and peralatan
+        // Delete existing kegiatan, materials, and peralatan for this report
         const { error: deleteError } = await supabase
           .from('kegiatan_drainase')
           .delete()
@@ -369,30 +369,17 @@ export const DrainaseForm = () => {
         throw new Error("ID Laporan tidak tersedia setelah penyimpanan awal.");
       }
 
-      // Save kegiatan
+      // Process each kegiatan
       for (const kegiatan of formData.kegiatans) {
-        // Upload photos to Supabase Storage
-        const foto0Url = kegiatan.foto0 
-          ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, currentLaporanId, kegiatan.id, 'foto0'))
-          : (kegiatan.foto0Url || null);
-        const foto50Url = kegiatan.foto50 
-          ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, currentLaporanId, kegiatan.id, 'foto50'))
-          : (kegiatan.foto50Url || null);
-        const foto100Url = kegiatan.foto100 
-          ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, currentLaporanId, kegiatan.id, 'foto100'))
-          : (kegiatan.foto100Url || null);
-
-        // Insert kegiatan
-        const { data: kegiatanData, error: kegiatanError } = await supabase
+        // 1. Insert kegiatan_drainase record first to get a stable ID
+        const { data: kegiatanData, error: kegiatanInsertError } = await supabase
           .from('kegiatan_drainase')
           .insert({
             laporan_id: currentLaporanId,
             nama_jalan: kegiatan.namaJalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto_0_url: foto0Url,
-            foto_50_url: foto50Url,
-            foto_100_url: foto100Url,
+            // Initially insert without photo URLs
             jenis_saluran: kegiatan.jenisSaluran,
             jenis_sedimen: kegiatan.jenisSedimen,
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
@@ -407,11 +394,36 @@ export const DrainaseForm = () => {
           .select()
           .single();
 
-        if (kegiatanError) throw new Error(`Gagal menyimpan kegiatan: ${kegiatanError.message}`);
+        if (kegiatanInsertError) throw new Error(`Gagal menyimpan kegiatan: ${kegiatanInsertError.message}`);
 
-        // Insert materials
+        const kegiatanDbId = kegiatanData.id; // This is the stable ID from Supabase
+
+        // 2. Upload photos using the stable kegiatanDbId
+        const foto0Url = kegiatan.foto0 
+          ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, currentLaporanId, kegiatanDbId, 'foto0'))
+          : (kegiatan.foto0Url || null);
+        const foto50Url = kegiatan.foto50 
+          ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, currentLaporanId, kegiatanDbId, 'foto50'))
+          : (kegiatan.foto50Url || null);
+        const foto100Url = kegiatan.foto100 
+          ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, currentLaporanId, kegiatanDbId, 'foto100'))
+          : (kegiatan.foto100Url || null);
+
+        // 3. Update kegiatan_drainase with photo URLs
+        const { error: updatePhotoError } = await supabase
+          .from('kegiatan_drainase')
+          .update({
+            foto_0_url: foto0Url,
+            foto_50_url: foto50Url,
+            foto_100_url: foto100Url,
+          })
+          .eq('id', kegiatanDbId);
+
+        if (updatePhotoError) throw new Error(`Gagal memperbarui URL foto kegiatan: ${updatePhotoError.message}`);
+
+        // 4. Insert materials and peralatan using kegiatanDbId
         const materialsToInsert = kegiatan.materials.map(m => ({
-          kegiatan_id: kegiatanData.id,
+          kegiatan_id: kegiatanDbId,
           jenis: m.jenis,
           jumlah: m.jumlah,
           satuan: m.satuan,
@@ -423,9 +435,8 @@ export const DrainaseForm = () => {
 
         if (materialsError) throw new Error(`Gagal menyimpan material: ${materialsError.message}`);
 
-        // Insert peralatan
         const peralatanToInsert = kegiatan.peralatans.map(p => ({
-          kegiatan_id: kegiatanData.id,
+          kegiatan_id: kegiatanDbId,
           nama: p.nama,
           jumlah: p.jumlah,
         }));
