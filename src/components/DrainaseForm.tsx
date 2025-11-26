@@ -368,6 +368,7 @@ export const DrainaseForm = () => {
       if (!currentLaporanId) {
         throw new Error("ID Laporan tidak tersedia setelah penyimpanan awal.");
       }
+      console.log(`DEBUG: Laporan ID: ${currentLaporanId}`);
 
       // Process each kegiatan
       for (const kegiatan of formData.kegiatans) {
@@ -397,19 +398,29 @@ export const DrainaseForm = () => {
         if (kegiatanInsertError) throw new Error(`Gagal menyimpan kegiatan: ${kegiatanInsertError.message}`);
 
         const kegiatanDbId = kegiatanData.id; // This is the stable ID from Supabase
+        console.log(`DEBUG: Kegiatan DB ID for upload: ${kegiatanDbId}`);
 
         // 2. Upload photos using the stable kegiatanDbId
+        console.log(`DEBUG: Attempting to upload foto0 for kegiatan ${kegiatanDbId}. File:`, kegiatan.foto0);
         const foto0Url = kegiatan.foto0 
           ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, currentLaporanId, kegiatanDbId, 'foto0'))
           : (kegiatan.foto0Url || null);
+        console.log(`DEBUG: foto0Url after upload: ${foto0Url}`);
+
+        console.log(`DEBUG: Attempting to upload foto50 for kegiatan ${kegiatanDbId}. File:`, kegiatan.foto50);
         const foto50Url = kegiatan.foto50 
           ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, currentLaporanId, kegiatanDbId, 'foto50'))
           : (kegiatan.foto50Url || null);
+        console.log(`DEBUG: foto50Url after upload: ${foto50Url}`);
+
+        console.log(`DEBUG: Attempting to upload foto100 for kegiatan ${kegiatanDbId}. File:`, kegiatan.foto100);
         const foto100Url = kegiatan.foto100 
           ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, currentLaporanId, kegiatanDbId, 'foto100'))
           : (kegiatan.foto100Url || null);
+        console.log(`DEBUG: foto100Url after upload: ${foto100Url}`);
 
         // 3. Update kegiatan_drainase with photo URLs
+        console.log(`DEBUG: Attempting to update kegiatan ${kegiatanDbId} with photo URLs:`, { foto0Url, foto50Url, foto100Url });
         const { error: updatePhotoError } = await supabase
           .from('kegiatan_drainase')
           .update({
@@ -419,7 +430,11 @@ export const DrainaseForm = () => {
           })
           .eq('id', kegiatanDbId);
 
-        if (updatePhotoError) throw new Error(`Gagal memperbarui URL foto kegiatan: ${updatePhotoError.message}`);
+        if (updatePhotoError) {
+          console.error(`ERROR: Gagal memperbarui URL foto kegiatan ${kegiatanDbId}:`, updatePhotoError);
+          throw new Error(`Gagal memperbarui URL foto kegiatan: ${updatePhotoError.message}`);
+        }
+        console.log(`DEBUG: Successfully updated photo URLs for kegiatan ${kegiatanDbId}.`);
 
         // 4. Insert materials and peralatan using kegiatanDbId
         const materialsToInsert = kegiatan.materials.map(m => ({
