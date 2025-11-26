@@ -29,11 +29,12 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan } from "@/types/laporan";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
+import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection"; // Import the new section
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -57,6 +58,18 @@ export const DrainaseForm = () => {
       volumeGalian: "",
       materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
       peralatans: [{ id: "1", nama: "", jumlah: 1 }],
+      operasionalAlatBerats: [{ // Initialize operasionalAlatBerats
+        id: "1",
+        jenis: "",
+        jumlah: 1,
+        dexliteJumlah: "",
+        dexliteSatuan: "Liter",
+        pertaliteJumlah: "",
+        pertaliteSatuan: "Liter",
+        bioSolarJumlah: "",
+        bioSolarSatuan: "Liter",
+        keterangan: "",
+      }],
       koordinator: "",
       jumlahPHL: 1,
       keterangan: "",
@@ -107,12 +120,13 @@ export const DrainaseForm = () => {
 
       if (kegiatanError) throw kegiatanError;
 
-      // Load kegiatan with materials and peralatan
+      // Load kegiatan with materials, peralatan, and operasional alat berat
       const kegiatansWithDetails = await Promise.all(
         (kegiatanData || []).map(async (kegiatan) => {
-          const [materialsRes, peralatanRes] = await Promise.all([
+          const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
             supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
+            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id) // Fetch operasional alat berat
           ]);
 
           return {
@@ -143,6 +157,18 @@ export const DrainaseForm = () => {
               id: p.id,
               nama: p.nama,
               jumlah: p.jumlah
+            })),
+            operasionalAlatBerats: (operasionalRes.data || []).map(o => ({ // Map operasional alat berat
+              id: o.id,
+              jenis: o.jenis,
+              jumlah: o.jumlah,
+              dexliteJumlah: o.dexlite_jumlah || "",
+              dexliteSatuan: o.dexlite_satuan || "Liter",
+              pertaliteJumlah: o.pertalite_jumlah || "",
+              pertaliteSatuan: o.pertalite_satuan || "Liter",
+              bioSolarJumlah: o.bio_solar_jumlah || "",
+              bioSolarSatuan: o.bio_solar_satuan || "Liter",
+              keterangan: o.keterangan || "",
             })),
             koordinator: kegiatan.koordinator || "",
             jumlahPHL: kegiatan.jumlah_phl || 1,
@@ -189,6 +215,18 @@ export const DrainaseForm = () => {
       volumeGalian: "",
       materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
       peralatans: [{ id: "1", nama: "", jumlah: 1 }],
+      operasionalAlatBerats: [{ // Initialize operasionalAlatBerats for new activity
+        id: "1",
+        jenis: "",
+        jumlah: 1,
+        dexliteJumlah: "",
+        dexliteSatuan: "Liter",
+        pertaliteJumlah: "",
+        pertaliteSatuan: "Liter",
+        bioSolarJumlah: "",
+        bioSolarSatuan: "Liter",
+        keterangan: "",
+      }],
       koordinator: "",
       jumlahPHL: 1,
       keterangan: "",
@@ -338,13 +376,13 @@ export const DrainaseForm = () => {
 
         if (updateError) throw updateError;
 
-        // Delete existing kegiatan, materials, and peralatan
-        const { error: deleteError } = await supabase
+        // Delete existing kegiatan, materials, peralatan, and operasional alat berat
+        const { error: deleteKegiatanError } = await supabase
           .from('kegiatan_drainase')
           .delete()
           .eq('laporan_id', currentLaporanId);
 
-        if (deleteError) throw deleteError;
+        if (deleteKegiatanError) throw deleteKegiatanError;
       } else {
         // Create new laporan
         const { data: laporanData, error: laporanError } = await supabase
@@ -427,6 +465,26 @@ export const DrainaseForm = () => {
           .insert(peralatanToInsert);
 
         if (peralatanError) throw peralatanError;
+
+        // Insert operasional alat berat
+        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.map(o => ({
+          kegiatan_id: kegiatanData.id,
+          jenis: o.jenis,
+          jumlah: o.jumlah,
+          dexlite_jumlah: o.dexliteJumlah,
+          dexlite_satuan: o.dexliteSatuan,
+          pertalite_jumlah: o.pertaliteJumlah,
+          pertalite_satuan: o.pertaliteSatuan,
+          bio_solar_jumlah: o.bioSolarJumlah,
+          bio_solar_satuan: o.bioSolarSatuan,
+          keterangan: o.keterangan,
+        }));
+
+        const { error: operasionalError } = await supabase
+          .from('operasional_alat_berat_kegiatan')
+          .insert(operasionalAlatBeratsToInsert);
+
+        if (operasionalError) throw operasionalError;
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
@@ -857,6 +915,12 @@ export const DrainaseForm = () => {
               </div>
             ))}
           </div>
+
+          {/* Operasional Alat Berat Section */}
+          <OperasionalAlatBeratSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
           {/* Koordinator & PHL */}
           <div className="grid gap-4 md:grid-cols-2">

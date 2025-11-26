@@ -11,6 +11,19 @@ export interface Peralatan {
   jumlah: number;
 }
 
+export interface OperasionalAlatBerat {
+  id: string;
+  jenis: string;
+  jumlah: number;
+  dexliteJumlah: string;
+  dexliteSatuan: string;
+  pertaliteJumlah: string;
+  pertaliteSatuan: string;
+  bioSolarJumlah: string;
+  bioSolarSatuan: string;
+  keterangan: string;
+}
+
 export interface KegiatanDrainase {
   id: string;
   namaJalan: string;
@@ -31,6 +44,7 @@ export interface KegiatanDrainase {
   volumeGalian: string;
   materials: Material[];
   peralatans: Peralatan[];
+  operasionalAlatBerats: OperasionalAlatBerat[]; // Add this line
   koordinator: string;
   jumlahPHL: number;
   keterangan: string;
