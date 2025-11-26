@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
-import { alatBeratOptions, satuanOptions } from "@/data/kecamatan-kelurahan"; // Import satuanOptions
+import { alatBeratOptions } from "@/data/kecamatan-kelurahan"; // Removed satuanOptions as it's no longer needed for fuel units
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import {
@@ -34,11 +34,11 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       jenis: "",
       jumlah: 1,
       dexliteJumlah: "",
-      dexliteSatuan: "Liter",
+      dexliteSatuan: "Liter", // Default to Liter
       pertaliteJumlah: "",
-      pertaliteSatuan: "Liter",
+      pertaliteSatuan: "Liter", // Default to Liter
       bioSolarJumlah: "",
-      bioSolarSatuan: "Liter",
+      bioSolarSatuan: "Liter", // Default to Liter
       keterangan: "",
     };
     updateCurrentKegiatan({
@@ -154,21 +154,12 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             </div>
             <div className="space-y-2">
               <Label>Satuan Dexlite</Label>
-              <Select
-                value={operasional.dexliteSatuan}
-                onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "dexliteSatuan", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Satuan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {satuanOptions.map((satuan) => (
-                    <SelectItem key={satuan} value={satuan}>
-                      {satuan}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                type="text"
+                value="Liter"
+                disabled
+                className="bg-muted"
+              />
             </div>
 
             <div className="space-y-2">
@@ -182,21 +173,12 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             </div>
             <div className="space-y-2">
               <Label>Satuan Pertalite</Label>
-              <Select
-                value={operasional.pertaliteSatuan}
-                onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "pertaliteSatuan", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Satuan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {satuanOptions.map((satuan) => (
-                    <SelectItem key={satuan} value={satuan}>
-                      {satuan}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                type="text"
+                value="Liter"
+                disabled
+                className="bg-muted"
+              />
             </div>
 
             <div className="space-y-2">
@@ -210,21 +192,12 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             </div>
             <div className="space-y-2">
               <Label>Satuan Bio Solar</Label>
-              <Select
-                value={operasional.bioSolarSatuan}
-                onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "bioSolarSatuan", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Satuan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {satuanOptions.map((satuan) => (
-                    <SelectItem key={satuan} value={satuan}>
-                      {satuan}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                type="text"
+                value="Liter"
+                disabled
+                className="bg-muted"
+              />
             </div>
           </div>
 
