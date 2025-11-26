@@ -1,41 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { List } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan } from "@/types/laporan";
-import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
+import { kecamatanKelurahanData, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToSupabaseStorage } from "@/lib/supabase-storage-upload";
 import { compressImage } from "@/lib/image-compressor";
+
+// Import modular components
+import { LaporanInfoSection } from "./drainase-form/LaporanInfoSection";
+import { KegiatanNavigation } from "./drainase-form/KegiatanNavigation";
+import { KegiatanDetailsSection } from "./drainase-form/KegiatanDetailsSection";
+import { PhotoUploadSection } from "./drainase-form/PhotoUploadSection";
+import { JenisSaluranSedimenSection } from "./drainase-form/JenisSaluranSedimenSection";
+import { ActivityMeasurementsSection } from "./drainase-form/ActivityMeasurementsSection";
+import { MaterialsSection } from "./drainase-form/MaterialsSection";
+import { PeralatanSection } from "./drainase-form/PeralatanSection";
+import { KoordinatorPHLSection } from "./drainase-form/KoordinatorPHLSection";
+import { KeteranganSection } from "./drainase-form/KeteranganSection";
+import { FormActions } from "./drainase-form/FormActions";
+import { PdfPreviewDialog } from "./drainase-form/PdfPreviewDialog";
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -76,21 +66,23 @@ export const DrainaseForm = () => {
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
-  // Expose currentKegiatan to window for debugging
-  useEffect(() => {
-    (window as any).currentKegiatan = currentKegiatan;
-  }, [currentKegiatan]);
-
   useEffect(() => {
     if (id) {
       loadLaporan(id);
     }
   }, [id]);
 
+  const updateCurrentKegiatan = useCallback((updates: Partial<KegiatanDrainase>) => {
+    setFormData(prevData => {
+      const newKegiatans = [...prevData.kegiatans];
+      newKegiatans[currentKegiatanIndex] = { ...newKegiatans[currentKegiatanIndex], ...updates };
+      return { ...prevData, kegiatans: newKegiatans };
+    });
+  }, [currentKegiatanIndex]);
+
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
     try {
-      // Fetch laporan
       const { data: laporanData, error: laporanError } = await supabase
         .from('laporan_drainase')
         .select('*')
@@ -106,7 +98,6 @@ export const DrainaseForm = () => {
 
       setLaporanId(laporanId);
 
-      // Fetch kegiatan
       const { data: kegiatanData, error: kegiatanError } = await supabase
         .from('kegiatan_drainase')
         .select('*')
@@ -114,7 +105,6 @@ export const DrainaseForm = () => {
 
       if (kegiatanError) throw kegiatanError;
 
-      // Load kegiatan with materials and peralatan
       const kegiatansWithDetails = await Promise.all(
         (kegiatanData || []).map(async (kegiatan) => {
           const [materialsRes, peralatanRes] = await Promise.all([
@@ -127,7 +117,7 @@ export const DrainaseForm = () => {
             namaJalan: kegiatan.nama_jalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto0: kegiatan.foto_0_url || null, // These will now be URLs from Supabase Storage
+            foto0: kegiatan.foto_0_url || null,
             foto50: kegiatan.foto_50_url || null,
             foto100: kegiatan.foto_100_url || null,
             foto0Url: kegiatan.foto_0_url || undefined,
@@ -172,15 +162,9 @@ export const DrainaseForm = () => {
     }
   };
 
-  const updateCurrentKegiatan = (updates: Partial<KegiatanDrainase>) => {
-    const newKegiatans = [...formData.kegiatans];
-    newKegiatans[currentKegiatanIndex] = { ...currentKegiatan, ...updates };
-    setFormData({ ...formData, kegiatans: newKegiatans });
-  };
-
-  const addKegiatan = () => {
+  const addKegiatan = useCallback(() => {
     const newKegiatan: KegiatanDrainase = {
-      id: "temp-" + Date.now().toString(), // Use a temporary ID for new activities
+      id: "temp-" + Date.now().toString(),
       namaJalan: "",
       kecamatan: "",
       kelurahan: "",
@@ -200,119 +184,50 @@ export const DrainaseForm = () => {
       jumlahPHL: 1,
       keterangan: "",
     };
-    setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
+    setFormData(prevData => ({ ...prevData, kegiatans: [...prevData.kegiatans, newKegiatan] }));
     setCurrentKegiatanIndex(formData.kegiatans.length);
-  };
+  }, [formData.kegiatans.length]);
 
-  const removeKegiatan = (index: number) => {
+  const removeKegiatan = useCallback((index: number) => {
     if (formData.kegiatans.length > 1) {
-      const newKegiatans = formData.kegiatans.filter((_, i) => i !== index);
-      setFormData({ ...formData, kegiatans: newKegiatans });
-      if (currentKegiatanIndex >= newKegiatans.length) {
-        setCurrentKegiatanIndex(newKegiatans.length - 1);
-      }
+      setFormData(prevData => {
+        const newKegiatans = prevData.kegiatans.filter((_, i) => i !== index);
+        if (currentKegiatanIndex >= newKegiatans.length) {
+          setCurrentKegiatanIndex(newKegiatans.length - 1);
+        }
+        return { ...prevData, kegiatans: newKegiatans };
+      });
     }
-  };
+  }, [formData.kegiatans.length, currentKegiatanIndex]);
 
-  const handleKecamatanChange = (value: string) => {
+  const handleKecamatanChange = useCallback((value: string) => {
     setSelectedKecamatan(value);
     const kecData = kecamatanKelurahanData.find((k) => k.kecamatan === value);
     if (kecData) {
       setKelurahanOptions(kecData.kelurahan);
       updateCurrentKegiatan({ kecamatan: value, kelurahan: "" });
     }
-  };
+  }, [updateCurrentKegiatan]);
 
-  const handleKelurahanChange = (value: string) => {
+  const handleKelurahanChange = useCallback((value: string) => {
     updateCurrentKegiatan({ kelurahan: value });
-  };
+  }, [updateCurrentKegiatan]);
 
-  const addMaterial = () => {
-    const newMaterial: Material = {
-      id: Date.now().toString(),
-      jenis: "",
-      jumlah: "",
-      satuan: "M³",
-    };
-    updateCurrentKegiatan({
-      materials: [...currentKegiatan.materials, newMaterial],
-    });
-  };
-
-  const removeMaterial = (id: string) => {
-    if (currentKegiatan.materials.length > 1) {
-      updateCurrentKegiatan({
-        materials: currentKegiatan.materials.filter((m) => m.id !== id),
-      });
-    }
-  };
-
-  const updateMaterial = (id: string, field: keyof Material, value: string) => {
-    updateCurrentKegiatan({
-      materials: currentKegiatan.materials.map((m) => {
-        if (m.id === id) {
-          const updatedMaterial = { ...m, [field]: value };
-          
-          // Auto-fill satuan when jenis changes
-          if (field === "jenis" && value) {
-            const normalizedJenis = value.toLowerCase().trim();
-            const defaultUnit = materialDefaultUnits[normalizedJenis];
-            if (defaultUnit) {
-              updatedMaterial.satuan = defaultUnit;
-            }
-          }
-          
-          return updatedMaterial;
-        }
-        return m;
-      }),
-    });
-  };
-
-  const addPeralatan = () => {
-    const newPeralatan: Peralatan = {
-      id: Date.now().toString(),
-      nama: "",
-      jumlah: 1,
-    };
-    updateCurrentKegiatan({
-      peralatans: [...currentKegiatan.peralatans, newPeralatan],
-    });
-  };
-
-  const removePeralatan = (id: string) => {
-    if (currentKegiatan.peralatans.length > 1) {
-      updateCurrentKegiatan({
-        peralatans: currentKegiatan.peralatans.filter((p) => p.id !== id),
-      });
-    }
-  };
-
-  const updatePeralatan = (id: string, field: keyof Peralatan, value: string | number) => {
-    updateCurrentKegiatan({
-      peralatans: currentKegiatan.peralatans.map((p) =>
-        p.id === id ? { ...p, [field]: value } : p
-      ),
-    });
-  };
-
-  // Modified uploadFile to use Supabase Storage and image compression
-  const uploadFile = async (file: File, laporanId: string, kegiatanId: string, type: string): Promise<string | null> => {
+  const uploadFile = useCallback(async (file: File, laporanId: string, kegiatanId: string, type: string): Promise<string | null> => {
     if (!file) return null;
 
-    // Compress the image before uploading
     const compressedFile = await compressImage(file);
     if (!compressedFile) {
       toast.error(`Gagal mengompres foto ${type}.`);
       return null;
     }
 
-    const bucketName = "drainase-images"; // Define your Supabase bucket name here
+    const bucketName = "drainase-images";
     const folderPath = `laporan-drainase/${laporanId}/${kegiatanId}`;
     return uploadImageToSupabaseStorage(compressedFile, bucketName, folderPath);
-  };
+  }, []);
 
-  const handlePreview = async () => {
+  const handlePreview = useCallback(async () => {
     try {
       const blob = await generatePDF(formData, false);
       const url = URL.createObjectURL(blob);
@@ -322,15 +237,14 @@ export const DrainaseForm = () => {
       console.error('Preview error:', error);
       toast.error('Gagal membuat preview PDF');
     }
-  };
+  }, [formData]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       let currentLaporanId = laporanId;
 
       if (currentLaporanId) {
-        // Update existing laporan
         const { error: updateError } = await supabase
           .from('laporan_drainase')
           .update({
@@ -341,7 +255,6 @@ export const DrainaseForm = () => {
 
         if (updateError) throw new Error(`Gagal memperbarui laporan: ${updateError.message}`);
 
-        // Delete existing kegiatan, materials, and peralatan for this report
         const { error: deleteError } = await supabase
           .from('kegiatan_drainase')
           .delete()
@@ -349,7 +262,6 @@ export const DrainaseForm = () => {
 
         if (deleteError) throw new Error(`Gagal menghapus kegiatan lama: ${deleteError.message}`);
       } else {
-        // Create new laporan
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
           .insert({
@@ -364,15 +276,11 @@ export const DrainaseForm = () => {
         setLaporanId(currentLaporanId);
       }
 
-      // Ensure currentLaporanId is available before proceeding
       if (!currentLaporanId) {
         throw new Error("ID Laporan tidak tersedia setelah penyimpanan awal.");
       }
-      console.log(`DEBUG: Laporan ID: ${currentLaporanId}`);
 
-      // Process each kegiatan
       for (const kegiatan of formData.kegiatans) {
-        // 1. Insert kegiatan_drainase record first to get a stable ID
         const { data: kegiatanData, error: kegiatanInsertError } = await supabase
           .from('kegiatan_drainase')
           .insert({
@@ -380,7 +288,6 @@ export const DrainaseForm = () => {
             nama_jalan: kegiatan.namaJalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            // Initially insert without photo URLs
             jenis_saluran: kegiatan.jenisSaluran,
             jenis_sedimen: kegiatan.jenisSedimen,
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
@@ -397,30 +304,18 @@ export const DrainaseForm = () => {
 
         if (kegiatanInsertError) throw new Error(`Gagal menyimpan kegiatan: ${kegiatanInsertError.message}`);
 
-        const kegiatanDbId = kegiatanData.id; // This is the stable ID from Supabase
-        console.log(`DEBUG: Kegiatan DB ID for upload: ${kegiatanDbId}`);
+        const kegiatanDbId = kegiatanData.id;
 
-        // 2. Upload photos using the stable kegiatanDbId
-        console.log(`DEBUG: Attempting to upload foto0 for kegiatan ${kegiatanDbId}. File:`, kegiatan.foto0);
         const foto0Url = kegiatan.foto0 
           ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, currentLaporanId, kegiatanDbId, 'foto0'))
           : (kegiatan.foto0Url || null);
-        console.log(`DEBUG: foto0Url after upload: ${foto0Url}`);
-
-        console.log(`DEBUG: Attempting to upload foto50 for kegiatan ${kegiatanDbId}. File:`, kegiatan.foto50);
         const foto50Url = kegiatan.foto50 
           ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, currentLaporanId, kegiatanDbId, 'foto50'))
           : (kegiatan.foto50Url || null);
-        console.log(`DEBUG: foto50Url after upload: ${foto50Url}`);
-
-        console.log(`DEBUG: Attempting to upload foto100 for kegiatan ${kegiatanDbId}. File:`, kegiatan.foto100);
         const foto100Url = kegiatan.foto100 
           ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, currentLaporanId, kegiatanDbId, 'foto100'))
           : (kegiatan.foto100Url || null);
-        console.log(`DEBUG: foto100Url after upload: ${foto100Url}`);
 
-        // 3. Update kegiatan_drainase with photo URLs
-        console.log(`DEBUG: Attempting to update kegiatan ${kegiatanDbId} with photo URLs:`, { foto0Url, foto50Url, foto100Url });
         const { error: updatePhotoError } = await supabase
           .from('kegiatan_drainase')
           .update({
@@ -430,13 +325,8 @@ export const DrainaseForm = () => {
           })
           .eq('id', kegiatanDbId);
 
-        if (updatePhotoError) {
-          console.error(`ERROR: Gagal memperbarui URL foto kegiatan ${kegiatanDbId}:`, updatePhotoError);
-          throw new Error(`Gagal memperbarui URL foto kegiatan: ${updatePhotoError.message}`);
-        }
-        console.log(`DEBUG: Successfully updated photo URLs for kegiatan ${kegiatanDbId}.`);
+        if (updatePhotoError) throw new Error(`Gagal memperbarui URL foto kegiatan: ${updatePhotoError.message}`);
 
-        // 4. Insert materials and peralatan using kegiatanDbId
         const materialsToInsert = kegiatan.materials.map(m => ({
           kegiatan_id: kegiatanDbId,
           jenis: m.jenis,
@@ -464,23 +354,23 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/laporan'); // Navigate to the list page after successful save
+      navigate('/laporan');
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error(`Gagal menyimpan laporan: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [laporanId, formData, navigate, uploadFile]);
 
-  const handleDownload = async () => {
+  const handleDownload = useCallback(async () => {
     try {
       await generatePDF(formData, true);
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Gagal mendownload PDF');
     }
-  };
+  }, [formData]);
 
   if (isLoading) {
     return (
@@ -508,476 +398,75 @@ export const DrainaseForm = () => {
           </Button>
         </div>
 
-        {/* Activity Navigation */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2 flex-wrap">
-              {formData.kegiatans.map((_, index) => (
-                <Button
-                  key={index}
-                  variant={currentKegiatanIndex === index ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentKegiatanIndex(index)}
-                >
-                  Kegiatan {index + 1}
-                </Button>
-              ))}
-              <Button variant="outline" size="sm" onClick={addKegiatan}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah
-              </Button>
-            </div>
-            {formData.kegiatans.length > 1 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => removeKegiatan(currentKegiatanIndex)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </Card>
+        <KegiatanNavigation
+          kegiatans={formData.kegiatans}
+          currentKegiatanIndex={currentKegiatanIndex}
+          setCurrentKegiatanIndex={setCurrentKegiatanIndex}
+          addKegiatan={addKegiatan}
+          removeKegiatan={removeKegiatan}
+        />
 
         <Card className="p-6 space-y-6">
-          {/* Tanggal */}
-          <div className="space-y-2">
-            <Label htmlFor="tanggal">Tanggal</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="tanggal"
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.tanggal && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.tanggal ? format(formData.tanggal, "PPP", { locale: idLocale }) : "Pilih tanggal"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.tanggal}
-                  onSelect={(date) => date && setFormData({ ...formData, tanggal: date })}
-                  initialFocus
-                  locale={idLocale}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <LaporanInfoSection formData={formData} setFormData={setFormData} />
 
-          {/* Lokasi */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="nama-jalan">Nama Jalan</Label>
-              <Input
-                id="nama-jalan"
-                value={currentKegiatan.namaJalan}
-                onChange={(e) => updateCurrentKegiatan({ namaJalan: e.target.value })}
-                placeholder="Masukkan nama jalan"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="kecamatan">Kecamatan</Label>
-              <Select value={currentKegiatan.kecamatan} onValueChange={handleKecamatanChange}>
-                <SelectTrigger id="kecamatan">
-                  <SelectValue placeholder="Pilih kecamatan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {kecamatanKelurahanData.map((item) => (
-                    <SelectItem key={item.kecamatan} value={item.kecamatan}>
-                      {item.kecamatan}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="kelurahan">Kelurahan</Label>
-              <Select
-                value={currentKegiatan.kelurahan}
-                onValueChange={handleKelurahanChange}
-                disabled={!kelurahanOptions.length}
-              >
-                <SelectTrigger id="kelurahan">
-                  <SelectValue placeholder="Pilih kelurahan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {kelurahanOptions.map((kel) => (
-                    <SelectItem key={kel} value={kel}>
-                      {kel}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <KegiatanDetailsSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+            kelurahanOptions={kelurahanOptions}
+            handleKecamatanChange={handleKecamatanChange}
+            handleKelurahanChange={handleKelurahanChange}
+          />
 
-          {/* Photos */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="foto-0">Foto 0%</Label>
-              <Input
-                id="foto-0"
-                type="file"
-                accept="image/*"
-                onChange={(e) => updateCurrentKegiatan({ foto0: e.target.files?.[0] || null })}
-              />
-              {(currentKegiatan.foto0 || currentKegiatan.foto0Url) && (
-                <div className="mt-2">
-                  <img 
-                    src={
-                      currentKegiatan.foto0 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto0)
-                        : currentKegiatan.foto0Url || ''
-                    } 
-                    alt="Foto 0%" 
-                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
-                    onClick={() => {
-                      const url = currentKegiatan.foto0 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto0)
-                        : currentKegiatan.foto0Url || '';
-                      setPreviewUrl(url);
-                      setShowPreview(true);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="foto-50">Foto 50%</Label>
-              <Input
-                id="foto-50"
-                type="file"
-                accept="image/*"
-                onChange={(e) => updateCurrentKegiatan({ foto50: e.target.files?.[0] || null })}
-              />
-              {(currentKegiatan.foto50 || currentKegiatan.foto50Url) && (
-                <div className="mt-2">
-                  <img 
-                    src={
-                      currentKegiatan.foto50 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto50)
-                        : currentKegiatan.foto50Url || ''
-                    } 
-                    alt="Foto 50%" 
-                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
-                    onClick={() => {
-                      const url = currentKegiatan.foto50 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto50)
-                        : currentKegiatan.foto50Url || '';
-                      setPreviewUrl(url);
-                      setShowPreview(true);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="foto-100">Foto 100%</Label>
-              <Input
-                id="foto-100"
-                type="file"
-                accept="image/*"
-                onChange={(e) => updateCurrentKegiatan({ foto100: e.target.files?.[0] || null })}
-              />
-              {(currentKegiatan.foto100 || currentKegiatan.foto100Url) && (
-                <div className="mt-2">
-                  <img 
-                    src={
-                      currentKegiatan.foto100 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto100)
-                        : currentKegiatan.foto100Url || ''
-                    } 
-                    alt="Foto 100%" 
-                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
-                    onClick={() => {
-                      const url = currentKegiatan.foto100 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto100)
-                        : currentKegiatan.foto100Url || '';
-                      setPreviewUrl(url);
-                      setShowPreview(true);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+          <PhotoUploadSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+            setShowPreview={setShowPreview}
+            setPreviewUrl={setPreviewUrl}
+          />
 
-          {/* Jenis Saluran & Sedimen */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
-              <Select
-                value={currentKegiatan.jenisSaluran}
-                onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "" })}
-              >
-                <SelectTrigger id="jenis-saluran">
-                  <SelectValue placeholder="Pilih jenis saluran" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Terbuka">Terbuka</SelectItem>
-                  <SelectItem value="Tertutup">Tertutup</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
-              <Select
-                value={currentKegiatan.jenisSedimen}
-                onValueChange={(value) => updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "" })}
-              >
-                <SelectTrigger id="jenis-sedimen">
-                  <SelectValue placeholder="Pilih jenis sedimen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Padat">Padat</SelectItem>
-                  <SelectItem value="Cair">Cair</SelectItem>
-                  <SelectItem value="Padat & Cair">Padat & Cair</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <JenisSaluranSedimenSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
-          {/* Aktifitas & Measurements */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
-              <Input
-                id="aktifitas"
-                value={currentKegiatan.aktifitasPenanganan}
-                onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
-                placeholder="Contoh: Pembersihan dan Pengerukan"
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
-                <Input
-                  id="panjang"
-                  value={currentKegiatan.panjangPenanganan}
-                  onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
-                <Input
-                  id="lebar"
-                  value={currentKegiatan.lebarRataRata}
-                  onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
-                <Input
-                  id="sedimen"
-                  value={currentKegiatan.rataRataSedimen}
-                  onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="volume">Volume Galian (M³)</Label>
-                <Input
-                  id="volume"
-                  value={currentKegiatan.volumeGalian}
-                  onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
+          <ActivityMeasurementsSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
-          {/* Materials */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Material yang Digunakan</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah
-              </Button>
-            </div>
-            {currentKegiatan.materials.map((material) => (
-              <div key={material.id} className="grid gap-4 md:grid-cols-4 items-end">
-                <div className="space-y-2">
-                  <Label>Jenis Material</Label>
-                  <Input
-                    value={material.jenis}
-                    onChange={(e) => updateMaterial(material.id, "jenis", e.target.value)}
-                    placeholder="Contoh: Pasir"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Jumlah</Label>
-                  <Input
-                    value={material.jumlah}
-                    onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Satuan</Label>
-                  <Select
-                    value={material.satuan}
-                    onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {satuanOptions.map((satuan) => (
-                        <SelectItem key={satuan} value={satuan}>
-                          {satuan}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => removeMaterial(material.id)}
-                  disabled={currentKegiatan.materials.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+          <MaterialsSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
-          {/* Peralatan */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Peralatan yang Digunakan</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah
-              </Button>
-            </div>
-            {currentKegiatan.peralatans.map((peralatan) => (
-              <div key={peralatan.id} className="grid gap-4 md:grid-cols-3 items-end">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Nama Peralatan</Label>
-                  <Input
-                    value={peralatan.nama}
-                    onChange={(e) => updatePeralatan(peralatan.id, "nama", e.target.value)}
-                    placeholder="Contoh: Excavator"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Jumlah</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={peralatan.jumlah}
-                    onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => removePeralatan(peralatan.id)}
-                  disabled={currentKegiatan.peralatans.length === 1}
-                  className="md:col-start-3"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+          <PeralatanSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
-          {/* Koordinator & PHL */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="koordinator">Koordinator</Label>
-              <Select
-                value={currentKegiatan.koordinator}
-                onValueChange={(value) => updateCurrentKegiatan({ koordinator: value })}
-              >
-                <SelectTrigger id="koordinator">
-                  <SelectValue placeholder="Pilih koordinator" />
-                </SelectTrigger>
-                <SelectContent>
-                  {koordinatorOptions.map((koordinator) => (
-                    <SelectItem key={koordinator} value={koordinator}>
-                      {koordinator}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
-              <Input
-                id="jumlah-phl"
-                type="number"
-                min="1"
-                value={currentKegiatan.jumlahPHL}
-                onChange={(e) => updateCurrentKegiatan({ jumlahPHL: parseInt(e.target.value) || 1 })}
-              />
-            </div>
-          </div>
+          <KoordinatorPHLSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
-          {/* Keterangan */}
-          <div className="space-y-2">
-            <Label htmlFor="keterangan">Keterangan</Label>
-            <Textarea
-              id="keterangan"
-              value={currentKegiatan.keterangan}
-              onChange={(e) => updateCurrentKegiatan({ keterangan: e.target.value })}
-              placeholder="Catatan tambahan (opsional)"
-              rows={4}
-            />
-          </div>
+          <KeteranganSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
-          {/* Actions */}
-          <div className="flex gap-4 pt-4">
-            <Button onClick={handlePreview} variant="outline" className="flex-1">
-              <Eye className="mr-2 h-4 w-4" />
-              Preview PDF
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving} className="flex-1">
-              {isSaving ? (
-                <>Menyimpan...</>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Simpan
-                </>
-              )}
-            </Button>
-            <Button onClick={handleDownload} variant="default" className="flex-1">
-              <Download className="mr-2 h-4 w-4" />
-              Download
-            </Button>
-          </div>
+          <FormActions
+            handlePreview={handlePreview}
+            handleSave={handleSave}
+            handleDownload={handleDownload}
+            isSaving={isSaving}
+          />
         </Card>
 
-        {/* Preview Dialog */}
-        <Dialog open={showPreview} onOpenChange={setShowPreview}>
-          <DialogContent className="max-w-4xl max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle>Preview PDF</DialogTitle>
-              <DialogDescription>
-                Preview laporan sebelum download
-              </DialogDescription>
-            </DialogHeader>
-            {previewUrl && (
-              <iframe
-                src={previewUrl}
-                className="w-full h-[70vh] border rounded"
-                title="PDF Preview"
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        <PdfPreviewDialog
+          showPreview={showPreview}
+          setShowPreview={setShowPreview}
+          previewUrl={previewUrl}
+        />
       </div>
     </div>
   );
