@@ -31,6 +31,8 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
             value={currentKegiatan.panjangPenanganan}
             onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
             placeholder="0"
+            type="number" // Use type number for better input experience
+            step="0.01" // Allow decimal inputs
           />
         </div>
         <div className="space-y-2">
@@ -40,6 +42,8 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
             value={currentKegiatan.lebarRataRata}
             onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
             placeholder="0"
+            type="number" // Use type number for better input experience
+            step="0.01" // Allow decimal inputs
           />
         </div>
         <div className="space-y-2">
@@ -49,6 +53,8 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
             value={currentKegiatan.rataRataSedimen}
             onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
             placeholder="0"
+            type="number" // Use type number for better input experience
+            step="0.01" // Allow decimal inputs
           />
         </div>
         <div className="space-y-2">
@@ -56,8 +62,9 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
           <Input
             id="volume"
             value={currentKegiatan.volumeGalian}
-            onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
-            placeholder="0"
+            readOnly // Make it read-only
+            className="bg-muted cursor-not-allowed" // Add styling to indicate it's read-only
+            placeholder="0.00"
           />
         </div>
       </div>

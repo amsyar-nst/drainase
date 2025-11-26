@@ -80,6 +80,25 @@ export const DrainaseForm = () => {
     });
   }, [currentKegiatanIndex]);
 
+  // Effect to calculate volumeGalian automatically
+  useEffect(() => {
+    const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
+    const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
+    const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
+
+    const calculatedVolume = (panjang * lebar * tinggi).toFixed(2); // Keep 2 decimal places
+
+    if (currentKegiatan.volumeGalian !== calculatedVolume) {
+      updateCurrentKegiatan({ volumeGalian: calculatedVolume });
+    }
+  }, [
+    currentKegiatan.panjangPenanganan,
+    currentKegiatan.lebarRataRata,
+    currentKegiatan.rataRataSedimen,
+    currentKegiatan.volumeGalian, // Include volumeGalian to prevent infinite loop if it's not updated
+    updateCurrentKegiatan,
+  ]);
+
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
     try {
@@ -348,7 +367,7 @@ export const DrainaseForm = () => {
 
         const { error: peralatanError } = await supabase
           .from('peralatan_kegiatan')
-          .insert(peralatanToInsert);
+          .insert(peralataanToInsert);
 
         if (peralatanError) throw new Error(`Gagal menyimpan peralatan: ${peralatanError.message}`);
       }
