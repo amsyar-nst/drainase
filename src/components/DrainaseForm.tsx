@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { List } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan } from "@/types/laporan";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
@@ -22,6 +22,7 @@ import { JenisSaluranSedimenSection } from "./drainase-form/JenisSaluranSedimenS
 import { ActivityMeasurementsSection } from "./drainase-form/ActivityMeasurementsSection";
 import { MaterialsSection } from "./drainase-form/MaterialsSection";
 import { PeralatanSection } from "./drainase-form/PeralatanSection";
+import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection"; // New import
 import { KoordinatorPHLSection } from "./drainase-form/KoordinatorPHLSection";
 import { KeteranganSection } from "./drainase-form/KeteranganSection";
 import { FormActions } from "./drainase-form/FormActions";
@@ -47,10 +48,11 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      isVolumeGalianManuallySet: false, // Initialize new property
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
-      peralatans: [{ id: "1", nama: "", jumlah: 1 }],
-      koordinator: "",
+      isVolumeGalianManuallySet: false,
+      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }], // Initialize new property
+      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }], // Initialize new property
+      operasionalAlatBerats: [{ id: "1", jenis: "", jumlah: 1 }], // Initialize new property
+      koordinator: [], // Changed to empty array
       jumlahPHL: 1,
       keterangan: "",
     }]
@@ -130,9 +132,10 @@ export const DrainaseForm = () => {
 
       const kegiatansWithDetails = await Promise.all(
         (kegiatanData || []).map(async (kegiatan) => {
-          const [materialsRes, peralatanRes] = await Promise.all([
+          const [materialsRes, peralatanRes, operasionalAlatBeratRes] = await Promise.all([
             supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
+            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id) // Fetch new data
           ]);
 
           return {
@@ -158,14 +161,21 @@ export const DrainaseForm = () => {
               id: m.id,
               jenis: m.jenis,
               jumlah: m.jumlah,
-              satuan: m.satuan
+              satuan: m.satuan,
+              keterangan: m.keterangan || "", // Load new property
             })),
             peralatans: (peralatanRes.data || []).map(p => ({
               id: p.id,
               nama: p.nama,
-              jumlah: p.jumlah
+              jumlah: p.jumlah,
+              satuan: p.satuan || "Unit", // Load new property
             })),
-            koordinator: kegiatan.koordinator || "",
+            operasionalAlatBerats: (operasionalAlatBeratRes.data || []).map(o => ({ // Load new data
+              id: o.id,
+              jenis: o.jenis,
+              jumlah: o.jumlah,
+            })),
+            koordinator: (kegiatan.koordinator || []) as string[], // Load as array
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
           };
@@ -202,10 +212,11 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      isVolumeGalianManuallySet: false, // Initialize new property
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
-      peralatans: [{ id: "1", nama: "", jumlah: 1 }],
-      koordinator: "",
+      isVolumeGalianManuallySet: false,
+      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
+      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }],
+      operasionalAlatBerats: [{ id: "1", jenis: "", jumlah: 1 }], // Initialize new property
+      koordinator: [], // Changed to empty array
       jumlahPHL: 1,
       keterangan: "",
     };
@@ -280,12 +291,23 @@ export const DrainaseForm = () => {
 
         if (updateError) throw new Error(`Gagal memperbarui laporan: ${updateError.message}`);
 
-        const { error: deleteError } = await supabase
-          .from('kegiatan_drainase')
-          .delete()
-          .eq('laporan_id', currentLaporanId);
+        // Delete existing related data before inserting new ones to handle updates
+        const { data: kegiatanIds, error: fetchKegiatanError } = await supabase
+          .from("kegiatan_drainase")
+          .select("id")
+          .eq("laporan_id", currentLaporanId);
 
-        if (deleteError) throw new Error(`Gagal menghapus kegiatan lama: ${deleteError.message}`);
+        if (fetchKegiatanError) throw fetchKegiatanError;
+
+        if (kegiatanIds && kegiatanIds.length > 0) {
+          const idsToDelete = kegiatanIds.map(k => k.id);
+          
+          await supabase.from("material_kegiatan").delete().in("kegiatan_id", idsToDelete);
+          await supabase.from("peralatan_kegiatan").delete().in("kegiatan_id", idsToDelete);
+          await supabase.from("operasional_alat_berat_kegiatan").delete().in("kegiatan_id", idsToDelete); // Delete new table data
+          await supabase.from("kegiatan_drainase").delete().eq("laporan_id", currentLaporanId);
+        }
+
       } else {
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
@@ -320,7 +342,7 @@ export const DrainaseForm = () => {
             lebar_rata_rata: kegiatan.lebarRataRata,
             rata_rata_sedimen: kegiatan.rataRataSedimen,
             volume_galian: kegiatan.volumeGalian,
-            koordinator: kegiatan.koordinator,
+            koordinator: kegiatan.koordinator, // Save as array
             jumlah_phl: kegiatan.jumlahPHL,
             keterangan: kegiatan.keterangan,
           })
@@ -357,6 +379,7 @@ export const DrainaseForm = () => {
           jenis: m.jenis,
           jumlah: m.jumlah,
           satuan: m.satuan,
+          keterangan: m.keterangan, // Save new property
         }));
 
         const { error: materialsError } = await supabase
@@ -369,13 +392,26 @@ export const DrainaseForm = () => {
           kegiatan_id: kegiatanDbId,
           nama: p.nama,
           jumlah: p.jumlah,
+          satuan: p.satuan, // Save new property
         }));
 
         const { error: peralatanError } = await supabase
           .from('peralatan_kegiatan')
-          .insert(peralataanToInsert);
+          .insert(peralatanToInsert);
 
         if (peralatanError) throw new Error(`Gagal menyimpan peralatan: ${peralatanError.message}`);
+
+        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.map(o => ({ // Save new data
+          kegiatan_id: kegiatanDbId,
+          jenis: o.jenis,
+          jumlah: o.jumlah,
+        }));
+
+        const { error: operasionalAlatBeratError } = await supabase
+          .from('operasional_alat_berat_kegiatan')
+          .insert(operasionalAlatBeratsToInsert);
+
+        if (operasionalAlatBeratError) throw new Error(`Gagal menyimpan operasional alat berat: ${operasionalAlatBeratError.message}`);
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
@@ -465,6 +501,11 @@ export const DrainaseForm = () => {
           />
 
           <PeralatanSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
+
+          <OperasionalAlatBeratSection // New section
             currentKegiatan={currentKegiatan}
             updateCurrentKegiatan={updateCurrentKegiatan}
           />

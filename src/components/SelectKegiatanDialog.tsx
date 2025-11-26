@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { KegiatanDrainase, LaporanDrainase, Material, Peralatan } from "@/types/laporan";
+import { KegiatanDrainase, LaporanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { generatePDF } from "@/lib/pdf-generator";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -32,7 +32,7 @@ const SelectKegiatanDialog: React.FC<SelectKegiatanDialogProps> = ({
   laporanTanggal,
 }) => {
   const [kegiatans, setKegiatans] = useState<KegiatanDrainase[]>([]);
-  const [selectedKegiatanIds, setSelectedKegiatanIds] = useState<Set<string>>(new Set());
+  const [selectedKegiatanIds, setSelectedKegiatanIds] = new Set<string>();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -57,9 +57,10 @@ const SelectKegiatanDialog: React.FC<SelectKegiatanDialogProps> = ({
 
       const kegiatansWithDetails = await Promise.all(
         (kegiatanData || []).map(async (kegiatan) => {
-          const [materialsRes, peralatanRes] = await Promise.all([
+          const [materialsRes, peralatanRes, operasionalAlatBeratRes] = await Promise.all([
             supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
+            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
           ]);
 
           return {
@@ -84,14 +85,21 @@ const SelectKegiatanDialog: React.FC<SelectKegiatanDialogProps> = ({
               id: m.id,
               jenis: m.jenis,
               jumlah: m.jumlah,
-              satuan: m.satuan
+              satuan: m.satuan,
+              keterangan: m.keterangan || "",
             })),
             peralatans: (peralatanRes.data || []).map(p => ({
               id: p.id,
               nama: p.nama,
-              jumlah: p.jumlah
+              jumlah: p.jumlah,
+              satuan: p.satuan || "Unit",
             })),
-            koordinator: kegiatan.koordinator || "",
+            operasionalAlatBerats: (operasionalAlatBeratRes.data || []).map(o => ({
+              id: o.id,
+              jenis: o.jenis,
+              jumlah: o.jumlah,
+            })),
+            koordinator: (kegiatan.koordinator || []) as string[],
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
           };
@@ -212,7 +220,6 @@ const SelectKegiatanDialog: React.FC<SelectKegiatanDialogProps> = ({
           <Button variant="outline" onClick={onClose}>
             Batal
           </Button>
-          {/* Tombol "Cetak PDF" dihapus */}
           <Button onClick={() => handleGeneratePdf(true)} disabled={selectedKegiatanIds.size === 0}>
             Cetak/Unduh PDF
           </Button>

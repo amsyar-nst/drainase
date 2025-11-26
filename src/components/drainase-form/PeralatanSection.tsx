@@ -1,9 +1,11 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, Peralatan } from "@/types/laporan";
+import { satuanOptions } from "@/data/kecamatan-kelurahan"; // Import satuanOptions
 
 interface PeralatanSectionProps {
   currentKegiatan: KegiatanDrainase;
@@ -19,6 +21,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
       id: Date.now().toString(),
       nama: "",
       jumlah: 1,
+      satuan: "Unit", // Initialize new property with a default
     };
     updateCurrentKegiatan({
       peralatans: [...currentKegiatan.peralatans, newPeralatan],
@@ -51,13 +54,13 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
         </Button>
       </div>
       {currentKegiatan.peralatans.map((peralatan) => (
-        <div key={peralatan.id} className="grid gap-4 md:grid-cols-3 items-end">
-          <div className="space-y-2 md:col-span-2">
+        <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end"> {/* Adjusted grid columns */}
+          <div className="space-y-2 md:col-span-1"> {/* Adjusted col-span */}
             <Label>Nama Peralatan</Label>
             <Input
               value={peralatan.nama}
               onChange={(e) => updatePeralatan(peralatan.id, "nama", e.target.value)}
-              placeholder="Contoh: Excavator"
+              placeholder="Contoh: Linggis"
             />
           </div>
           <div className="space-y-2">
@@ -69,13 +72,30 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
               onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
             />
           </div>
+          <div className="space-y-2"> {/* New Satuan input */}
+            <Label>Satuan</Label>
+            <Select
+              value={peralatan.satuan}
+              onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {satuanOptions.map((satuan) => (
+                  <SelectItem key={satuan} value={satuan}>
+                    {satuan}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             type="button"
             variant="destructive"
             size="icon"
             onClick={() => removePeralatan(peralatan.id)}
             disabled={currentKegiatan.peralatans.length === 1}
-            className="md:col-start-3"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

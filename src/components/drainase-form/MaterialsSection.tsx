@@ -22,6 +22,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({
       jenis: "",
       jumlah: "",
       satuan: "M³",
+      keterangan: "", // Initialize new property
     };
     updateCurrentKegiatan({
       materials: [...currentKegiatan.materials, newMaterial],
@@ -68,7 +69,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({
         </Button>
       </div>
       {currentKegiatan.materials.map((material) => (
-        <div key={material.id} className="grid gap-4 md:grid-cols-4 items-end">
+        <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end"> {/* Adjusted grid columns */}
           <div className="space-y-2">
             <Label>Jenis Material</Label>
             <Input
@@ -102,6 +103,14 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2"> {/* New Keterangan input */}
+            <Label>Keterangan</Label>
+            <Input
+              value={material.keterangan}
+              onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
+              placeholder="Opsional"
+            />
           </div>
           <Button
             type="button"

@@ -3,11 +3,19 @@ export interface Material {
   jenis: string;
   jumlah: string;
   satuan: string;
+  keterangan: string; // New property
 }
 
 export interface Peralatan {
   id: string;
   nama: string;
+  jumlah: number;
+  satuan: string; // New property
+}
+
+export interface OperasionalAlatBerat { // New interface
+  id: string;
+  jenis: string;
   jumlah: number;
 }
 
@@ -29,10 +37,11 @@ export interface KegiatanDrainase {
   lebarRataRata: string;
   rataRataSedimen: string;
   volumeGalian: string;
-  isVolumeGalianManuallySet?: boolean; // New property
+  isVolumeGalianManuallySet?: boolean;
   materials: Material[];
   peralatans: Peralatan[];
-  koordinator: string;
+  operasionalAlatBerats: OperasionalAlatBerat[]; // New property
+  koordinator: string[]; // Changed to array of strings
   jumlahPHL: number;
   keterangan: string;
 }

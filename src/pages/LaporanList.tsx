@@ -77,7 +77,7 @@ const LaporanList = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Delete related materials and peralatan first (due to foreign key constraints)
+      // Delete related materials, peralatan, and operasional_alat_berat first (due to foreign key constraints)
       const { data: kegiatanIds, error: fetchKegiatanError } = await supabase
         .from("kegiatan_drainase")
         .select("id")
@@ -99,6 +99,12 @@ const LaporanList = () => {
           .delete()
           .in("kegiatan_id", idsToDelete);
         if (peralatanError) throw peralatanError;
+
+        const { error: operasionalAlatBeratError } = await supabase // New delete
+          .from("operasional_alat_berat_kegiatan")
+          .delete()
+          .in("kegiatan_id", idsToDelete);
+        if (operasionalAlatBeratError) throw operasionalAlatBeratError;
 
         // Then delete kegiatans
         const { error: kegiatanError } = await supabase
@@ -231,7 +237,7 @@ const LaporanList = () => {
               <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
               <AlertDialogDescription>
                 Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan.
-                Semua kegiatan, material, dan peralatan yang terkait dengan laporan ini juga akan dihapus.
+                Semua kegiatan, material, peralatan, dan operasional alat berat yang terkait dengan laporan ini juga akan dihapus.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

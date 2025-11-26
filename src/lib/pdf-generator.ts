@@ -125,13 +125,13 @@ export const generatePDF = async (
           border: 1px solid #000;
         }
 
-        .material-list, .equipment-list {
+        .material-list, .equipment-list, .heavy-equipment-list {
           margin: 0;
           padding: 0;
           list-style: none;
         }
 
-        .material-list li, .equipment-list li {
+        .material-list li, .equipment-list li, .heavy-equipment-list li {
           margin-bottom: 2px;
           font-size: 6pt;
         }
@@ -206,8 +206,9 @@ export const generatePDF = async (
             <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
             <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
-            <th colspan="3">Material / Bahan</th>
-            <th colspan="2">Peralatan & Alat Berat</th>
+            <th colspan="4">Material / Bahan</th>
+            <th colspan="3">Peralatan & Alat Berat</th>
+            <th colspan="2">Operasional Alat Berat</th>
             <th colspan="2">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
@@ -215,6 +216,10 @@ export const generatePDF = async (
             <th class="photo-cell">0%</th>
             <th class="photo-cell">50%</th>
             <th class="photo-cell">100%</th>
+            <th style="width: 80px;">Jenis</th>
+            <th class="number-col">Jlh.</th>
+            <th class="number-col">Sat.</th>
+            <th style="width: 60px;">Ket.</th>
             <th style="width: 80px;">Jenis</th>
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
@@ -268,6 +273,13 @@ export const generatePDF = async (
                 </ul>
               </td>
               <td>
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.keterangan || '-'}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td>
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.nama}</li>
@@ -281,7 +293,28 @@ export const generatePDF = async (
                   `).join('')}
                 </ul>
               </td>
-              <td>${kegiatan.koordinator}</td>
+              <td class="center">
+                <ul class="equipment-list">
+                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    <li>${peralatan.satuan || '-'}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td>
+                <ul class="heavy-equipment-list">
+                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(operasional => `
+                    <li>${operasional.jenis}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td class="center">
+                <ul class="heavy-equipment-list">
+                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(operasional => `
+                    <li>${operasional.jumlah}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td>${kegiatan.koordinator.join(', ') || '-'}</td>
               <td class="center">${kegiatan.jumlahPHL}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>

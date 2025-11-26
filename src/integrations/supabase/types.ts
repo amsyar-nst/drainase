@@ -28,7 +28,7 @@ export type Database = {
           kecamatan: string
           kelurahan: string
           keterangan: string | null
-          koordinator: string | null
+          koordinator: string[] | null -- Changed to string[]
           laporan_id: string
           lebar_rata_rata: string | null
           nama_jalan: string
@@ -50,7 +50,7 @@ export type Database = {
           kecamatan: string
           kelurahan: string
           keterangan?: string | null
-          koordinator?: string | null
+          koordinator?: string[] | null -- Changed to string[]
           laporan_id: string
           lebar_rata_rata?: string | null
           nama_jalan: string
@@ -72,7 +72,7 @@ export type Database = {
           kecamatan?: string
           kelurahan?: string
           keterangan?: string | null
-          koordinator?: string | null
+          koordinator?: string[] | null -- Changed to string[]
           laporan_id?: string
           lebar_rata_rata?: string | null
           nama_jalan?: string
@@ -93,7 +93,7 @@ export type Database = {
       }
       kegiatan_drainase_tersier: {
         Row: {
-          alat_yang_dibutuhkan: Json | null // Changed to Json for JSONB
+          alat_yang_dibutuhkan: Json | null
           created_at: string
           hari_tanggal: string
           id: string
@@ -101,18 +101,18 @@ export type Database = {
           keterangan: string | null
           laporan_id: string
           lokasi: string
-          p3su_count: number | null // New column
-          penanggungjawab: string[] | null // Changed to string[]
-          realisasi_panjang: string | null // New column
-          realisasi_volume: string | null // New column
-          rencana_panjang: string | null // Renamed
-          rencana_volume: string | null // Renamed
+          p3su_count: number | null
+          penanggungjawab: string[] | null
+          realisasi_panjang: string | null
+          realisasi_volume: string | null
+          rencana_panjang: string | null
+          rencana_volume: string | null
           sisa_target: string | null
           updated_at: string
-          upt_count: number | null // New column
+          upt_count: number | null
         }
         Insert: {
-          alat_yang_dibutuhkan?: Json | null // Changed to Json for JSONB
+          alat_yang_dibutuhkan?: Json | null
           created_at?: string
           hari_tanggal: string
           id?: string
@@ -120,18 +120,18 @@ export type Database = {
           keterangan?: string | null
           laporan_id: string
           lokasi: string
-          p3su_count?: number | null // New column
-          penanggungjawab?: string[] | null // Changed to string[]
-          realisasi_panjang?: string | null // New column
-          realisasi_volume?: string | null // New column
-          rencana_panjang?: string | null // Renamed
-          rencana_volume?: string | null // Renamed
+          p3su_count?: number | null
+          penanggungjawab?: string[] | null
+          realisasi_panjang?: string | null
+          realisasi_volume?: string | null
+          rencana_panjang?: string | null
+          rencana_volume?: string | null
           sisa_target?: string | null
           updated_at?: string
-          upt_count?: number | null // New column
+          upt_count?: number | null
         }
         Update: {
-          alat_yang_dibutuhkan?: Json | null // Changed to Json for JSONB
+          alat_yang_dibutuhkan?: Json | null
           created_at?: string
           hari_tanggal?: string
           id?: string
@@ -139,15 +139,15 @@ export type Database = {
           keterangan?: string | null
           laporan_id?: string
           lokasi?: string
-          p3su_count?: number | null // New column
-          penanggungjawab?: string[] | null // Changed to string[]
-          realisasi_panjang?: string | null // New column
-          realisasi_volume?: string | null // New column
-          rencana_panjang?: string | null // Renamed
-          rencana_volume?: string | null // Renamed
+          p3su_count?: number | null
+          penanggungjawab?: string[] | null
+          realisasi_panjang?: string | null
+          realisasi_volume?: string | null
+          rencana_panjang?: string | null
+          rencana_volume?: string | null
           sisa_target?: string | null
           updated_at?: string
-          upt_count?: number | null // New column
+          upt_count?: number | null
         }
         Relationships: [
           {
@@ -212,6 +212,7 @@ export type Database = {
           jumlah: string
           kegiatan_id: string
           satuan: string
+          keterangan: string | null -- New column
         }
         Insert: {
           created_at?: string
@@ -220,6 +221,7 @@ export type Database = {
           jumlah: string
           kegiatan_id: string
           satuan: string
+          keterangan?: string | null -- New column
         }
         Update: {
           created_at?: string
@@ -228,10 +230,43 @@ export type Database = {
           jumlah?: string
           kegiatan_id?: string
           satuan?: string
+          keterangan?: string | null -- New column
         }
         Relationships: [
           {
             foreignKeyName: "material_kegiatan_kegiatan_id_fkey"
+            columns: ["kegiatan_id"]
+            isOneToOne: false
+            referencedRelation: "kegiatan_drainase"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operasional_alat_berat_kegiatan: { -- New table
+        Row: {
+          created_at: string
+          id: string
+          jenis: string
+          jumlah: number
+          kegiatan_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jenis: string
+          jumlah: number
+          kegiatan_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jenis?: string
+          jumlah?: number
+          kegiatan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operasional_alat_berat_kegiatan_kegiatan_id_fkey"
             columns: ["kegiatan_id"]
             isOneToOne: false
             referencedRelation: "kegiatan_drainase"
@@ -246,6 +281,7 @@ export type Database = {
           jumlah: number
           kegiatan_id: string
           nama: string
+          satuan: string | null -- New column
         }
         Insert: {
           created_at?: string
@@ -253,6 +289,7 @@ export type Database = {
           jumlah: number
           kegiatan_id: string
           nama: string
+          satuan?: string | null -- New column
         }
         Update: {
           created_at?: string
@@ -260,6 +297,7 @@ export type Database = {
           jumlah?: number
           kegiatan_id?: string
           nama?: string
+          satuan?: string | null -- New column
         }
         Relationships: [
           {
