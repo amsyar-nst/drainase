@@ -47,6 +47,7 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
+      isVolumeGalianManuallySet: false, // Initialize new property
       materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
       peralatans: [{ id: "1", nama: "", jumlah: 1 }],
       koordinator: "",
@@ -88,14 +89,17 @@ export const DrainaseForm = () => {
 
     const calculatedVolume = (panjang * lebar * tinggi).toFixed(2); // Keep 2 decimal places
 
-    if (currentKegiatan.volumeGalian !== calculatedVolume) {
+    // Only auto-update if it hasn't been manually set OR if the calculated volume is different
+    // and the manual flag is not set
+    if (!currentKegiatan.isVolumeGalianManuallySet && currentKegiatan.volumeGalian !== calculatedVolume) {
       updateCurrentKegiatan({ volumeGalian: calculatedVolume });
     }
   }, [
     currentKegiatan.panjangPenanganan,
     currentKegiatan.lebarRataRata,
     currentKegiatan.rataRataSedimen,
-    currentKegiatan.volumeGalian, // Include volumeGalian to prevent infinite loop if it's not updated
+    currentKegiatan.volumeGalian,
+    currentKegiatan.isVolumeGalianManuallySet,
     updateCurrentKegiatan,
   ]);
 
@@ -149,6 +153,7 @@ export const DrainaseForm = () => {
             lebarRataRata: kegiatan.lebar_rata_rata || "",
             rataRataSedimen: kegiatan.rata_rata_sedimen || "",
             volumeGalian: kegiatan.volume_galian || "",
+            isVolumeGalianManuallySet: false, // Default to false when loading
             materials: (materialsRes.data || []).map(m => ({
               id: m.id,
               jenis: m.jenis,
@@ -197,6 +202,7 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
+      isVolumeGalianManuallySet: false, // Initialize new property
       materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
       peralatans: [{ id: "1", nama: "", jumlah: 1 }],
       koordinator: "",

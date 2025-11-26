@@ -29,6 +29,7 @@ export interface KegiatanDrainase {
   lebarRataRata: string;
   rataRataSedimen: string;
   volumeGalian: string;
+  isVolumeGalianManuallySet?: boolean; // New property
   materials: Material[];
   peralatans: Peralatan[];
   koordinator: string;

@@ -29,7 +29,7 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
           <Input
             id="panjang"
             value={currentKegiatan.panjangPenanganan}
-            onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
+            onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value, isVolumeGalianManuallySet: false })}
             placeholder="0"
             type="number" // Use type number for better input experience
             step="0.01" // Allow decimal inputs
@@ -40,7 +40,7 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
           <Input
             id="lebar"
             value={currentKegiatan.lebarRataRata}
-            onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
+            onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value, isVolumeGalianManuallySet: false })}
             placeholder="0"
             type="number" // Use type number for better input experience
             step="0.01" // Allow decimal inputs
@@ -51,7 +51,7 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
           <Input
             id="sedimen"
             value={currentKegiatan.rataRataSedimen}
-            onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
+            onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value, isVolumeGalianManuallySet: false })}
             placeholder="0"
             type="number" // Use type number for better input experience
             step="0.01" // Allow decimal inputs
@@ -62,9 +62,10 @@ export const ActivityMeasurementsSection: React.FC<ActivityMeasurementsSectionPr
           <Input
             id="volume"
             value={currentKegiatan.volumeGalian}
-            readOnly // Make it read-only
-            className="bg-muted cursor-not-allowed" // Add styling to indicate it's read-only
+            onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value, isVolumeGalianManuallySet: true })}
             placeholder="0.00"
+            type="number" // Use type number for better input experience
+            step="0.01" // Allow decimal inputs
           />
         </div>
       </div>
