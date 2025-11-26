@@ -200,8 +200,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
             <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
-            <th colspan="3">Material / Bahan</th>
-            <th colspan="2">Peralatan & Alat Berat</th>
+            <th colspan="4">Material / Bahan</th>
+            <th colspan="3">Peralatan & Alat Berat</th>
             <th colspan="2">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
@@ -212,8 +212,10 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th style="width: 80px;">Jenis</th>
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
+            <th class="keterangan-col">Ket. Material</th>
             <th style="width: 80px;">Jenis</th>
             <th class="number-col">Jlh.</th>
+            <th class="number-col">Sat.</th>
             <th style="width: 70px;">Koordinator</th>
             <th class="number-col">Jml PHL</th>
           </tr>
@@ -262,6 +264,13 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                 </ul>
               </td>
               <td>
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.keterangan || '-'}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td>
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.nama}</li>
@@ -275,7 +284,14 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                   `).join('')}
                 </ul>
               </td>
-              <td>${kegiatan.koordinator}</td>
+              <td class="center">
+                <ul class="equipment-list">
+                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    <li>${peralatan.satuan || '-'}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td>${kegiatan.koordinator.join(', ')}</td>
               <td class="center">${kegiatan.jumlahPHL}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>

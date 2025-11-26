@@ -3,12 +3,14 @@ export interface Material {
   jenis: string;
   jumlah: string;
   satuan: string;
+  keterangan?: string; // Added keterangan field
 }
 
 export interface Peralatan {
   id: string;
   nama: string;
   jumlah: number;
+  satuan: string; // Added satuan field
 }
 
 export interface OperasionalAlatBerat {
@@ -44,8 +46,8 @@ export interface KegiatanDrainase {
   volumeGalian: string;
   materials: Material[];
   peralatans: Peralatan[];
-  operasionalAlatBerats: OperasionalAlatBerat[]; // Add this line
-  koordinator: string;
+  operasionalAlatBerats: OperasionalAlatBerat[];
+  koordinator: string[]; // Changed to string array for multiple coordinators
   jumlahPHL: number;
   keterangan: string;
 }

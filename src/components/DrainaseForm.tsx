@@ -27,14 +27,15 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
-import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection"; // Import the new section
+import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
+import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -56,9 +57,9 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
-      peralatans: [{ id: "1", nama: "", jumlah: 1 }],
-      operasionalAlatBerats: [{ // Initialize operasionalAlatBerats
+      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }], // Added keterangan
+      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }], // Added satuan
+      operasionalAlatBerats: [{
         id: "1",
         jenis: "",
         jumlah: 1,
@@ -70,7 +71,7 @@ export const DrainaseForm = () => {
         bioSolarSatuan: "Liter",
         keterangan: "",
       }],
-      koordinator: "",
+      koordinator: [], // Changed to array
       jumlahPHL: 1,
       keterangan: "",
     }]
@@ -84,6 +85,7 @@ export const DrainaseForm = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false); // State for koordinator popover
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
@@ -92,6 +94,15 @@ export const DrainaseForm = () => {
       loadLaporan(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (currentKegiatan.kecamatan) {
+      const kecData = kecamatanKelurahanData.find((k) => k.kecamatan === currentKegiatan.kecamatan);
+      setKelurahanOptions(kecData?.kelurahan || []);
+    } else {
+      setKelurahanOptions([]);
+    }
+  }, [currentKegiatan.kecamatan]);
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
@@ -126,7 +137,7 @@ export const DrainaseForm = () => {
           const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
             supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
             supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id) // Fetch operasional alat berat
+            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
           ]);
 
           return {
@@ -151,14 +162,16 @@ export const DrainaseForm = () => {
               id: m.id,
               jenis: m.jenis,
               jumlah: m.jumlah,
-              satuan: m.satuan
+              satuan: m.satuan,
+              keterangan: m.keterangan || "", // Load keterangan
             })),
             peralatans: (peralatanRes.data || []).map(p => ({
               id: p.id,
               nama: p.nama,
-              jumlah: p.jumlah
+              jumlah: p.jumlah,
+              satuan: p.satuan || "Unit", // Load satuan, default to "Unit"
             })),
-            operasionalAlatBerats: (operasionalRes.data || []).map(o => ({ // Map operasional alat berat
+            operasionalAlatBerats: (operasionalRes.data || []).map(o => ({
               id: o.id,
               jenis: o.jenis,
               jumlah: o.jumlah,
@@ -170,7 +183,7 @@ export const DrainaseForm = () => {
               bioSolarSatuan: o.bio_solar_satuan || "Liter",
               keterangan: o.keterangan || "",
             })),
-            koordinator: kegiatan.koordinator || "",
+            koordinator: kegiatan.koordinator ? (kegiatan.koordinator as string).split(', ').filter(Boolean) : [], // Parse comma-separated string to array
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
           };
@@ -213,9 +226,9 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³" }],
-      peralatans: [{ id: "1", nama: "", jumlah: 1 }],
-      operasionalAlatBerats: [{ // Initialize operasionalAlatBerats for new activity
+      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
+      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }],
+      operasionalAlatBerats: [{
         id: "1",
         jenis: "",
         jumlah: 1,
@@ -227,7 +240,7 @@ export const DrainaseForm = () => {
         bioSolarSatuan: "Liter",
         keterangan: "",
       }],
-      koordinator: "",
+      koordinator: [],
       jumlahPHL: 1,
       keterangan: "",
     };
@@ -247,11 +260,7 @@ export const DrainaseForm = () => {
 
   const handleKecamatanChange = (value: string) => {
     setSelectedKecamatan(value);
-    const kecData = kecamatanKelurahanData.find((k) => k.kecamatan === value);
-    if (kecData) {
-      setKelurahanOptions(kecData.kelurahan);
-      updateCurrentKegiatan({ kecamatan: value, kelurahan: "" });
-    }
+    updateCurrentKegiatan({ kecamatan: value, kelurahan: "" });
   };
 
   const handleKelurahanChange = (value: string) => {
@@ -264,6 +273,7 @@ export const DrainaseForm = () => {
       jenis: "",
       jumlah: "",
       satuan: "M³",
+      keterangan: "", // Initialize new field
     };
     updateCurrentKegiatan({
       materials: [...currentKegiatan.materials, newMaterial],
@@ -305,6 +315,7 @@ export const DrainaseForm = () => {
       id: Date.now().toString(),
       nama: "",
       jumlah: 1,
+      satuan: "Unit", // Initialize new field
     };
     updateCurrentKegiatan({
       peralatans: [...currentKegiatan.peralatans, newPeralatan],
@@ -325,6 +336,19 @@ export const DrainaseForm = () => {
         p.id === id ? { ...p, [field]: value } : p
       ),
     });
+  };
+
+  const toggleKoordinator = (koordinatorName: string) => {
+    const currentCoordinators = currentKegiatan.koordinator;
+    if (currentCoordinators.includes(koordinatorName)) {
+      updateCurrentKegiatan({
+        koordinator: currentCoordinators.filter((name) => name !== koordinatorName),
+      });
+    } else {
+      updateCurrentKegiatan({
+        koordinator: [...currentCoordinators, koordinatorName],
+      });
+    }
   };
 
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
@@ -376,13 +400,12 @@ export const DrainaseForm = () => {
 
         if (updateError) throw updateError;
 
-        // Delete existing kegiatan, materials, peralatan, and operasional alat berat
-        const { error: deleteKegiatanError } = await supabase
-          .from('kegiatan_drainase')
-          .delete()
-          .eq('laporan_id', currentLaporanId);
+        // Delete existing related data to re-insert
+        await supabase.from('material_kegiatan').delete().in('kegiatan_id', formData.kegiatans.map(k => k.id));
+        await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', formData.kegiatans.map(k => k.id));
+        await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', formData.kegiatans.map(k => k.id));
+        await supabase.from('kegiatan_drainase').delete().eq('laporan_id', currentLaporanId);
 
-        if (deleteKegiatanError) throw deleteKegiatanError;
       } else {
         // Create new laporan
         const { data: laporanData, error: laporanError } = await supabase
@@ -430,7 +453,7 @@ export const DrainaseForm = () => {
             lebar_rata_rata: kegiatan.lebarRataRata,
             rata_rata_sedimen: kegiatan.rataRataSedimen,
             volume_galian: kegiatan.volumeGalian,
-            koordinator: kegiatan.koordinator,
+            koordinator: kegiatan.koordinator.join(', '), // Store array as comma-separated string
             jumlah_phl: kegiatan.jumlahPHL,
             keterangan: kegiatan.keterangan,
           })
@@ -445,6 +468,7 @@ export const DrainaseForm = () => {
           jenis: m.jenis,
           jumlah: m.jumlah,
           satuan: m.satuan,
+          keterangan: m.keterangan, // Save keterangan
         }));
 
         const { error: materialsError } = await supabase
@@ -458,6 +482,7 @@ export const DrainaseForm = () => {
           kegiatan_id: kegiatanData.id,
           nama: p.nama,
           jumlah: p.jumlah,
+          satuan: p.satuan, // Save satuan
         }));
 
         const { error: peralatanError } = await supabase
@@ -488,6 +513,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
+      navigate('/laporan'); // Redirect to list after saving
     } catch (error) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan');
@@ -826,7 +852,7 @@ export const DrainaseForm = () => {
               </Button>
             </div>
             {currentKegiatan.materials.map((material) => (
-              <div key={material.id} className="grid gap-4 md:grid-cols-4 items-end">
+              <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end"> {/* Changed to 5 columns */}
                 <div className="space-y-2">
                   <Label>Jenis Material</Label>
                   <Input
@@ -861,6 +887,14 @@ export const DrainaseForm = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2"> {/* New Keterangan input */}
+                  <Label>Keterangan</Label>
+                  <Input
+                    value={material.keterangan || ""}
+                    onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
+                    placeholder="Catatan material (opsional)"
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="destructive"
@@ -884,7 +918,7 @@ export const DrainaseForm = () => {
               </Button>
             </div>
             {currentKegiatan.peralatans.map((peralatan) => (
-              <div key={peralatan.id} className="grid gap-4 md:grid-cols-3 items-end">
+              <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end"> {/* Changed to 4 columns */}
                 <div className="space-y-2 md:col-span-2">
                   <Label>Nama Peralatan</Label>
                   <Input
@@ -902,13 +936,30 @@ export const DrainaseForm = () => {
                     onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
                   />
                 </div>
+                <div className="space-y-2"> {/* New Satuan input */}
+                  <Label>Satuan</Label>
+                  <Select
+                    value={peralatan.satuan}
+                    onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {satuanOptions.map((satuan) => (
+                        <SelectItem key={satuan} value={satuan}>
+                          {satuan}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button
                   type="button"
                   variant="destructive"
                   size="icon"
                   onClick={() => removePeralatan(peralatan.id)}
                   disabled={currentKegiatan.peralatans.length === 1}
-                  className="md:col-start-3"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -926,21 +977,44 @@ export const DrainaseForm = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="koordinator">Koordinator</Label>
-              <Select
-                value={currentKegiatan.koordinator}
-                onValueChange={(value) => updateCurrentKegiatan({ koordinator: value })}
-              >
-                <SelectTrigger id="koordinator">
-                  <SelectValue placeholder="Pilih koordinator" />
-                </SelectTrigger>
-                <SelectContent>
-                  {koordinatorOptions.map((koordinator) => (
-                    <SelectItem key={koordinator} value={koordinator}>
-                      {koordinator}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={koordinatorPopoverOpen} onOpenChange={setKoordinatorPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={koordinatorPopoverOpen}
+                    className="w-full justify-between"
+                  >
+                    {currentKegiatan.koordinator.length > 0
+                      ? currentKegiatan.koordinator.join(", ")
+                      : "Pilih koordinator..."}
+                    <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                    <CommandGroup>
+                      {koordinatorOptions.map((koordinator) => (
+                        <CommandItem
+                          key={koordinator}
+                          onSelect={() => toggleKoordinator(koordinator)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              currentKegiatan.koordinator.includes(koordinator)
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {koordinator}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
