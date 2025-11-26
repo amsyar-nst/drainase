@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
-import { alatBeratOptions, satuanOptions } from "@/data/kecamatan-kelurahan";
+import { alatBeratOptions } from "@/data/kecamatan-kelurahan";
 
 interface OperasionalAlatBeratSectionProps {
   currentKegiatan: KegiatanDrainase;
@@ -16,6 +16,9 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   currentKegiatan,
   updateCurrentKegiatan,
 }) => {
+  // State to manage custom input for each operasional item
+  const [customJenisAlatBerat, setCustomJenisAlatBerat] = useState<Record<string, string>>({});
+
   const addOperasionalAlatBerat = () => {
     const newOperasional: OperasionalAlatBerat = {
       id: Date.now().toString(),
@@ -32,6 +35,12 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       updateCurrentKegiatan({
         operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.filter((o) => o.id !== id),
       });
+      // Also remove custom input state if it exists
+      setCustomJenisAlatBerat(prev => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
     }
   };
 
@@ -41,6 +50,26 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
         o.id === id ? { ...o, [field]: value } : o
       ),
     });
+  };
+
+  const handleJenisAlatBeratChange = (id: string, value: string) => {
+    if (value === "custom") {
+      // Set the jenis to an empty string or a placeholder to indicate custom input
+      updateOperasionalAlatBerat(id, "jenis", "");
+      setCustomJenisAlatBerat(prev => ({ ...prev, [id]: "" }));
+    } else {
+      updateOperasionalAlatBerat(id, "jenis", value);
+      setCustomJenisAlatBerat(prev => {
+        const newState = { ...prev };
+        delete newState[id]; // Remove custom input state if a predefined option is selected
+        return newState;
+      });
+    }
+  };
+
+  const handleCustomJenisAlatBeratChange = (id: string, value: string) => {
+    setCustomJenisAlatBerat(prev => ({ ...prev, [id]: value }));
+    updateOperasionalAlatBerat(id, "jenis", value);
   };
 
   return (
@@ -57,8 +86,8 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           <div className="space-y-2 md:col-span-2">
             <Label>Jenis Alat Berat</Label>
             <Select
-              value={operasional.jenis}
-              onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
+              value={alatBeratOptions.includes(operasional.jenis) ? operasional.jenis : "custom"}
+              onValueChange={(value) => handleJenisAlatBeratChange(operasional.id, value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Pilih jenis alat berat" />
@@ -69,8 +98,18 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                     {jenis}
                   </SelectItem>
                 ))}
+                <SelectItem value="custom">Lainnya (Input Manual)</SelectItem>
               </SelectContent>
             </Select>
+            {(!alatBeratOptions.includes(operasional.jenis) || operasional.jenis === "") && (
+              <Input
+                type="text"
+                placeholder="Masukkan jenis alat berat manual"
+                value={customJenisAlatBerat[operasional.id] !== undefined ? customJenisAlatBerat[operasional.id] : operasional.jenis}
+                onChange={(e) => handleCustomJenisAlatBeratChange(operasional.id, e.target.value)}
+                className="mt-2"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label>Jumlah</Label>
