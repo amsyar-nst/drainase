@@ -668,7 +668,10 @@ export const DrainaseForm = () => {
                 <Input
                   id="tanggal"
                   value={dateInputString}
-                  onChange={handleDateInputChange}
+                  onChange={(e) => {
+                    e.stopPropagation(); // Mencegah event menyebar ke PopoverTrigger
+                    handleDateInputChange(e);
+                  }}
                   placeholder="dd/MM/yyyy"
                   className={cn(
                     "w-full justify-start text-left font-normal",
