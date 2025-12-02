@@ -60,8 +60,8 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }], // Added keterangan
-      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }], // Added satuan
+      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
+      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }],
       operasionalAlatBerats: [{
         id: "1",
         jenis: "",
@@ -74,7 +74,7 @@ export const DrainaseForm = () => {
         bioSolarSatuan: "Liter",
         keterangan: "",
       }],
-      koordinator: [], // Changed to array
+      koordinator: [],
       jumlahPHL: 1,
       keterangan: "",
     }]
@@ -88,7 +88,7 @@ export const DrainaseForm = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false); // State for koordinator popover
+  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
 
   // State for manual date input string
   const [dateInputString, setDateInputString] = useState<string>(
@@ -180,13 +180,13 @@ export const DrainaseForm = () => {
               jenis: m.jenis,
               jumlah: m.jumlah,
               satuan: m.satuan,
-              keterangan: m.keterangan || "", // Load keterangan
+              keterangan: m.keterangan || "",
             })),
             peralatans: (peralatanRes.data || []).map(p => ({
               id: p.id,
               nama: p.nama,
               jumlah: p.jumlah,
-              satuan: p.satuan || "Unit", // Load satuan, default to "Unit"
+              satuan: p.satuan || "Unit",
             })),
             operasionalAlatBerats: (operasionalRes.data || []).map(o => ({
               id: o.id,
@@ -200,7 +200,7 @@ export const DrainaseForm = () => {
               bioSolarSatuan: o.bio_solar_satuan || "Liter",
               keterangan: o.keterangan || "",
             })),
-            koordinator: kegiatan.koordinator || [], // Load array directly
+            koordinator: kegiatan.koordinator || [],
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
           };
@@ -290,7 +290,7 @@ export const DrainaseForm = () => {
       jenis: "",
       jumlah: "",
       satuan: "M³",
-      keterangan: "", // Initialize new field
+      keterangan: "",
     };
     updateCurrentKegiatan({
       materials: [...currentKegiatan.materials, newMaterial],
@@ -332,7 +332,7 @@ export const DrainaseForm = () => {
       id: Date.now().toString(),
       nama: "",
       jumlah: 1,
-      satuan: "Unit", // Initialize new field
+      satuan: "Unit",
     };
     updateCurrentKegiatan({
       peralatans: [...currentKegiatan.peralatans, newPeralatan],
@@ -383,7 +383,7 @@ export const DrainaseForm = () => {
       return publicUrl;
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Gagal mengunggah file: ' + error.message); // Display error message
+      toast.error('Gagal mengunggah file: ' + error.message);
       return null;
     }
   };
@@ -492,7 +492,7 @@ export const DrainaseForm = () => {
             lebar_rata_rata: kegiatan.lebarRataRata,
             rata_rata_sedimen: kegiatan.rataRataSedimen,
             volume_galian: kegiatan.volumeGalian,
-            koordinator: kegiatan.koordinator, // Pass array directly
+            koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
             keterangan: kegiatan.keterangan,
           })
@@ -507,7 +507,7 @@ export const DrainaseForm = () => {
           jenis: m.jenis,
           jumlah: m.jumlah,
           satuan: m.satuan,
-          keterangan: m.keterangan, // Save keterangan
+          keterangan: m.keterangan,
         }));
 
         const { error: materialsError } = await supabase
@@ -521,12 +521,12 @@ export const DrainaseForm = () => {
           kegiatan_id: kegiatanData.id,
           nama: p.nama,
           jumlah: p.jumlah,
-          satuan: p.satuan, // Save satuan
+          satuan: p.satuan,
         }));
 
         const { error: peralatanError } = await supabase
           .from('peralatan_kegiatan')
-          .insert(peralatanToInsert);
+          .insert(peralataanToInsert);
 
         if (peralatanError) throw peralatanError;
 
@@ -552,7 +552,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/laporan'); // Redirect to list after saving
+      navigate('/laporan');
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan: ' + error.message);
@@ -586,8 +586,6 @@ export const DrainaseForm = () => {
       if (isValid(parsedDate)) {
         setFormData((prev) => ({ ...prev, tanggal: parsedDate }));
       }
-      // If invalid, formData.tanggal remains unchanged, which is desired.
-      // The input field will show the invalid string until blur or valid input.
     }
   };
 
@@ -663,32 +661,37 @@ export const DrainaseForm = () => {
           {/* Tanggal */}
           <div className="space-y-2">
             <Label htmlFor="tanggal">Tanggal</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Input
-                  id="tanggal"
-                  value={dateInputString}
-                  onChange={(e) => {
-                    e.stopPropagation(); // Mencegah event menyebar ke PopoverTrigger
-                    handleDateInputChange(e);
-                  }}
-                  placeholder="dd/MM/yyyy"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.tanggal && "text-muted-foreground"
-                  )}
-                />
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.tanggal || undefined} // Calendar expects Date | undefined
-                  onSelect={handleDateSelect}
-                  initialFocus
-                  locale={idLocale}
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="relative flex items-center">
+              <Input
+                id="tanggal"
+                value={dateInputString}
+                onChange={handleDateInputChange}
+                placeholder="dd/MM/yyyy"
+                className={cn(
+                  "w-full justify-start text-left font-normal pr-10", // Add padding-right for icon
+                  !formData.tanggal && "text-muted-foreground"
+                )}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.tanggal || undefined}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    locale={idLocale}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           {/* Lokasi */}
@@ -925,7 +928,7 @@ export const DrainaseForm = () => {
               </Button>
             </div>
             {currentKegiatan.materials.map((material) => (
-              <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end"> {/* Changed to 5 columns */}
+              <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
                 <div className="space-y-2">
                   <Label>Jenis Material</Label>
                   <Input
@@ -960,7 +963,7 @@ export const DrainaseForm = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"> {/* New Keterangan input */}
+                <div className="space-y-2">
                   <Label>Keterangan</Label>
                   <Input
                     value={material.keterangan || ""}
@@ -991,7 +994,7 @@ export const DrainaseForm = () => {
               </Button>
             </div>
             {currentKegiatan.peralatans.map((peralatan) => (
-              <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end"> {/* Changed to 4 columns */}
+              <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
                 <div className="space-y-2 md:col-span-2">
                   <Label>Nama Peralatan</Label>
                   <Input
@@ -1009,7 +1012,7 @@ export const DrainaseForm = () => {
                     onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
                   />
                 </div>
-                <div className="space-y-2"> {/* New Satuan input */}
+                <div className="space-y-2">
                   <Label>Satuan</Label>
                   <Select
                     value={peralatan.satuan}
