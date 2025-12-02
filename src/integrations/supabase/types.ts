@@ -28,7 +28,7 @@ export type Database = {
           kecamatan: string
           kelurahan: string
           keterangan: string | null
-          koordinator: string[] | null /* Changed from string | null to string[] | null */
+          koordinator: string[] | null
           laporan_id: string
           lebar_rata_rata: string | null
           nama_jalan: string
@@ -50,7 +50,7 @@ export type Database = {
           kecamatan: string
           kelurahan: string
           keterangan?: string | null
-          koordinator?: string[] | null /* Changed from string | null to string[] | null */
+          koordinator?: string[] | null
           laporan_id: string
           lebar_rata_rata?: string | null
           nama_jalan: string
@@ -72,7 +72,7 @@ export type Database = {
           kecamatan?: string
           kelurahan?: string
           keterangan?: string | null
-          koordinator?: string[] | null /* Changed from string | null to string[] | null */
+          koordinator?: string[] | null
           laporan_id?: string
           lebar_rata_rata?: string | null
           nama_jalan?: string
@@ -215,6 +215,7 @@ export type Database = {
           jumlah: string
           kegiatan_id: string
           satuan: string
+          keterangan: string | null // Added this line
         }
         Insert: {
           created_at?: string
@@ -223,6 +224,7 @@ export type Database = {
           jumlah: string
           kegiatan_id: string
           satuan: string
+          keterangan?: string | null // Added this line
         }
         Update: {
           created_at?: string
@@ -231,6 +233,7 @@ export type Database = {
           jumlah?: string
           kegiatan_id?: string
           satuan?: string
+          keterangan?: string | null // Added this line
         }
         Relationships: [
           {

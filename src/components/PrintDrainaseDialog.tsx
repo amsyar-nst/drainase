@@ -63,7 +63,10 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         .eq('id', id)
         .single();
 
-      if (laporanError) throw laporanError;
+      if (laporanError) {
+        console.error("Error fetching laporan tanggal:", laporanError);
+        throw new Error("Gagal memuat tanggal laporan.");
+      }
       setLaporanTanggal(new Date(laporanData.tanggal));
 
       // Fetch all activities for the report
@@ -73,7 +76,10 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         .eq('laporan_id', id)
         .order('created_at', { ascending: true }); // Order by creation to maintain consistency
 
-      if (kegiatanError) throw kegiatanError;
+      if (kegiatanError) {
+        console.error("Error fetching kegiatan list:", kegiatanError);
+        throw new Error("Gagal memuat daftar kegiatan.");
+      }
 
       const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => ({
         id: kegiatan.id,
@@ -105,9 +111,9 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
       setAllKegiatans(mappedKegiatans);
       // Select all by default
       setSelectedKegiatanIds(new Set(mappedKegiatans.map(k => k.id)));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching activities for print:", error);
-      toast.error("Gagal memuat daftar kegiatan.");
+      toast.error("Gagal memuat daftar kegiatan: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -157,6 +163,19 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
             supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatanId)
           ]);
 
+          if (materialsRes.error) {
+            console.error("Error fetching materials:", materialsRes.error);
+            throw new Error("Gagal memuat material untuk kegiatan.");
+          }
+          if (peralatanRes.error) {
+            console.error("Error fetching peralatan:", peralatanRes.error);
+            throw new Error("Gagal memuat peralatan untuk kegiatan.");
+          }
+          if (operasionalRes.error) {
+            console.error("Error fetching operasional alat berat:", operasionalRes.error);
+            throw new Error("Gagal memuat operasional alat berat untuk kegiatan.");
+          }
+
           selectedKegiatans.push({
             ...baseKegiatan,
             materials: (materialsRes.data || []).map(m => ({
@@ -196,9 +215,9 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
       await generatePDF(laporanToPrint, true);
       toast.success("Laporan PDF berhasil dibuat.");
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating PDF:", error);
-      toast.error("Gagal membuat laporan PDF.");
+      toast.error("Gagal membuat laporan PDF: " + error.message);
     } finally {
       setIsPrinting(false);
     }
