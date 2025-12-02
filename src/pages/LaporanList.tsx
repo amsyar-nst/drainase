@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, FileDown } from "lucide-react";
+import { Trash2, Edit, Plus, Printer } from "lucide-react"; // Added Printer icon
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
+import { PrintDrainaseDialog } from "@/components/PrintDrainaseDialog"; // Import the new dialog component
 
 interface LaporanItem {
   id: string;
@@ -32,6 +33,8 @@ const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false); // State for print dialog
+  const [laporanToPrintId, setLaporanToPrintId] = useState<string | null>(null); // State for selected laporan to print
   const navigate = useNavigate();
 
   const fetchLaporans = async () => {
@@ -100,6 +103,11 @@ const LaporanList = () => {
     }
   };
 
+  const handlePrintClick = (laporanId: string) => {
+    setLaporanToPrintId(laporanId);
+    setIsPrintDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -158,6 +166,15 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => handlePrintClick(laporan.id)} // Added print button handler
+                              className="gap-2"
+                            >
+                              <Printer className="h-4 w-4" />
+                              Cetak
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => navigate(`/edit/${laporan.id}`)}
                               className="gap-2"
                             >
@@ -204,6 +221,14 @@ const LaporanList = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {laporanToPrintId && (
+          <PrintDrainaseDialog
+            laporanId={laporanToPrintId}
+            isOpen={isPrintDialogOpen}
+            onClose={() => setIsPrintDialogOpen(false)}
+          />
+        )}
       </div>
     </>
   );
