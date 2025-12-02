@@ -185,7 +185,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         <div class="report-title">LAPORAN HARIAN PEMELIHARAAN DRAINASE</div>
       </div>
 
-      <div class="period">Periode : ${format(data.tanggal, "MMMM yyyy", { locale: idLocale })}</div>
+      <div class="period">Periode : ${format(data.tanggal, "MMMM yyyy", { locale: id })}</div>
 
       <table>
         <thead>
@@ -225,7 +225,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           ${kegiatansWithImages.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
-              <td>${format(data.tanggal, "EEEE", { locale: idLocale })}<br/>${format(data.tanggal, "dd/MM/yyyy", { locale: idLocale })}</td>
+              <td>${format(data.tanggal, "EEEE", { locale: id })}<br/>${format(data.tanggal, "dd/MM/yyyy", { locale: id })}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 ${kegiatan.foto0Base64 ? `<img src="${kegiatan.foto0Base64}" alt="Foto 0%" />` : ''}
