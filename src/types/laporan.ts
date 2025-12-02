@@ -53,6 +53,6 @@ export interface KegiatanDrainase {
 }
 
 export interface LaporanDrainase {
-  tanggal: Date;
+  tanggal: Date | null; // Changed to allow null
   kegiatans: KegiatanDrainase[];
 }

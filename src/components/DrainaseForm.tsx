@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { format } from "date-fns";
+import { format, parse, isValid } from "date-fns"; // Import parse and isValid
 import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -90,6 +90,11 @@ export const DrainaseForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false); // State for koordinator popover
 
+  // State for manual date input string
+  const [dateInputString, setDateInputString] = useState<string>(
+    formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+  );
+
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
   useEffect(() => {
@@ -106,6 +111,15 @@ export const DrainaseForm = () => {
       setKelurahanOptions([]);
     }
   }, [currentKegiatan.kecamatan]);
+
+  // Effect to synchronize dateInputString with formData.tanggal
+  useEffect(() => {
+    if (formData.tanggal) {
+      setDateInputString(format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }));
+    } else {
+      setDateInputString("");
+    }
+  }, [formData.tanggal]);
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
@@ -375,6 +389,10 @@ export const DrainaseForm = () => {
   };
 
   const handlePreview = async () => {
+    if (!formData.tanggal) {
+      toast.error("Mohon isi tanggal laporan.");
+      return;
+    }
     try {
       const blob = await generatePDF(formData, false);
       const url = URL.createObjectURL(blob);
@@ -390,6 +408,12 @@ export const DrainaseForm = () => {
     setIsSaving(true);
     try {
       let currentLaporanId = laporanId;
+
+      if (!formData.tanggal) {
+        toast.error("Mohon isi tanggal laporan.");
+        setIsSaving(false);
+        return;
+      }
 
       if (currentLaporanId) {
         // Update existing laporan
@@ -538,11 +562,43 @@ export const DrainaseForm = () => {
   };
 
   const handleDownload = async () => {
+    if (!formData.tanggal) {
+      toast.error("Mohon isi tanggal laporan.");
+      return;
+    }
     try {
       await generatePDF(formData, true);
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Gagal mendownload PDF');
+    }
+  };
+
+  // Handler for manual date input change
+  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDateInputString(value);
+
+    if (value === "") {
+      setFormData((prev) => ({ ...prev, tanggal: null }));
+    } else {
+      const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
+      if (isValid(parsedDate)) {
+        setFormData((prev) => ({ ...prev, tanggal: parsedDate }));
+      }
+      // If invalid, formData.tanggal remains unchanged, which is desired.
+      // The input field will show the invalid string until blur or valid input.
+    }
+  };
+
+  // Handler for date selection from calendar
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setFormData((prev) => ({ ...prev, tanggal: date }));
+      setDateInputString(format(date, "dd/MM/yyyy", { locale: idLocale }));
+    } else {
+      setFormData((prev) => ({ ...prev, tanggal: null }));
+      setDateInputString("");
     }
   };
 
@@ -609,23 +665,22 @@ export const DrainaseForm = () => {
             <Label htmlFor="tanggal">Tanggal</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
+                <Input
                   id="tanggal"
-                  variant="outline"
+                  value={dateInputString}
+                  onChange={handleDateInputChange}
+                  placeholder="dd/MM/yyyy"
                   className={cn(
                     "w-full justify-start text-left font-normal",
                     !formData.tanggal && "text-muted-foreground"
                   )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.tanggal ? format(formData.tanggal, "PPP", { locale: idLocale }) : "Pilih tanggal"}
-                </Button>
+                />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={formData.tanggal}
-                  onSelect={(date) => date && setFormData({ ...formData, tanggal: date })}
+                  selected={formData.tanggal || undefined} // Calendar expects Date | undefined
+                  onSelect={handleDateSelect}
                   initialFocus
                   locale={idLocale}
                 />
