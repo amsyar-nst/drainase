@@ -1047,7 +1047,7 @@ export const DrainaseForm = () => {
                   <Input
                     value={peralatan.nama}
                     onChange={(e) => updatePeralatan(peralatan.id, "nama", e.target.value)}
-                    placeholder="Contoh: Excavator"
+                    placeholder="" {/* Placeholder dihapus di sini */}
                   />
                 </div>
                 <div className="space-y-2">
