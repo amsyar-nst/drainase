@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer } from "lucide-react";
+import { Trash2, Edit, Plus, Printer, CalendarDays } from "lucide-react"; // Added CalendarDays icon
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -25,6 +25,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { SelectDrainaseReportDialog } from "@/components/SelectDrainaseReportDialog";
 
@@ -47,17 +49,36 @@ const LaporanList = () => {
   const [isSelectDrainaseReportDialogOpen, setIsSelectDrainaseReportDialogOpen] = useState(false);
   const [selectedGlobalReportType, setSelectedGlobalReportType] = useState<"harian" | "bulanan" | "tersier" | null>(null);
 
+  // New states for period filtering
+  const [uniquePeriods, setUniquePeriods] = useState<string[]>([]);
+  const [selectedFilterPeriod, setSelectedFilterPeriod] = useState<string | null>(null);
+
   const navigate = useNavigate();
 
-  const fetchLaporans = async () => {
+  const fetchLaporans = async (filterPeriod: string | null = null) => {
     try {
       setLoading(true);
-      const { data: laporanData, error: laporanError } = await supabase
+      let query = supabase
         .from("laporan_drainase")
         .select("*")
         .order("tanggal", { ascending: false });
 
+      if (filterPeriod) {
+        query = query.eq("periode", filterPeriod);
+      }
+
+      const { data: laporanData, error: laporanError } = await query;
+
       if (laporanError) throw laporanError;
+
+      // Fetch unique periods for the filter dropdown
+      const { data: periodsData, error: periodsError } = await supabase
+        .from("laporan_drainase")
+        .select("distinct periode") // Corrected: Use "distinct periode" in the select string
+        .order("periode", { ascending: false }); // Order to show latest periods first
+
+      if (periodsError) throw periodsError;
+      setUniquePeriods(periodsData.map(p => p.periode));
 
       // Fetch kegiatan count for each laporan
       const laporansWithCount = await Promise.all(
@@ -84,8 +105,8 @@ const LaporanList = () => {
   };
 
   useEffect(() => {
-    fetchLaporans();
-  }, []);
+    fetchLaporans(selectedFilterPeriod);
+  }, [selectedFilterPeriod]); // Re-fetch when filter period changes
 
   const handleDelete = async (id: string) => {
     try {
@@ -106,7 +127,7 @@ const LaporanList = () => {
       if (laporanError) throw laporanError;
 
       toast.success("Laporan berhasil dihapus");
-      fetchLaporans();
+      fetchLaporans(selectedFilterPeriod); // Re-fetch with current filter
     } catch (error) {
       console.error("Error deleting laporan:", error);
       toast.error("Gagal menghapus laporan");
@@ -160,6 +181,29 @@ const LaporanList = () => {
                 <Plus className="h-4 w-4" />
                 Buat Laporan Baru
               </Button>
+
+              {/* New Periode Filter Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                    <CalendarDays className="h-4 w-4" />
+                    {selectedFilterPeriod ? selectedFilterPeriod : "Periode"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Pilih Periode</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSelectedFilterPeriod(null)}>
+                    Tampilkan Semua
+                  </DropdownMenuItem>
+                  {uniquePeriods.map((period) => (
+                    <DropdownMenuItem key={period} onClick={() => setSelectedFilterPeriod(period)}>
+                      {period}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 w-full sm:w-auto">
@@ -199,7 +243,7 @@ const LaporanList = () => {
                       <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
                       <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
                       <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
-                      <TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead> {/* Adjusted min-width for desktop */}
+                      <TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -217,30 +261,30 @@ const LaporanList = () => {
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="outline"
-                              size="icon" // Default size for mobile (icon only)
+                              size="icon"
                               onClick={() => handleIndividualPrintClick(laporan.id)}
-                              className="md:size-sm md:w-auto" // Override for desktop (sm size, auto width)
+                              className="md:size-sm md:w-auto"
                             >
                               <Printer className="h-4 w-4 md:mr-2" />
-                              <span className="hidden md:inline">Cetak</span> {/* Hidden on mobile, inline on desktop */}
+                              <span className="hidden md:inline">Cetak</span>
                             </Button>
                             <Button
                               variant="outline"
-                              size="icon" // Default size for mobile (icon only)
+                              size="icon"
                               onClick={() => navigate(`/drainase/edit/${laporan.id}`)}
-                              className="md:size-sm md:w-auto" // Override for desktop (sm size, auto width)
+                              className="md:size-sm md:w-auto"
                             >
                               <Edit className="h-4 w-4 md:mr-2" />
-                              <span className="hidden md:inline">Edit</span> {/* Hidden on mobile, inline on desktop */}
+                              <span className="hidden md:inline">Edit</span>
                             </Button>
                             <Button
                               variant="outline"
-                              size="icon" // Default size for mobile (icon only)
+                              size="icon"
                               onClick={() => setDeleteId(laporan.id)}
-                              className="text-destructive hover:text-destructive md:size-sm md:w-auto" // Override for desktop
+                              className="text-destructive hover:text-destructive md:size-sm md:w-auto"
                             >
                               <Trash2 className="h-4 w-4 md:mr-2" />
-                              <span className="hidden md:inline">Hapus</span> {/* Hidden on mobile, inline on desktop */}
+                              <span className="hidden md:inline">Hapus</span>
                             </Button>
                           </div>
                         </TableCell>
