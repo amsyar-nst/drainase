@@ -34,6 +34,7 @@ import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection"; // Import new component
 
 const bulanOptions = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -48,16 +49,7 @@ const jenisSedimenOptions = [
   "Padat dan Cair"
 ];
 
-const alatOptions = [
-  "Cangkul",
-  "Sekop",
-  "Dump Truck",
-  "Backhoe Loader",
-  "Excavator",
-  "Wheelbarrow",
-  "Linggis",
-  "Ember"
-];
+// Removed alatOptions as it's now used within AlatYangDibutuhkanSection
 
 export const DrainaseTersierForm = () => {
   const navigate = useNavigate();
@@ -72,8 +64,7 @@ export const DrainaseTersierForm = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [kelurahanOptions, setKelurahanOptions] = useState<string[]>([]);
   const [customSedimen, setCustomSedimen] = useState("");
-  const [selectedAlat, setSelectedAlat] = useState<string[]>([]);
-  const [alatJumlah, setAlatJumlah] = useState<Record<string, number>>({});
+  // Removed selectedAlat and alatJumlah states
   const [selectedPenanggungJawab, setSelectedPenanggungJawab] = useState<string[]>([]);
 
   const emptyKegiatan: KegiatanDrainaseTersier = {
@@ -84,7 +75,7 @@ export const DrainaseTersierForm = () => {
     kelurahan: "",
     kota: "Kota Medan",
     jenisSedimen: "",
-    alatYangDibutuhkan: [],
+    alatYangDibutuhkan: [], // Managed by AlatYangDibutuhkanSection
     useUpt: false,
     uptCount: 0,
     useP3su: false,
@@ -129,14 +120,13 @@ export const DrainaseTersierForm = () => {
         const lokasiParts = lokasi.split(", ");
         
         let alatArray: Alat[] = [];
-        if (k.alat_yang_dibutuhkan) {
-          if (Array.isArray(k.alat_yang_dibutuhkan) && k.alat_yang_dibutuhkan.length > 0) {
-            if (typeof k.alat_yang_dibutuhkan[0] === 'object') {
-              alatArray = k.alat_yang_dibutuhkan as Alat[];
-            } else {
-              alatArray = (k.alat_yang_dibutuhkan as string[]).map(nama => ({ nama, jumlah: 1 }));
-            }
-          }
+        if (k.alat_yang_dibutuhkan && Array.isArray(k.alat_yang_dibutuhkan)) {
+          // Map string[] from DB to Alat[] for frontend, assigning unique IDs and default quantity
+          alatArray = k.alat_yang_dibutuhkan.map((nama: string) => ({
+            id: crypto.randomUUID(),
+            nama: nama,
+            jumlah: 1, // Default to 1, as DB only stores names
+          }));
         }
 
         let penanggungjawabArray: string[] = [];
@@ -156,10 +146,10 @@ export const DrainaseTersierForm = () => {
           kelurahan: lokasiParts[2] || "",
           kota: lokasiParts[3] || "Kota Medan",
           jenisSedimen: k.jenis_sedimen || "",
-          alatYangDibutuhkan: alatArray,
+          alatYangDibutuhkan: alatArray, // Use the mapped alatArray
           useUpt: (k.kebutuhan_tenaga_kerja || 0) > 0,
           uptCount: k.kebutuhan_tenaga_kerja || 0,
-          useP3su: false,
+          useP3su: false, // Assuming P3SU count is not stored in DB for now
           p3suCount: 0,
           rencanaPanjang: k.panjang || "",
           rencanaVolume: k.volume || "",
@@ -187,21 +177,7 @@ export const DrainaseTersierForm = () => {
     setKelurahanOptions(selected?.kelurahan || []);
   };
 
-  const toggleAlat = (namaAlat: string) => {
-    if (selectedAlat.includes(namaAlat)) {
-      setSelectedAlat(selectedAlat.filter(a => a !== namaAlat));
-      const newJumlah = { ...alatJumlah };
-      delete newJumlah[namaAlat];
-      setAlatJumlah(newJumlah);
-    } else {
-      setSelectedAlat([...selectedAlat, namaAlat]);
-      setAlatJumlah({ ...alatJumlah, [namaAlat]: 1 });
-    }
-  };
-
-  const updateAlatJumlah = (namaAlat: string, jumlah: number) => {
-    setAlatJumlah({ ...alatJumlah, [namaAlat]: jumlah });
-  };
+  // Removed toggleAlat and updateAlatJumlah functions
 
   const togglePenanggungJawab = (nama: string) => {
     if (selectedPenanggungJawab.includes(nama)) {
@@ -212,14 +188,9 @@ export const DrainaseTersierForm = () => {
   };
 
   const addKegiatan = () => {
-    const alatArray: Alat[] = selectedAlat.map(nama => ({
-      nama,
-      jumlah: alatJumlah[nama] || 1
-    }));
-
+    // alatYangDibutuhkan is now managed directly by currentKegiatan state
     const newKegiatan = {
       ...currentKegiatan,
-      alatYangDibutuhkan: alatArray,
       penanggungjawab: selectedPenanggungJawab,
     };
 
@@ -229,8 +200,7 @@ export const DrainaseTersierForm = () => {
     });
 
     setCurrentKegiatan(emptyKegiatan);
-    setSelectedAlat([]);
-    setAlatJumlah({});
+    // Removed selectedAlat and alatJumlah resets
     setSelectedPenanggungJawab([]);
     toast.success("Kegiatan ditambahkan");
   };
@@ -244,28 +214,16 @@ export const DrainaseTersierForm = () => {
     const selected = kecamatanKelurahanData.find((k) => k.kecamatan === kegiatan.kecamatan);
     setKelurahanOptions(selected?.kelurahan || []);
 
-    const alatNames = kegiatan.alatYangDibutuhkan.map(a => a.nama);
-    setSelectedAlat(alatNames);
-    const jumlahMap: Record<string, number> = {};
-    kegiatan.alatYangDibutuhkan.forEach(a => {
-      jumlahMap[a.nama] = a.jumlah;
-    });
-    setAlatJumlah(jumlahMap);
-
+    // No need to set selectedAlat and alatJumlah anymore, as alatYangDibutuhkan is directly in currentKegiatan
     setSelectedPenanggungJawab(kegiatan.penanggungjawab);
   };
 
   const updateKegiatan = () => {
     if (currentKegiatanIndex === null) return;
 
-    const alatArray: Alat[] = selectedAlat.map(nama => ({
-      nama,
-      jumlah: alatJumlah[nama] || 1
-    }));
-
+    // alatYangDibutuhkan is now managed directly by currentKegiatan state
     const updatedKegiatan = {
       ...currentKegiatan,
-      alatYangDibutuhkan: alatArray,
       penanggungjawab: selectedPenanggungJawab,
     };
 
@@ -280,8 +238,7 @@ export const DrainaseTersierForm = () => {
     setCurrentKegiatan(emptyKegiatan);
     setCurrentKegiatanIndex(null);
     setIsEditing(false);
-    setSelectedAlat([]);
-    setAlatJumlah({});
+    // Removed selectedAlat and alatJumlah resets
     setSelectedPenanggungJawab([]);
     toast.success("Kegiatan diperbarui");
   };
@@ -299,8 +256,7 @@ export const DrainaseTersierForm = () => {
     setCurrentKegiatan(emptyKegiatan);
     setCurrentKegiatanIndex(null);
     setIsEditing(false);
-    setSelectedAlat([]);
-    setAlatJumlah({});
+    // Removed selectedAlat and alatJumlah resets
     setSelectedPenanggungJawab([]);
   };
 
@@ -348,6 +304,7 @@ export const DrainaseTersierForm = () => {
         hari_tanggal: format(kegiatan.hariTanggal, "yyyy-MM-dd"),
         lokasi: `${kegiatan.namaJalan}, ${kegiatan.kecamatan}, ${kegiatan.kelurahan}, ${kegiatan.kota}`,
         jenis_sedimen: kegiatan.jenisSedimen,
+        // Map Alat[] to string[] for Supabase, only saving the 'nama'
         alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan.map(a => a.nama),
         kebutuhan_tenaga_kerja: kegiatan.useUpt ? kegiatan.uptCount : 0,
         panjang: kegiatan.rencanaPanjang,
@@ -632,29 +589,11 @@ export const DrainaseTersierForm = () => {
                 </div>
               </div>
 
-              {/* Alat yang Dibutuhkan */}
-              <div className="space-y-2 border rounded-lg p-4">
-                <h3 className="font-semibold text-lg">Alat yang Dibutuhkan</h3>
-                {alatOptions.map((alat) => (
-                  <div key={alat} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={alat}
-                      checked={selectedAlat.includes(alat)}
-                      onCheckedChange={() => toggleAlat(alat)}
-                    />
-                    <Label htmlFor={alat}>{alat}</Label>
-                    {selectedAlat.includes(alat) && (
-                      <Input
-                        type="number"
-                        placeholder="Jumlah"
-                        value={alatJumlah[alat]?.toString() || "1"}
-                        onChange={(e) => updateAlatJumlah(alat, parseInt(e.target.value))}
-                        className="w-24"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+              {/* Alat yang Dibutuhkan - Using the new component */}
+              <AlatYangDibutuhkanSection
+                currentKegiatan={currentKegiatan}
+                updateCurrentKegiatan={setCurrentKegiatan}
+              />
 
               {/* Rencana Dimensi */}
               <div className="space-y-4 border rounded-lg p-4">
