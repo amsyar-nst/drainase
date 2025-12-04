@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer, MoreHorizontal } from "lucide-react"; // Added MoreHorizontal
+import { Trash2, Edit, Plus, Printer } from "lucide-react"; // Removed MoreHorizontal
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -199,7 +199,7 @@ const LaporanList = () => {
                       <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
                       <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
                       <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
-                      <TableHead className="text-right min-w-[60px]">Aksi</TableHead> {/* Adjusted min-width for dropdown */}
+                      <TableHead className="text-right min-w-[120px]">Aksi</TableHead> {/* Adjusted min-width */}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -214,54 +214,28 @@ const LaporanList = () => {
                           {format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2 md:hidden"> {/* Hidden on md and up */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Buka menu</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleIndividualPrintClick(laporan.id)}>
-                                  <Printer className="mr-2 h-4 w-4" /> Cetak
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigate(`/drainase/edit/${laporan.id}`)}>
-                                  <Edit className="mr-2 h-4 w-4" /> Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setDeleteId(laporan.id)} className="text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" /> Hapus
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                          <div className="hidden md:flex justify-end gap-2"> {/* Visible on md and up */}
+                          <div className="flex justify-end gap-1"> {/* Reduced gap for smaller buttons */}
                             <Button
                               variant="outline"
-                              size="sm"
+                              size="icon" // Changed to icon size
                               onClick={() => handleIndividualPrintClick(laporan.id)}
-                              className="gap-2"
                             >
                               <Printer className="h-4 w-4" />
-                              Cetak
                             </Button>
                             <Button
                               variant="outline"
-                              size="sm"
+                              size="icon" // Changed to icon size
                               onClick={() => navigate(`/drainase/edit/${laporan.id}`)}
-                              className="gap-2"
                             >
                               <Edit className="h-4 w-4" />
-                              Edit
                             </Button>
                             <Button
                               variant="outline"
-                              size="sm"
+                              size="icon" // Changed to icon size
                               onClick={() => setDeleteId(laporan.id)}
-                              className="gap-2 text-destructive hover:text-destructive"
+                              className="text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
-                              Hapus
                             </Button>
                           </div>
                         </TableCell>
