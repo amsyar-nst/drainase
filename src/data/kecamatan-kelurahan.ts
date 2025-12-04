@@ -139,6 +139,29 @@ export const alatBeratOptions = [
   "Asphalt Finisher"
 ];
 
+export const alatOptions = [
+  "Cangkul",
+  "Sekop",
+  "Linggis",
+  "Gerobak Dorong",
+  "Karung",
+  "Ember",
+  "Palu",
+  "Kunci Pas",
+  "Tang",
+  "Meteran",
+  "Gergaji",
+  "Alat Pelindung Diri (APD)",
+  "Senter",
+  "Peralatan Kebersihan",
+  "Pompa Air",
+  "Selang Air",
+  "Jaring Sampah",
+  "Perahu Karet",
+  "Alat Komunikasi",
+  "Peralatan P3K"
+];
+
 // Mapping material types to default units (case-insensitive)
 export const materialDefaultUnits: Record<string, string> = {
   "pasir": "M³",
