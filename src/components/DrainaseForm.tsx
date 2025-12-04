@@ -531,7 +531,7 @@ export const DrainaseForm = () => {
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
             panjang_penanganan: kegiatan.panjangPenanganan,
             lebar_rata_rata: kegiatan.lebarRataRata,
-            rata_rata_sedimen: kegiatan.rataRataSedimen,
+            rata_rata_rata_sedimen: kegiatan.rataRataSedimen,
             volume_galian: kegiatan.volumeGalian,
             koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
@@ -1047,7 +1047,7 @@ export const DrainaseForm = () => {
                   <Input
                     value={peralatan.nama}
                     onChange={(e) => updatePeralatan(peralatan.id, "nama", e.target.value)}
-                    placeholder="" {/* Placeholder dihapus di sini */}
+                    placeholder="" 
                   />
                 </div>
                 <div className="space-y-2">
