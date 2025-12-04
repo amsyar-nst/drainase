@@ -31,12 +31,12 @@ export interface KegiatanDrainase {
   namaJalan: string;
   kecamatan: string;
   kelurahan: string;
-  foto0: File | string | null;
-  foto50: File | string | null;
-  foto100: File | string | null;
-  foto0Url?: string;
-  foto50Url?: string;
-  foto100Url?: string;
+  foto0: (File | string | null)[]; // Changed to array
+  foto50: (File | string | null)[]; // Changed to array
+  foto100: (File | string | null)[]; // Changed to array
+  foto0Url?: string[]; // Changed to array
+  foto50Url?: string[]; // Changed to array
+  foto100Url?: string[]; // Changed to array
   jenisSaluran: "Terbuka" | "Tertutup" | "";
   jenisSedimen: "Padat" | "Cair" | "Padat & Cair" | "";
   aktifitasPenanganan: string;

@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { format, parse, isValid } from "date-fns"; // Import parse and isValid
 import { id as idLocale } from "date-fns/locale";
-import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react"; // Added XCircle for removing photos
 import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
@@ -48,12 +48,12 @@ export const DrainaseForm = () => {
       namaJalan: "",
       kecamatan: "",
       kelurahan: "",
-      foto0: null,
-      foto50: null,
-      foto100: null,
-      foto0Url: undefined,
-      foto50Url: undefined,
-      foto100Url: undefined,
+      foto0: [], // Changed to array
+      foto50: [], // Changed to array
+      foto100: [], // Changed to array
+      foto0Url: [], // Changed to array
+      foto50Url: [], // Changed to array
+      foto100Url: [], // Changed to array
       jenisSaluran: "",
       jenisSedimen: "",
       aktifitasPenanganan: "",
@@ -84,14 +84,14 @@ export const DrainaseForm = () => {
   const [currentKegiatanIndex, setCurrentKegiatanIndex] = useState(0);
   const [selectedKecamatan, setSelectedKecamatan] = useState("");
   const [kelurahanOptions, setKelurahanOptions] = useState<string[]>([]);
-  const [showPreviewDialog, setShowPreviewDialog] = useState(false); // Renamed to avoid conflict
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
-  const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false); // New state for print selection dialog
-  const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview"); // New state to store action type
+  const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false);
+  const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview");
 
   // State for manual date input string
   const [dateInputString, setDateInputString] = useState<string>(
@@ -221,12 +221,13 @@ export const DrainaseForm = () => {
             namaJalan: kegiatan.nama_jalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto0: kegiatan.foto_0_url || null,
-            foto50: kegiatan.foto_50_url || null,
-            foto100: kegiatan.foto_100_url || null,
-            foto0Url: kegiatan.foto_0_url || undefined,
-            foto50Url: kegiatan.foto_50_url || undefined,
-            foto100Url: kegiatan.foto_100_url || undefined,
+            // Ensure these are arrays, even if null from DB
+            foto0: (kegiatan.foto_0_url || []),
+            foto50: (kegiatan.foto_50_url || []),
+            foto100: (kegiatan.foto_100_url || []),
+            foto0Url: (kegiatan.foto_0_url || []),
+            foto50Url: (kegiatan.foto_50_url || []),
+            foto100Url: (kegiatan.foto_100_url || []),
             jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup",
             jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair",
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
@@ -277,9 +278,12 @@ export const DrainaseForm = () => {
       namaJalan: "",
       kecamatan: "",
       kelurahan: "",
-      foto0: null,
-      foto50: null,
-      foto100: null,
+      foto0: [], // Changed to array
+      foto50: [], // Changed to array
+      foto100: [], // Changed to array
+      foto0Url: [], // Changed to array
+      foto50Url: [], // Changed to array
+      foto100Url: [], // Changed to array
       jenisSaluran: "",
       jenisSedimen: "",
       aktifitasPenanganan: "",
@@ -412,24 +416,41 @@ export const DrainaseForm = () => {
     }
   };
 
-  const uploadFile = async (file: File, path: string): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('laporan-photos')
-        .upload(path, file, { upsert: true });
+  // New function to upload multiple files
+  const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    for (const fileOrUrl of files) {
+      if (fileOrUrl instanceof File) {
+        // New file, upload it
+        const fileName = `${basePath}/${fileOrUrl.name}`;
+        const { data, error } = await supabase.storage
+          .from('laporan-photos')
+          .upload(fileName, fileOrUrl, { upsert: true });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('laporan-photos')
-        .getPublicUrl(data.path);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Gagal mengunggah file: ' + error.message);
-      return null;
+        const { data: { publicUrl } } = supabase.storage
+          .from('laporan-photos')
+          .getPublicUrl(data.path);
+        uploadedUrls.push(publicUrl);
+      } else if (typeof fileOrUrl === 'string' && fileOrUrl) {
+        // Existing URL, just add it
+        uploadedUrls.push(fileOrUrl);
+      }
     }
+    return uploadedUrls;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'foto0' | 'foto50' | 'foto100') => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      updateCurrentKegiatan({ [field]: [...currentKegiatan[field], ...newFiles] });
+    }
+  };
+
+  const removePhoto = (field: 'foto0' | 'foto50' | 'foto100', indexToRemove: number) => {
+    const updatedPhotos = currentKegiatan[field].filter((_, index) => index !== indexToRemove);
+    updateCurrentKegiatan({ [field]: updatedPhotos });
   };
 
   const handlePrintSelection = async (type: "harian" | "bulanan" | "tersier", action: "preview" | "download") => {
@@ -519,15 +540,9 @@ export const DrainaseForm = () => {
       // Save kegiatan
       for (const kegiatan of formData.kegiatans) {
         // Upload photos
-        const foto0Url = kegiatan.foto0 
-          ? (typeof kegiatan.foto0 === 'string' ? kegiatan.foto0 : await uploadFile(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/foto0.jpg`))
-          : (kegiatan.foto0Url || null);
-        const foto50Url = kegiatan.foto50 
-          ? (typeof kegiatan.foto50 === 'string' ? kegiatan.foto50 : await uploadFile(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/foto50.jpg`))
-          : (kegiatan.foto50Url || null);
-        const foto100Url = kegiatan.foto100 
-          ? (typeof kegiatan.foto100 === 'string' ? kegiatan.foto100 : await uploadFile(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/foto100.jpg`))
-          : (kegiatan.foto100Url || null);
+        const foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
+        const foto50Urls = await uploadFiles(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/50`);
+        const foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
 
         // Insert kegiatan
         const { data: kegiatanData, error: kegiatanError } = await supabase
@@ -537,9 +552,9 @@ export const DrainaseForm = () => {
             nama_jalan: kegiatan.namaJalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto_0_url: foto0Url,
-            foto_50_url: foto50Url,
-            foto_100_url: foto100Url,
+            foto_0_url: foto0Urls, // Now an array
+            foto_50_url: foto50Urls, // Now an array
+            foto_100_url: foto100Urls, // Now an array
             jenis_saluran: kegiatan.jenisSaluran,
             jenis_sedimen: kegiatan.jenisSedimen,
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
@@ -791,92 +806,131 @@ export const DrainaseForm = () => {
 
           {/* Photos */}
           <div className="grid gap-4 md:grid-cols-3">
+            {/* Foto 0% */}
             <div className="space-y-2">
               <Label htmlFor="foto-0">Foto 0%</Label>
               <Input
                 id="foto-0"
                 type="file"
                 accept="image/*"
-                onChange={(e) => updateCurrentKegiatan({ foto0: e.target.files?.[0] || null })}
+                multiple // Allow multiple files
+                onChange={(e) => handleFileChange(e, 'foto0')}
               />
-              {(currentKegiatan.foto0 || currentKegiatan.foto0Url) && (
-                <div className="mt-2">
-                  <img 
-                    src={
-                      currentKegiatan.foto0 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto0)
-                        : currentKegiatan.foto0Url || ''
-                    } 
-                    alt="Foto 0%" 
-                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
-                    onClick={() => {
-                      const url = currentKegiatan.foto0 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto0)
-                        : currentKegiatan.foto0Url || '';
-                      setPreviewUrl(url);
-                      setShowPreviewDialog(true);
-                    }}
-                  />
-                </div>
-              )}
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {currentKegiatan.foto0.map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={
+                        photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || ''
+                      } 
+                      alt={`Foto 0% ${index + 1}`} 
+                      className="w-full h-24 object-cover rounded border cursor-pointer"
+                      onClick={() => {
+                        const url = photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || '';
+                        setPreviewUrl(url);
+                        setShowPreviewDialog(true);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto('foto0', index)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
+            {/* Foto 50% */}
             <div className="space-y-2">
               <Label htmlFor="foto-50">Foto 50%</Label>
               <Input
                 id="foto-50"
                 type="file"
                 accept="image/*"
-                onChange={(e) => updateCurrentKegiatan({ foto50: e.target.files?.[0] || null })}
+                multiple // Allow multiple files
+                onChange={(e) => handleFileChange(e, 'foto50')}
               />
-              {(currentKegiatan.foto50 || currentKegiatan.foto50Url) && (
-                <div className="mt-2">
-                  <img 
-                    src={
-                      currentKegiatan.foto50 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto50)
-                        : currentKegiatan.foto50Url || ''
-                    } 
-                    alt="Foto 50%" 
-                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
-                    onClick={() => {
-                      const url = currentKegiatan.foto50 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto50)
-                        : currentKegiatan.foto50Url || '';
-                      setPreviewUrl(url);
-                      setShowPreviewDialog(true);
-                    }}
-                  />
-                </div>
-              )}
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {currentKegiatan.foto50.map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={
+                        photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || ''
+                      } 
+                      alt={`Foto 50% ${index + 1}`} 
+                      className="w-full h-24 object-cover rounded border cursor-pointer"
+                      onClick={() => {
+                        const url = photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || '';
+                        setPreviewUrl(url);
+                        setShowPreviewDialog(true);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto('foto50', index)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
+            {/* Foto 100% */}
             <div className="space-y-2">
               <Label htmlFor="foto-100">Foto 100%</Label>
               <Input
                 id="foto-100"
                 type="file"
                 accept="image/*"
-                onChange={(e) => updateCurrentKegiatan({ foto100: e.target.files?.[0] || null })}
+                multiple // Allow multiple files
+                onChange={(e) => handleFileChange(e, 'foto100')}
               />
-              {(currentKegiatan.foto100 || currentKegiatan.foto100Url) && (
-                <div className="mt-2">
-                  <img 
-                    src={
-                      currentKegiatan.foto100 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto100)
-                        : currentKegiatan.foto100Url || ''
-                    } 
-                    alt="Foto 100%" 
-                    className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
-                    onClick={() => {
-                      const url = currentKegiatan.foto100 instanceof File 
-                        ? URL.createObjectURL(currentKegiatan.foto100)
-                        : currentKegiatan.foto100Url || '';
-                      setPreviewUrl(url);
-                      setShowPreviewDialog(true);
-                    }}
-                  />
-                </div>
-              )}
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {currentKegiatan.foto100.map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={
+                        photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || ''
+                      } 
+                      alt={`Foto 100% ${index + 1}`} 
+                      className="w-full h-24 object-cover rounded border cursor-pointer"
+                      onClick={() => {
+                        const url = photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || '';
+                        setPreviewUrl(url);
+                        setShowPreviewDialog(true);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto('foto100', index)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

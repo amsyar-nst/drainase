@@ -18,9 +18,9 @@ export type Database = {
         Row: {
           aktifitas_penanganan: string | null
           created_at: string
-          foto_0_url: string | null
-          foto_100_url: string | null
-          foto_50_url: string | null
+          foto_0_url: string[] | null // Changed to string[] | null
+          foto_100_url: string[] | null // Changed to string[] | null
+          foto_50_url: string[] | null // Changed to string[] | null
           id: string
           jenis_saluran: string | null
           jenis_sedimen: string | null
@@ -40,9 +40,9 @@ export type Database = {
         Insert: {
           aktifitas_penanganan?: string | null
           created_at?: string
-          foto_0_url?: string | null
-          foto_100_url?: string | null
-          foto_50_url?: string | null
+          foto_0_url?: string[] | null // Changed to string[] | null
+          foto_100_url?: string[] | null // Changed to string[] | null
+          foto_50_url?: string[] | null // Changed to string[] | null
           id?: string
           jenis_saluran?: string | null
           jenis_sedimen?: string | null
@@ -62,9 +62,9 @@ export type Database = {
         Update: {
           aktifitas_penanganan?: string | null
           created_at?: string
-          foto_0_url?: string | null
-          foto_100_url?: string | null
-          foto_50_url?: string | null
+          foto_0_url?: string[] | null // Changed to string[] | null
+          foto_100_url?: string[] | null // Changed to string[] | null
+          foto_50_url?: string[] | null // Changed to string[] | null
           id?: string
           jenis_saluran?: string | null
           jenis_sedimen?: string | null

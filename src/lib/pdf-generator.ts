@@ -37,9 +37,9 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
   const kegiatansWithImages = await Promise.all(
     data.kegiatans.map(async (kegiatan) => ({
       ...kegiatan,
-      foto0Base64: await getBase64(kegiatan.foto0),
-      foto50Base64: await getBase64(kegiatan.foto50),
-      foto100Base64: await getBase64(kegiatan.foto100),
+      foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))), // Map over array
+      foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))), // Map over array
+      foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))), // Map over array
     }))
   );
 
@@ -119,16 +119,23 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         }
 
         .photo-cell {
-          width: 100px;
+          width: 100px; /* Adjusted width to accommodate multiple small images */
           text-align: center;
           padding: 2px;
         }
 
-        .photo-cell img {
-          width: 95px;
-          height: 71px;
+        .photo-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px; /* Small gap between images */
+          justify-content: center;
+        }
+
+        .photo-container img {
+          width: 45px; /* Smaller width for multiple images */
+          height: 34px; /* Smaller height for multiple images */
           object-fit: cover;
-          border: 1px solid #000;
+          border: 1px solid #ccc;
         }
 
         .material-list, .equipment-list {
@@ -239,13 +246,19 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
               <td>${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
-                ${kegiatan.foto0Base64 ? `<img src="${kegiatan.foto0Base64}" alt="Foto 0%" />` : ''}
+                <div class="photo-container">
+                  ${kegiatan.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
+                </div>
               </td>
               <td class="photo-cell">
-                ${kegiatan.foto50Base64 ? `<img src="${kegiatan.foto50Base64}" alt="Foto 50%" />` : ''}
+                <div class="photo-container">
+                  ${kegiatan.foto50Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 50%" />` : '').join('')}
+                </div>
               </td>
               <td class="photo-cell">
-                ${kegiatan.foto100Base64 ? `<img src="${kegiatan.foto100Base64}" alt="Foto 100%" />` : ''}
+                <div class="photo-container">
+                  ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
+                </div>
               </td>
               <td class="center">${kegiatan.jenisSaluran || '-'}</td>
               <td class="center">${kegiatan.jenisSedimen || '-'}</td>
