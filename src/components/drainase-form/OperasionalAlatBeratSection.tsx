@@ -6,7 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
 import { alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command"; // Import CommandInput
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"; 
 import { Textarea } from "@/components/ui/textarea";
 
 interface OperasionalAlatBeratSectionProps {
@@ -88,7 +88,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               </PopoverTrigger>
               <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                 <Command>
-                  <CommandInput placeholder="Cari jenis alat berat..." /> {/* Added CommandInput */}
+                  {/* CommandInput dihapus di sini */}
                   <CommandList>
                     <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                     <CommandGroup>
