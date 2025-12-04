@@ -843,7 +843,7 @@ export const DrainaseForm = () => {
                 onChange={(e) => handleFileChange(e, 'foto0')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {currentKegiatan.foto0.map((photo, index) => (
+                {(currentKegiatan.foto0 || []).map((photo, index) => (
                   <div key={index} className="relative group">
                     <img 
                       src={
@@ -885,7 +885,7 @@ export const DrainaseForm = () => {
                 onChange={(e) => handleFileChange(e, 'foto50')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {currentKegiatan.foto50.map((photo, index) => (
+                {(currentKegiatan.foto50 || []).map((photo, index) => (
                   <div key={index} className="relative group">
                     <img 
                       src={
@@ -927,7 +927,7 @@ export const DrainaseForm = () => {
                 onChange={(e) => handleFileChange(e, 'foto100')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {currentKegiatan.foto100.map((photo, index) => (
+                {(currentKegiatan.foto100 || []).map((photo, index) => (
                   <div key={index} className="relative group">
                     <img 
                       src={
