@@ -5,17 +5,28 @@ import { id } from "date-fns/locale";
 export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
 
   // Convert images to base64
-  const getBase64 = (file: File | string | null): Promise<string> => {
-    return new Promise((resolve) => {
+  const getBase64 = async (file: File | string | null): Promise<string> => {
+    return new Promise(async (resolve) => {
       if (!file) {
         resolve("");
         return;
       }
       if (typeof file === 'string') {
-        // If it's already a URL (string), assume it's a public URL or base64 string
-        resolve(file);
+        // If it's a string, assume it's a URL and fetch its content to convert to base64
+        try {
+          const response = await fetch(file);
+          if (!response.ok) throw new Error(`Failed to fetch image from URL: ${file}`);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        } catch (error) {
+          console.error("Error converting URL to base64:", error);
+          resolve(""); // Resolve with empty string on error
+        }
         return;
       }
+      // If it's a File object, read it as Data URL
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(file);
@@ -37,7 +48,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Laporan Drainase - ${format(data.tanggal, "dd MMMM yyyy", { locale: id })}</title>
+      <title>Laporan Drainase - ${format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })}</title>
       <style>
         @page {
           size: 330mm 215mm;
@@ -185,7 +196,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         <div class="report-title">LAPORAN HARIAN PEMELIHARAAN DRAINASE</div>
       </div>
 
-      <div class="period">Periode : ${format(data.tanggal, "MMMM yyyy", { locale: id })}</div>
+      <div class="period">Periode : ${format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}</div>
 
       <table>
         <thead>
@@ -225,7 +236,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           ${kegiatansWithImages.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
-              <td>${format(data.tanggal, "EEEE", { locale: id })}<br/>${format(data.tanggal, "dd/MM/yyyy", { locale: id })}</td>
+              <td>${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 ${kegiatan.foto0Base64 ? `<img src="${kegiatan.foto0Base64}" alt="Foto 0%" />` : ''}
