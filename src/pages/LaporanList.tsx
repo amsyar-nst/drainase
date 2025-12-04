@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SelectDrainaseReportDialog } from "@/components/SelectDrainaseReportDialog"; // Import the new dialog
+import { SelectDrainaseReportDialog } from "@/components/SelectDrainaseReportDialog";
 
 interface LaporanItem {
   id: string;
@@ -150,19 +150,19 @@ const LaporanList = () => {
       <div className="min-h-screen bg-background p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
             <div>
               <CardTitle className="text-2xl">Daftar Laporan Drainase</CardTitle>
               <CardDescription>Kelola laporan kegiatan drainase yang telah disimpan</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => navigate("/drainase/new")} className="gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto"> {/* Added flex-col sm:flex-row and w-full sm:w-auto */}
+              <Button onClick={() => navigate("/drainase/new")} className="gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
                 Buat Laporan Baru
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2 w-full sm:w-auto">
                     <Printer className="h-4 w-4" />
                     Cetak
                   </Button>
@@ -191,15 +191,15 @@ const LaporanList = () => {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Periode</TableHead>
-                      <TableHead>Jumlah Kegiatan</TableHead>
-                      <TableHead>Dibuat</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
+                      <TableHead className="min-w-[120px]">Tanggal</TableHead> {/* Added min-width */}
+                      <TableHead className="min-w-[150px]">Periode</TableHead> {/* Added min-width */}
+                      <TableHead className="min-w-[150px]">Jumlah Kegiatan</TableHead> {/* Added min-width */}
+                      <TableHead className="min-w-[180px]">Dibuat</TableHead> {/* Added min-width */}
+                      <TableHead className="text-right min-w-[200px]">Aksi</TableHead> {/* Added min-width */}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
