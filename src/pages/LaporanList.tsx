@@ -38,7 +38,7 @@ interface LaporanItem {
   kegiatan_count: number;
 }
 
-// Define a type for the distinct period data
+// Define a type for the period data
 interface PeriodData {
   periode: string;
 }
@@ -84,22 +84,23 @@ const LaporanList = () => {
       }
       console.log("Fetched Laporan Data:", laporanData); // Debug log: Periksa ini di console
 
-      // 2. Fetch unique periods for the filter dropdown
-      const { data: periodsData, error: periodsError } = await supabase
+      // 2. Fetch all periods and deduplicate client-side for the filter dropdown
+      const { data: allPeriodsData, error: allPeriodsError } = await supabase
         .from("laporan_drainase")
-        .select("distinct periode")
+        .select("periode")
         .order("periode", { ascending: false });
 
-      if (periodsError) {
-        console.error("Supabase Error fetching unique periods:", periodsError);
-        toast.error("Gagal memuat periode unik: " + periodsError.message);
+      if (allPeriodsError) {
+        console.error("Supabase Error fetching all periods:", allPeriodsError);
+        toast.error("Gagal memuat semua periode: " + allPeriodsError.message);
         setUniquePeriods([]); // Reset periods on error
         return; // Exit early
       }
-      console.log("Fetched Unique Periods Data:", periodsData); // Debug log: Periksa ini di console
+      console.log("Fetched All Periods Data (before deduplication):", allPeriodsData); // Debug log
 
-      // Explicitly cast periodsData to PeriodData[] using 'unknown' as an intermediate step
-      setUniquePeriods((periodsData as unknown as PeriodData[] || []).map(p => p.periode));
+      // Deduplicate periods client-side
+      const uniquePeriodsSet = new Set((allPeriodsData || []).map((p: PeriodData) => p.periode));
+      setUniquePeriods(Array.from(uniquePeriodsSet));
 
       // 3. Fetch kegiatan count for each laporan
       const laporansWithCount = await Promise.all(
