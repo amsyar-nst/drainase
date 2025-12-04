@@ -59,13 +59,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label>Operasional Alat Berat</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addOperasionalAlatBerat}>
-          <Plus className="h-4 w-4 mr-1" />
-          Tambah
-        </Button>
-      </div>
+      <Label>Operasional Alat Berat</Label> {/* Label remains at the top */}
       {currentKegiatan.operasionalAlatBerats.map((operasional) => (
         <div key={operasional.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
           {/* Jenis Alat Berat */}
@@ -177,6 +171,12 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           </div>
         </div>
       ))}
+      <div className="flex justify-end"> {/* Moved button here */}
+        <Button type="button" variant="outline" size="sm" onClick={addOperasionalAlatBerat}>
+          <Plus className="h-4 w-4 mr-1" />
+          Tambah Operasional Alat Berat
+        </Button>
+      </div>
     </div>
   );
 };

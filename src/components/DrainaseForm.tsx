@@ -1082,13 +1082,7 @@ export const DrainaseForm = () => {
 
           {/* Materials */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Material yang Digunakan</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah
-              </Button>
-            </div>
+            <Label>Material yang Digunakan</Label>
             {currentKegiatan.materials.map((material) => (
               <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
                 <div className="space-y-2">
@@ -1144,17 +1138,17 @@ export const DrainaseForm = () => {
                 </Button>
               </div>
             ))}
+            <div className="flex justify-end"> {/* Moved button here */}
+              <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Material
+              </Button>
+            </div>
           </div>
 
           {/* Peralatan */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Peralatan yang Digunakan</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah
-              </Button>
-            </div>
+            <Label>Peralatan yang Digunakan</Label>
             {currentKegiatan.peralatans.map((peralatan) => (
               <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
                 <div className="space-y-2 md:col-span-2">
@@ -1203,6 +1197,12 @@ export const DrainaseForm = () => {
                 </Button>
               </div>
             ))}
+            <div className="flex justify-end"> {/* Moved button here */}
+              <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Peralatan
+              </Button>
+            </div>
           </div>
 
           {/* Operasional Alat Berat Section */}
