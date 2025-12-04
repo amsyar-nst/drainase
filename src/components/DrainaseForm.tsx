@@ -38,6 +38,12 @@ import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBera
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Import the new dialog
 
+// Define predefined sedimen options for easier comparison
+const predefinedSedimenOptions = [
+  "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
+  "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput"
+];
+
 export const DrainaseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -92,7 +98,10 @@ export const DrainaseForm = () => {
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
   const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false);
   const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview");
-  const [customSedimen, setCustomSedimen] = useState(""); // New state for custom sedimen input
+  
+  // New state to manage the selected value in the dropdown, including "custom"
+  const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
+  const [customSedimen, setCustomSedimen] = useState(""); // State for custom sedimen input
 
   // State for manual date input string
   const [dateInputString, setDateInputString] = useState<string>(
@@ -130,17 +139,21 @@ export const DrainaseForm = () => {
     }
   }, [formData.tanggal]);
 
-  // Effect to set customSedimen when loading an existing report
+  // Effect to initialize selectedSedimenOption and customSedimen when currentKegiatan changes (e.g., on load or activity switch)
   useEffect(() => {
-    if (currentKegiatan.jenisSedimen && ![
-      "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
-      "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput"
-    ].includes(currentKegiatan.jenisSedimen)) {
-      setCustomSedimen(currentKegiatan.jenisSedimen);
+    if (currentKegiatan.jenisSedimen) {
+      if (predefinedSedimenOptions.includes(currentKegiatan.jenisSedimen)) {
+        setSelectedSedimenOption(currentKegiatan.jenisSedimen);
+        setCustomSedimen("");
+      } else {
+        setSelectedSedimenOption("custom");
+        setCustomSedimen(currentKegiatan.jenisSedimen);
+      }
     } else {
+      setSelectedSedimenOption("");
       setCustomSedimen("");
     }
-  }, [currentKegiatan.jenisSedimen]);
+  }, [currentKegiatan.jenisSedimen, currentKegiatanIndex]); // Depend on currentKegiatan.jenisSedimen and currentKegiatanIndex
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
@@ -968,18 +981,11 @@ export const DrainaseForm = () => {
             <div className="space-y-2">
               <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
               <Select
-                value={
-                  [
-                    "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
-                    "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput"
-                  ].includes(currentKegiatan.jenisSedimen)
-                    ? currentKegiatan.jenisSedimen
-                    : "custom" // If not in predefined list, show "custom"
-                }
+                value={selectedSedimenOption} // Use selectedSedimenOption here
                 onValueChange={(value) => {
+                  setSelectedSedimenOption(value);
                   if (value === "custom") {
-                    updateCurrentKegiatan({ jenisSedimen: "" }); // Clear current selection for custom input
-                    setCustomSedimen("");
+                    updateCurrentKegiatan({ jenisSedimen: customSedimen }); // Set to current custom input value
                   } else {
                     updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" });
                     setCustomSedimen(""); // Clear custom input if a predefined option is selected
@@ -990,28 +996,22 @@ export const DrainaseForm = () => {
                   <SelectValue placeholder="Pilih jenis sedimen" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Padat">Padat</SelectItem>
-                  <SelectItem value="Cair">Cair</SelectItem>
-                  <SelectItem value="Padat & Cair">Padat & Cair</SelectItem>
-                  <SelectItem value="Batu">Batu</SelectItem>
-                  <SelectItem value="Batu/Padat">Batu/Padat</SelectItem>
-                  <SelectItem value="Batu/Cair">Batu/Cair</SelectItem>
-                  <SelectItem value="Padat & Batu">Padat & Batu</SelectItem>
-                  <SelectItem value="Padat & Sampah">Padat & Sampah</SelectItem>
-                  <SelectItem value="Padat/ Gulma & Sampah">Padat/ Gulma & Sampah</SelectItem>
-                  <SelectItem value="Padat/ Cair/Sampah">Padat/ Cair/Sampah</SelectItem>
-                  <SelectItem value="Gulma/Rumput">Gulma/Rumput</SelectItem>
+                  {predefinedSedimenOptions.map((jenis) => (
+                    <SelectItem key={jenis} value={jenis}>
+                      {jenis}
+                    </SelectItem>
+                  ))}
                   <SelectItem value="custom">Lainnya</SelectItem>
                 </SelectContent>
               </Select>
-              {currentKegiatan.jenisSedimen === "" && (
+              {selectedSedimenOption === "custom" && ( // Conditional rendering based on selectedSedimenOption
                 <Input
                   type="text"
                   placeholder="Masukkan jenis sedimen manual"
                   value={customSedimen}
                   onChange={(e) => {
                     setCustomSedimen(e.target.value);
-                    updateCurrentKegiatan({ jenisSedimen: e.target.value });
+                    updateCurrentKegiatan({ jenisSedimen: e.target.value }); // Update actual data with manual input
                   }}
                   className="mt-2"
                 />
