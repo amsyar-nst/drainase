@@ -19,7 +19,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
-import { PrintDrainaseDialog } from "@/components/PrintDrainaseDialog"; // Import PrintDrainaseDialog
+import { PrintDrainaseDialog } from "@/components/PrintDrainaseDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SelectDrainaseReportDialog } from "@/components/SelectDrainaseReportDialog"; // Import the new dialog
 
 interface LaporanItem {
   id: string;
@@ -33,8 +40,13 @@ const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false); // State for PrintDrainaseDialog
-  const [selectedLaporanIdForPrint, setSelectedLaporanIdForPrint] = useState<string | null>(null); // State to pass to PrintDrainaseDialog
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [selectedLaporanIdForPrint, setSelectedLaporanIdForPrint] = useState<string | null>(null);
+  
+  // States for global print selection
+  const [isSelectDrainaseReportDialogOpen, setIsSelectDrainaseReportDialogOpen] = useState(false);
+  const [selectedGlobalReportType, setSelectedGlobalReportType] = useState<"harian" | "bulanan" | "tersier" | null>(null);
+
   const navigate = useNavigate();
 
   const fetchLaporans = async () => {
@@ -103,9 +115,25 @@ const LaporanList = () => {
     }
   };
 
-  const handlePrintClick = (laporanId: string) => {
+  const handleIndividualPrintClick = (laporanId: string) => {
     setSelectedLaporanIdForPrint(laporanId);
     setIsPrintDialogOpen(true);
+  };
+
+  const handleGlobalPrintSelection = (reportType: "harian" | "bulanan" | "tersier") => {
+    setSelectedGlobalReportType(reportType);
+    if (reportType === "harian" || reportType === "bulanan") {
+      setIsSelectDrainaseReportDialogOpen(true);
+    } else if (reportType === "tersier") {
+      toast.info("Fitur cetak Laporan Tersier secara global belum tersedia.");
+      // Future implementation: Open a SelectTersierReportDialog
+    }
+  };
+
+  const handleSelectSpecificDrainaseReport = (laporanId: string) => {
+    setSelectedLaporanIdForPrint(laporanId);
+    setIsPrintDialogOpen(true);
+    setIsSelectDrainaseReportDialogOpen(false); // Close the selection dialog
   };
 
   if (loading) {
@@ -127,10 +155,31 @@ const LaporanList = () => {
               <CardTitle className="text-2xl">Daftar Laporan Drainase</CardTitle>
               <CardDescription>Kelola laporan kegiatan drainase yang telah disimpan</CardDescription>
             </div>
-            <Button onClick={() => navigate("/drainase/new")} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Buat Laporan Baru
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate("/drainase/new")} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Buat Laporan Baru
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Printer className="h-4 w-4" />
+                    Cetak
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("harian")}>
+                    Laporan Harian
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("bulanan")}>
+                    Laporan Bulanan
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("tersier")}>
+                    Laporan Tersier
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           <CardContent>
             {laporans.length === 0 ? (
@@ -169,7 +218,7 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handlePrintClick(laporan.id)}
+                              onClick={() => handleIndividualPrintClick(laporan.id)}
                               className="gap-2"
                             >
                               <Printer className="h-4 w-4" />
@@ -225,7 +274,7 @@ const LaporanList = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Print Drainase Dialog */}
+        {/* Print Drainase Dialog (for individual or selected global reports) */}
         {selectedLaporanIdForPrint && (
           <PrintDrainaseDialog
             laporanId={selectedLaporanIdForPrint}
@@ -234,6 +283,16 @@ const LaporanList = () => {
               setIsPrintDialogOpen(false);
               setSelectedLaporanIdForPrint(null);
             }}
+          />
+        )}
+
+        {/* Select Drainase Report Dialog (for global Harian/Bulanan print) */}
+        {selectedGlobalReportType && (selectedGlobalReportType === "harian" || selectedGlobalReportType === "bulanan") && (
+          <SelectDrainaseReportDialog
+            isOpen={isSelectDrainaseReportDialogOpen}
+            onClose={() => setIsSelectDrainaseReportDialogOpen(false)}
+            onSelect={handleSelectSpecificDrainaseReport}
+            reportType={selectedGlobalReportType}
           />
         )}
       </div>
