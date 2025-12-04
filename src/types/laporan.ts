@@ -37,8 +37,8 @@ export interface KegiatanDrainase {
   foto0Url?: string[]; // Changed to array
   foto50Url?: string[]; // Changed to array
   foto100Url?: string[]; // Changed to array
-  jenisSaluran: "Terbuka" | "Tertutup" | "";
-  jenisSedimen: "Padat" | "Cair" | "Padat & Cair" | "";
+  jenisSaluran: "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | ""; // Added "Terbuka & Tertutup"
+  jenisSedimen: "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | ""; // Added new options
   aktifitasPenanganan: string;
   panjangPenanganan: string;
   lebarRataRata: string;

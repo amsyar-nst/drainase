@@ -228,8 +228,8 @@ export const DrainaseForm = () => {
             foto0Url: (kegiatan.foto_0_url || []),
             foto50Url: (kegiatan.foto_50_url || []),
             foto100Url: (kegiatan.foto_100_url || []),
-            jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup",
-            jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair",
+            jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
+            jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "",
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
             panjangPenanganan: kegiatan.panjang_penanganan || "",
             lebarRataRata: kegiatan.lebar_rata_rata || "",
@@ -940,7 +940,7 @@ export const DrainaseForm = () => {
               <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
               <Select
                 value={currentKegiatan.jenisSaluran}
-                onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "" })}
+                onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
               >
                 <SelectTrigger id="jenis-saluran">
                   <SelectValue placeholder="Pilih jenis saluran" />
@@ -948,6 +948,7 @@ export const DrainaseForm = () => {
                 <SelectContent>
                   <SelectItem value="Terbuka">Terbuka</SelectItem>
                   <SelectItem value="Tertutup">Tertutup</SelectItem>
+                  <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -955,7 +956,7 @@ export const DrainaseForm = () => {
               <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
               <Select
                 value={currentKegiatan.jenisSedimen}
-                onValueChange={(value) => updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "" })}
+                onValueChange={(value) => updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "" })}
               >
                 <SelectTrigger id="jenis-sedimen">
                   <SelectValue placeholder="Pilih jenis sedimen" />
@@ -964,6 +965,13 @@ export const DrainaseForm = () => {
                   <SelectItem value="Padat">Padat</SelectItem>
                   <SelectItem value="Cair">Cair</SelectItem>
                   <SelectItem value="Padat & Cair">Padat & Cair</SelectItem>
+                  <SelectItem value="Batu">Batu</SelectItem>
+                  <SelectItem value="Batu/Padat">Batu/Padat</SelectItem>
+                  <SelectItem value="Batu/Cair">Batu/Cair</SelectItem>
+                  <SelectItem value="Padat & Batu">Padat & Batu</SelectItem>
+                  <SelectItem value="Padat & Sampah">Padat & Sampah</SelectItem>
+                  <SelectItem value="Padat/ Gulma & Sampah">Padat/ Gulma & Sampah</SelectItem>
+                  <SelectItem value="Padat/ Cair/Sampah">Padat/ Cair/Sampah</SelectItem>
                 </SelectContent>
               </Select>
             </div>
