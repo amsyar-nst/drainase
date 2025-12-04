@@ -18,9 +18,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
-import { PrintSelectionDialog } from "@/components/PrintSelectionDialog"; // Import the new dialog component
-import { generatePDF } from "@/lib/pdf-generator"; // Import generatePDF
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // Import DropdownMenu components
 
 interface LaporanItem {
   id: string;
@@ -34,8 +38,6 @@ const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false); // State for print selection dialog
-  const [selectedLaporanIdForPrint, setSelectedLaporanIdForPrint] = useState<string | null>(null); // State for selected laporan to print
   const navigate = useNavigate();
 
   const fetchLaporans = async () => {
@@ -104,119 +106,10 @@ const LaporanList = () => {
     }
   };
 
-  const handlePrintClick = (laporanId: string) => {
-    setSelectedLaporanIdForPrint(laporanId);
-    setIsPrintSelectionDialogOpen(true);
-  };
-
-  const handlePrintSelection = async (type: "harian" | "bulanan" | "tersier", action: "preview" | "download") => {
-    if (!selectedLaporanIdForPrint) {
-      toast.error("Tidak ada laporan yang dipilih untuk dicetak.");
-      return;
-    }
-
-    if (type === "tersier") {
-      toast.error("Laporan Tersier tidak dapat dicetak dari daftar laporan drainase utama.");
-      return;
-    }
-
-    try {
-      // Fetch full laporan data including all activities, materials, etc.
-      const { data: laporanData, error: laporanError } = await supabase
-        .from('laporan_drainase')
-        .select('*')
-        .eq('id', selectedLaporanIdForPrint)
-        .single();
-
-      if (laporanError) throw laporanError;
-      if (!laporanData) {
-        toast.error('Laporan tidak ditemukan.');
-        return;
-      }
-
-      const { data: kegiatanData, error: kegiatanError } = await supabase
-        .from('kegiatan_drainase')
-        .select('*')
-        .eq('laporan_id', selectedLaporanIdForPrint);
-
-      if (kegiatanError) throw kegiatanError;
-
-      const kegiatansWithDetails = await Promise.all(
-        (kegiatanData || []).map(async (kegiatan) => {
-          const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
-            supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
-          ]);
-
-          const materials = (materialsRes.data || []).map(m => ({
-            id: m.id,
-            jenis: m.jenis,
-            jumlah: m.jumlah,
-            satuan: m.satuan,
-            keterangan: m.keterangan || "",
-          }));
-          const peralatans = (peralatanRes.data || []).map(p => ({
-            id: p.id,
-            nama: p.nama,
-            jumlah: p.jumlah,
-            satuan: p.satuan || "Unit",
-          }));
-          const operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
-            id: o.id,
-            jenis: o.jenis,
-            jumlah: o.jumlah,
-            dexliteJumlah: o.dexlite_jumlah || "",
-            dexliteSatuan: o.dexlite_satuan || "Liter",
-            pertaliteJumlah: o.pertalite_jumlah || "",
-            pertaliteSatuan: o.pertalite_satuan || "Liter",
-            bioSolarJumlah: o.bio_solar_jumlah || "",
-            bioSolarSatuan: o.bio_solar_satuan || "Liter",
-            keterangan: o.keterangan || "",
-          }));
-
-          return {
-            id: kegiatan.id,
-            namaJalan: kegiatan.nama_jalan,
-            kecamatan: kegiatan.kecamatan,
-            kelurahan: kegiatan.kelurahan,
-            foto0: kegiatan.foto_0_url || null,
-            foto50: kegiatan.foto_50_url || null,
-            foto100: kegiatan.foto_100_url || null,
-            foto0Url: kegiatan.foto_0_url || undefined,
-            foto50Url: kegiatan.foto_50_url || undefined,
-            foto100Url: kegiatan.foto_100_url || undefined,
-            jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup" | "Terbuka & Tertutup",
-            jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "",
-            aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
-            panjangPenanganan: kegiatan.panjang_penanganan || "",
-            lebarRataRata: kegiatan.lebar_rata_rata || "",
-            rataRataSedimen: kegiatan.rata_rata_sedimen || "",
-            volumeGalian: kegiatan.volume_galian || "",
-            materials: materials,
-            peralatans: peralatans,
-            operasionalAlatBerats: operasionalAlatBerats,
-            koordinator: kegiatan.koordinator || [],
-            jumlahPHL: kegiatan.jumlah_phl || 1,
-            keterangan: kegiatan.keterangan || "",
-          };
-        })
-      );
-
-      const fullLaporan = {
-        tanggal: new Date(laporanData.tanggal),
-        kegiatans: kegiatansWithDetails,
-      };
-
-      await generatePDF(fullLaporan, action === "download");
-      toast.success(`Laporan ${type} berhasil di${action === "preview" ? "pratinjau" : "unduh"}.`);
-
-    } catch (error: any) {
-      console.error("Error generating PDF:", error);
-      toast.error("Gagal membuat laporan PDF: " + error.message);
-    } finally {
-      setSelectedLaporanIdForPrint(null);
-    }
+  // Placeholder function for global print actions
+  const handleGlobalPrint = (reportType: string) => {
+    toast.info(`Fitur cetak '${reportType}' akan segera hadir. Mohon pilih laporan spesifik terlebih dahulu.`);
+    // Future implementation: Open a dialog to select a specific report or date range
   };
 
   if (loading) {
@@ -238,10 +131,31 @@ const LaporanList = () => {
               <CardTitle className="text-2xl">Daftar Laporan Drainase</CardTitle>
               <CardDescription>Kelola laporan kegiatan drainase yang telah disimpan</CardDescription>
             </div>
-            <Button onClick={() => navigate("/drainase/new")} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Buat Laporan Baru
-            </Button>
+            <div className="flex gap-2"> {/* Container for new buttons */}
+              <Button onClick={() => navigate("/drainase/new")} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Buat Laporan Baru
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Printer className="h-4 w-4" />
+                    Cetak
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleGlobalPrint("Laporan Harian")}>
+                    Laporan Harian
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGlobalPrint("Laporan Tersier")}>
+                    Laporan Tersier
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleGlobalPrint("Laporan Bulanan")}>
+                    Laporan Bulanan
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           <CardContent>
             {laporans.length === 0 ? (
@@ -277,15 +191,7 @@ const LaporanList = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePrintClick(laporan.id)}
-                              className="gap-2"
-                            >
-                              <Printer className="h-4 w-4" />
-                              Cetak
-                            </Button>
+                            {/* Removed individual print button */}
                             <Button
                               variant="outline"
                               size="sm"
@@ -335,15 +241,6 @@ const LaporanList = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {/* Print Selection Dialog */}
-        <PrintSelectionDialog
-          isOpen={isPrintSelectionDialogOpen}
-          onClose={() => setIsPrintSelectionDialogOpen(false)}
-          onSelectReportType={handlePrintSelection}
-          actionType="download" // For list, assume "download" action for print button
-          currentFormType="list"
-        />
       </div>
     </>
   );
