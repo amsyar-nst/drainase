@@ -6,7 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
 import { alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command"; // Import CommandInput
 import { Textarea } from "@/components/ui/textarea";
 
 interface OperasionalAlatBeratSectionProps {
@@ -88,6 +88,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               </PopoverTrigger>
               <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                 <Command>
+                  <CommandInput placeholder="Cari jenis alat berat..." /> {/* Added CommandInput */}
                   <CommandList>
                     <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                     <CommandGroup>
@@ -108,71 +109,71 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                         ))}
                     </CommandGroup>
                   </CommandList>
-                </PopoverContent>
-              </Popover>
-            </div>
-            {/* Jumlah */}
-            <div className="space-y-2 md:col-span-1">
-              <Label>Jumlah</Label>
-              <Input
-                type="number"
-                min="1"
-                value={operasional.jumlah}
-                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(e.target.value) || 1)}
-              />
-            </div>
-            {/* Dexlite Jumlah */}
-            <div className="space-y-2 md:col-span-1">
-              <Label>Dexlite</Label>
-              <Input
-                type="text"
-                placeholder="Jumlah (L)"
-                value={operasional.dexliteJumlah}
-                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
-              />
-            </div>
-            {/* Pertalite Jumlah */}
-            <div className="space-y-2 md:col-span-1">
-              <Label>Pertalite</Label>
-              <Input
-                type="text"
-                placeholder="Jumlah (L)"
-                value={operasional.pertaliteJumlah}
-                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
-              />
-            </div>
-            {/* Bio Solar Jumlah */}
-            <div className="space-y-2 md:col-span-1">
-              <Label>Bio Solar</Label>
-              <Input
-                type="text"
-                placeholder="Jumlah (L)"
-                value={operasional.bioSolarJumlah}
-                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
-              />
-            </div>
-            {/* Keterangan */}
-            <div className="space-y-2 md:col-span-3">
-              <Label>Keterangan</Label>
-              <Textarea
-                placeholder="Catatan tambahan"
-                value={operasional.keterangan}
-                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
-                rows={1}
-              />
-            </div>
-            {/* Remove Button */}
-            <div className="md:col-span-1 flex justify-end">
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                onClick={() => removeOperasionalAlatBerat(operasional.id)}
-                disabled={currentKegiatan.operasionalAlatBerats.length === 1}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+          {/* Jumlah */}
+          <div className="space-y-2 md:col-span-1">
+            <Label>Jumlah</Label>
+            <Input
+              type="number"
+              min="1"
+              value={operasional.jumlah}
+              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(e.target.value) || 1)}
+            />
+          </div>
+          {/* Dexlite Jumlah */}
+          <div className="space-y-2 md:col-span-1">
+            <Label>Dexlite</Label>
+            <Input
+              type="text"
+              placeholder="Jumlah (L)"
+              value={operasional.dexliteJumlah}
+              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
+            />
+          </div>
+          {/* Pertalite Jumlah */}
+          <div className="space-y-2 md:col-span-1">
+            <Label>Pertalite</Label>
+            <Input
+              type="text"
+              placeholder="Jumlah (L)"
+              value={operasional.pertaliteJumlah}
+              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
+            />
+          </div>
+          {/* Bio Solar Jumlah */}
+          <div className="space-y-2 md:col-span-1">
+            <Label>Bio Solar</Label>
+            <Input
+              type="text"
+              placeholder="Jumlah (L)"
+              value={operasional.bioSolarJumlah}
+              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
+            />
+          </div>
+          {/* Keterangan */}
+          <div className="space-y-2 md:col-span-3">
+            <Label>Keterangan</Label>
+            <Textarea
+              placeholder="Catatan tambahan"
+              value={operasional.keterangan}
+              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
+              rows={1}
+            />
+          </div>
+          {/* Remove Button */}
+          <div className="md:col-span-1 flex justify-end">
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={() => removeOperasionalAlatBerat(operasional.id)}
+              disabled={currentKegiatan.operasionalAlatBerats.length === 1}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       ))}
