@@ -19,12 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Import DropdownMenu components
+import { PrintDrainaseDialog } from "@/components/PrintDrainaseDialog"; // Import PrintDrainaseDialog
 
 interface LaporanItem {
   id: string;
@@ -38,6 +33,8 @@ const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false); // State for PrintDrainaseDialog
+  const [selectedLaporanIdForPrint, setSelectedLaporanIdForPrint] = useState<string | null>(null); // State to pass to PrintDrainaseDialog
   const navigate = useNavigate();
 
   const fetchLaporans = async () => {
@@ -106,10 +103,9 @@ const LaporanList = () => {
     }
   };
 
-  // Placeholder function for global print actions
-  const handleGlobalPrint = (reportType: string) => {
-    toast.info(`Fitur cetak '${reportType}' akan segera hadir. Mohon pilih laporan spesifik terlebih dahulu.`);
-    // Future implementation: Open a dialog to select a specific report or date range
+  const handlePrintClick = (laporanId: string) => {
+    setSelectedLaporanIdForPrint(laporanId);
+    setIsPrintDialogOpen(true);
   };
 
   if (loading) {
@@ -131,31 +127,10 @@ const LaporanList = () => {
               <CardTitle className="text-2xl">Daftar Laporan Drainase</CardTitle>
               <CardDescription>Kelola laporan kegiatan drainase yang telah disimpan</CardDescription>
             </div>
-            <div className="flex gap-2"> {/* Container for new buttons */}
-              <Button onClick={() => navigate("/drainase/new")} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Buat Laporan Baru
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Printer className="h-4 w-4" />
-                    Cetak
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleGlobalPrint("Laporan Harian")}>
-                    Laporan Harian
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGlobalPrint("Laporan Tersier")}>
-                    Laporan Tersier
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGlobalPrint("Laporan Bulanan")}>
-                    Laporan Bulanan
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <Button onClick={() => navigate("/drainase/new")} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Buat Laporan Baru
+            </Button>
           </CardHeader>
           <CardContent>
             {laporans.length === 0 ? (
@@ -191,7 +166,15 @@ const LaporanList = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {/* Removed individual print button */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePrintClick(laporan.id)}
+                              className="gap-2"
+                            >
+                              <Printer className="h-4 w-4" />
+                              Cetak
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
@@ -241,6 +224,18 @@ const LaporanList = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Print Drainase Dialog */}
+        {selectedLaporanIdForPrint && (
+          <PrintDrainaseDialog
+            laporanId={selectedLaporanIdForPrint}
+            isOpen={isPrintDialogOpen}
+            onClose={() => {
+              setIsPrintDialogOpen(false);
+              setSelectedLaporanIdForPrint(null);
+            }}
+          />
+        )}
       </div>
     </>
   );
