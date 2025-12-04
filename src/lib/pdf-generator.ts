@@ -51,7 +51,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
       <title>Laporan Drainase - ${format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })}</title>
       <style>
         @page {
-          size: 330mm 215mm;
+          size: A3 landscape; /* Changed to A3 landscape */
           margin: 10mm;
         }
         
@@ -183,7 +183,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           }
           
           @page {
-            size: 330mm 215mm landscape;
+            size: A3 landscape; /* Changed to A3 landscape */
             margin: 10mm;
           }
         }
