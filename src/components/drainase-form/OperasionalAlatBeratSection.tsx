@@ -4,16 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
-import { alatBeratOptions } from "@/data/kecamatan-kelurahan"; // Removed satuanOptions as it's no longer needed for fuel units
+import { alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 interface OperasionalAlatBeratSectionProps {
@@ -25,7 +18,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   currentKegiatan,
   updateCurrentKegiatan,
 }) => {
-  // State to manage which popover is currently open
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   const addOperasionalAlatBerat = () => {
@@ -34,11 +26,11 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       jenis: "",
       jumlah: 1,
       dexliteJumlah: "",
-      dexliteSatuan: "Liter", // Default to Liter
+      dexliteSatuan: "Liter",
       pertaliteJumlah: "",
-      pertaliteSatuan: "Liter", // Default to Liter
+      pertaliteSatuan: "Liter",
       bioSolarJumlah: "",
-      bioSolarSatuan: "Liter", // Default to Liter
+      bioSolarSatuan: "Liter",
       keterangan: "",
     };
     updateCurrentKegiatan({
@@ -76,7 +68,8 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       </div>
       {currentKegiatan.operasionalAlatBerats.map((operasional) => (
         <div key={operasional.id} className="border p-4 rounded-md space-y-4">
-          <div className="grid gap-4 md:grid-cols-3 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+            {/* Jenis Alat Berat */}
             <div className="space-y-2 md:col-span-2">
               <Label>Jenis Alat Berat</Label>
               <Popover
@@ -90,7 +83,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                     value={operasional.jenis}
                     onChange={(e) => {
                       updateOperasionalAlatBerat(operasional.id, "jenis", e.target.value);
-                      setOpenPopoverId(operasional.id); // Open popover when typing
+                      setOpenPopoverId(operasional.id);
                     }}
                   />
                 </PopoverTrigger>
@@ -108,7 +101,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                               key={jenis}
                               onSelect={() => {
                                 updateOperasionalAlatBerat(operasional.id, "jenis", jenis);
-                                setOpenPopoverId(null); // Close popover after selection
+                                setOpenPopoverId(null);
                               }}
                             >
                               {jenis}
@@ -120,7 +113,8 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-2">
+            {/* Jumlah */}
+            <div className="space-y-2 md:col-span-1">
               <Label>Jumlah</Label>
               <Input
                 type="number"
@@ -129,87 +123,60 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(e.target.value) || 1)}
               />
             </div>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => removeOperasionalAlatBerat(operasional.id)}
-              disabled={currentKegiatan.operasionalAlatBerats.length === 1}
-              className="md:col-start-3"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Fuel Inputs */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Dexlite Jumlah</Label>
+            {/* Dexlite Jumlah */}
+            <div className="space-y-2 md:col-span-1">
+              <Label>Dexlite (L)</Label>
               <Input
                 type="text"
-                placeholder="Jumlah Dexlite"
+                placeholder="Jumlah"
                 value={operasional.dexliteJumlah}
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Satuan Dexlite</Label>
+            {/* Pertalite Jumlah */}
+            <div className="space-y-2 md:col-span-1">
+              <Label>Pertalite (L)</Label>
               <Input
                 type="text"
-                value="Liter"
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Pertalite Jumlah</Label>
-              <Input
-                type="text"
-                placeholder="Jumlah Pertalite"
+                placeholder="Jumlah"
                 value={operasional.pertaliteJumlah}
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Satuan Pertalite</Label>
+            {/* Bio Solar Jumlah */}
+            <div className="space-y-2 md:col-span-1">
+              <Label>Bio Solar (L)</Label>
               <Input
                 type="text"
-                value="Liter"
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Bio Solar Jumlah</Label>
-              <Input
-                type="text"
-                placeholder="Jumlah Bio Solar"
+                placeholder="Jumlah"
                 value={operasional.bioSolarJumlah}
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Satuan Bio Solar</Label>
-              <Input
-                type="text"
-                value="Liter"
-                disabled
-                className="bg-muted"
-              />
-            </div>
           </div>
 
-          {/* Keterangan */}
-          <div className="space-y-2">
-            <Label>Keterangan</Label>
-            <Textarea
-              placeholder="Catatan tambahan untuk operasional alat berat ini"
-              value={operasional.keterangan}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
-              rows={2}
-            />
+          {/* Keterangan and Remove Button */}
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+            <div className="space-y-2 md:col-span-5">
+              <Label>Keterangan</Label>
+              <Textarea
+                placeholder="Catatan tambahan untuk operasional alat berat ini"
+                value={operasional.keterangan}
+                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="md:col-span-1 flex justify-end">
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={() => removeOperasionalAlatBerat(operasional.id)}
+                disabled={currentKegiatan.operasionalAlatBerats.length === 1}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       ))}
