@@ -1,4 +1,5 @@
 export interface Alat {
+  id: string; // Added id property
   nama: string;
   jumlah: number;
 }

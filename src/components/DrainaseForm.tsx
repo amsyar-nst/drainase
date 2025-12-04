@@ -664,7 +664,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/laporan');
+      navigate('/');
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan: ' + error.message);
@@ -719,7 +719,7 @@ export const DrainaseForm = () => {
               {id ? 'Edit laporan kegiatan drainase' : 'Isi formulir dengan lengkap untuk menghasilkan laporan'}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/laporan')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
             <List className="h-4 w-4" />
             Lihat Laporan
           </Button>

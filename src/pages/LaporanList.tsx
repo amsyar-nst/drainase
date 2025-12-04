@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Trash2, Edit, Plus, Printer } from "lucide-react";
 import { format } from "date-fns";
@@ -21,6 +20,7 @@ import {
 import { Navigation } from "@/components/Navigation";
 import { PrintSelectionDialog } from "@/components/PrintSelectionDialog"; // Import the new dialog component
 import { generatePDF } from "@/lib/pdf-generator"; // Import generatePDF
+import { supabase } from "@/integrations/supabase/client";
 
 interface LaporanItem {
   id: string;
@@ -186,8 +186,8 @@ const LaporanList = () => {
             foto0Url: kegiatan.foto_0_url || undefined,
             foto50Url: kegiatan.foto_50_url || undefined,
             foto100Url: kegiatan.foto_100_url || undefined,
-            jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup",
-            jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair",
+            jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup" | "Terbuka & Tertutup",
+            jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "",
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
             panjangPenanganan: kegiatan.panjang_penanganan || "",
             lebarRataRata: kegiatan.lebar_rata_rata || "",
@@ -238,7 +238,7 @@ const LaporanList = () => {
               <CardTitle className="text-2xl">Daftar Laporan Drainase</CardTitle>
               <CardDescription>Kelola laporan kegiatan drainase yang telah disimpan</CardDescription>
             </div>
-            <Button onClick={() => navigate("/")} className="gap-2">
+            <Button onClick={() => navigate("/drainase/new")} className="gap-2">
               <Plus className="h-4 w-4" />
               Buat Laporan Baru
             </Button>
@@ -247,7 +247,10 @@ const LaporanList = () => {
             {laporans.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground mb-4">Belum ada laporan tersimpan</p>
-                <Button onClick={() => navigate("/")}>Buat Laporan Pertama</Button>
+                <Button onClick={() => navigate("/drainase/new")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Buat Laporan Pertama
+                </Button>
               </div>
             ) : (
               <div className="rounded-md border">
@@ -286,7 +289,7 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => navigate(`/edit/${laporan.id}`)}
+                              onClick={() => navigate(`/drainase/edit/${laporan.id}`)}
                               className="gap-2"
                             >
                               <Edit className="h-4 w-4" />

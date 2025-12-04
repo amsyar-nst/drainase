@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection";
 import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Import the new dialog
+import { Checkbox } from "@/components/ui/checkbox"; // Imported Checkbox
 
 const bulanOptions = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -160,6 +161,7 @@ export const DrainaseTersierForm = () => {
       });
 
       setLaporan({
+        ...laporan, // Keep existing properties like bulan
         bulan: laporanData.bulan,
         kegiatans,
       });
@@ -272,6 +274,7 @@ export const DrainaseTersierForm = () => {
 
         if (updateError) throw updateError;
 
+        // Delete existing related activities to re-insert
         const { error: deleteError } = await supabase
           .from("kegiatan_drainase_tersier")
           .delete()
@@ -336,6 +339,11 @@ export const DrainaseTersierForm = () => {
 
     generatePDFTersier(laporan);
     toast.success("PDF berhasil diunduh");
+  };
+
+  // Wrapper function for updating currentKegiatan to match expected prop type
+  const updateCurrentKegiatanWrapper = (updates: Partial<KegiatanDrainaseTersier>) => {
+    setCurrentKegiatan((prev) => ({ ...prev, ...updates }));
   };
 
   return (
@@ -539,7 +547,7 @@ export const DrainaseTersierForm = () => {
                     id="upt"
                     checked={currentKegiatan.useUpt}
                     onCheckedChange={(checked) =>
-                      setCurrentKegiatan({ ...currentKegiatan, useUpt: checked || false, uptCount: 0 })
+                      setCurrentKegiatan({ ...currentKegiatan, useUpt: !!checked, uptCount: 0 })
                     }
                   />
                   <Label htmlFor="upt">UPT</Label>
@@ -563,7 +571,7 @@ export const DrainaseTersierForm = () => {
                     id="p3su"
                     checked={currentKegiatan.useP3su}
                     onCheckedChange={(checked) =>
-                      setCurrentKegiatan({ ...currentKegiatan, useP3su: checked || false, p3suCount: 0 })
+                      setCurrentKegiatan({ ...currentKegiatan, useP3su: !!checked, p3suCount: 0 })
                     }
                   />
                   <Label htmlFor="p3su">P3SU</Label>
@@ -587,7 +595,7 @@ export const DrainaseTersierForm = () => {
               {/* Alat yang Dibutuhkan - Using the new component */}
               <AlatYangDibutuhkanSection
                 currentKegiatan={currentKegiatan}
-                updateCurrentKegiatan={setCurrentKegiatan}
+                updateCurrentKegiatan={updateCurrentKegiatanWrapper} // Use the wrapper function
               />
 
               {/* Rencana Dimensi */}
