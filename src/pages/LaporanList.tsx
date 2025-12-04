@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer, CalendarDays } from "lucide-react"; // Added CalendarDays icon
+import { Trash2, Edit, Plus, Printer, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -38,6 +38,11 @@ interface LaporanItem {
   kegiatan_count: number;
 }
 
+// Define a type for the distinct period data
+interface PeriodData {
+  periode: string;
+}
+
 const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,37 +61,58 @@ const LaporanList = () => {
   const navigate = useNavigate();
 
   const fetchLaporans = async (filterPeriod: string | null = null) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      let query = supabase
+      // 1. Fetch main laporan data
+      let laporanQuery = supabase
         .from("laporan_drainase")
         .select("*")
         .order("tanggal", { ascending: false });
 
       if (filterPeriod) {
-        query = query.eq("periode", filterPeriod);
+        laporanQuery = laporanQuery.eq("periode", filterPeriod);
       }
 
-      const { data: laporanData, error: laporanError } = await query;
+      const { data: laporanData, error: laporanError } = await laporanQuery;
 
-      if (laporanError) throw laporanError;
+      if (laporanError) {
+        console.error("Supabase Error fetching main laporans:", laporanError);
+        toast.error("Gagal memuat laporan utama: " + laporanError.message);
+        setLaporans([]); // Reset laporans on error
+        setUniquePeriods([]); // Reset periods on error
+        return; // Exit early
+      }
+      console.log("Fetched Laporan Data:", laporanData); // Debug log: Periksa ini di console
 
-      // Fetch unique periods for the filter dropdown
+      // 2. Fetch unique periods for the filter dropdown
       const { data: periodsData, error: periodsError } = await supabase
         .from("laporan_drainase")
-        .select("distinct periode") // Corrected: Use "distinct periode" in the select string
-        .order("periode", { ascending: false }); // Order to show latest periods first
+        .select("distinct periode")
+        .order("periode", { ascending: false });
 
-      if (periodsError) throw periodsError;
-      setUniquePeriods(periodsData.map(p => p.periode));
+      if (periodsError) {
+        console.error("Supabase Error fetching unique periods:", periodsError);
+        toast.error("Gagal memuat periode unik: " + periodsError.message);
+        setUniquePeriods([]); // Reset periods on error
+        return; // Exit early
+      }
+      console.log("Fetched Unique Periods Data:", periodsData); // Debug log: Periksa ini di console
 
-      // Fetch kegiatan count for each laporan
+      // Explicitly cast periodsData to PeriodData[] using 'any' as an intermediate step
+      setUniquePeriods((periodsData as any as PeriodData[] || []).map(p => p.periode));
+
+      // 3. Fetch kegiatan count for each laporan
       const laporansWithCount = await Promise.all(
         (laporanData || []).map(async (laporan) => {
-          const { count } = await supabase
+          const { count, error: countError } = await supabase
             .from("kegiatan_drainase")
             .select("*", { count: "exact", head: true })
             .eq("laporan_id", laporan.id);
+
+          if (countError) {
+            console.warn(`Warning: Could not fetch kegiatan count for laporan ${laporan.id}:`, countError);
+            // Jangan lempar error di sini agar laporan lain tetap bisa dimuat
+          }
 
           return {
             ...laporan,
@@ -96,9 +122,13 @@ const LaporanList = () => {
       );
 
       setLaporans(laporansWithCount);
-    } catch (error) {
-      console.error("Error fetching laporans:", error);
-      toast.error("Gagal memuat data laporan");
+      console.log("Final Laporans state:", laporansWithCount); // Debug log: Periksa ini di console
+
+    } catch (error: any) {
+      console.error("Error in fetchLaporans:", error);
+      toast.error("Gagal memuat data laporan: " + (error.message || "Terjadi kesalahan tidak dikenal."));
+      setLaporans([]); // Reset laporans on any error
+      setUniquePeriods([]); // Reset periods on any error
     } finally {
       setLoading(false);
     }
