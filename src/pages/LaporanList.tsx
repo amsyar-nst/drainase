@@ -155,7 +155,7 @@ const LaporanList = () => {
               <CardTitle className="text-2xl">Daftar Laporan Drainase</CardTitle>
               <CardDescription>Kelola laporan kegiatan drainase yang telah disimpan</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto"> {/* Added flex-col sm:flex-row and w-full sm:w-auto */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button onClick={() => navigate("/drainase/new")} className="gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
                 Buat Laporan Baru
@@ -191,15 +191,15 @@ const LaporanList = () => {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-md border overflow-x-auto"> {/* Added overflow-x-auto here */}
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">Tanggal</TableHead> {/* Added min-width */}
-                      <TableHead className="min-w-[150px]">Periode</TableHead> {/* Added min-width */}
-                      <TableHead className="min-w-[150px]">Jumlah Kegiatan</TableHead> {/* Added min-width */}
-                      <TableHead className="min-w-[180px]">Dibuat</TableHead> {/* Added min-width */}
-                      <TableHead className="text-right min-w-[200px]">Aksi</TableHead> {/* Added min-width */}
+                      <TableHead className="min-w-[120px]">Tanggal</TableHead>
+                      <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead> {/* Hidden on mobile */}
+                      <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead> {/* Hidden on mobile */}
+                      <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead> {/* Hidden on mobile */}
+                      <TableHead className="text-right min-w-[200px]">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -208,9 +208,9 @@ const LaporanList = () => {
                         <TableCell className="font-medium">
                           {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
                         </TableCell>
-                        <TableCell>{laporan.periode}</TableCell>
-                        <TableCell>{laporan.kegiatan_count} kegiatan</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">{laporan.periode}</TableCell> {/* Hidden on mobile */}
+                        <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell> {/* Hidden on mobile */}
+                        <TableCell className="hidden md:table-cell">
                           {format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
                         </TableCell>
                         <TableCell className="text-right">
