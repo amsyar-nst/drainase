@@ -67,49 +67,47 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
         </Button>
       </div>
       {currentKegiatan.operasionalAlatBerats.map((operasional) => (
-        <div key={operasional.id} className="border p-4 rounded-md space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-            {/* Jenis Alat Berat */}
-            <div className="space-y-2 md:col-span-2">
-              <Label>Jenis Alat Berat</Label>
-              <Popover
-                open={openPopoverId === operasional.id}
-                onOpenChange={(isOpen) => setOpenPopoverId(isOpen ? operasional.id : null)}
-              >
-                <PopoverTrigger asChild>
-                  <Input
-                    type="text"
-                    placeholder="Pilih atau ketik jenis alat berat"
-                    value={operasional.jenis}
-                    onChange={(e) => {
-                      updateOperasionalAlatBerat(operasional.id, "jenis", e.target.value);
-                      setOpenPopoverId(operasional.id);
-                    }}
-                  />
-                </PopoverTrigger>
-                <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
-                  <Command>
-                    <CommandList>
-                      <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        {alatBeratOptions
-                          .filter((jenis) =>
-                            jenis.toLowerCase().includes(operasional.jenis.toLowerCase())
-                          )
-                          .map((jenis) => (
-                            <CommandItem
-                              key={jenis}
-                              onSelect={() => {
-                                updateOperasionalAlatBerat(operasional.id, "jenis", jenis);
-                                setOpenPopoverId(null);
-                              }}
-                            >
-                              {jenis}
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
+        <div key={operasional.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
+          {/* Jenis Alat Berat */}
+          <div className="space-y-2 md:col-span-3">
+            <Label>Jenis Alat Berat</Label>
+            <Popover
+              open={openPopoverId === operasional.id}
+              onOpenChange={(isOpen) => setOpenPopoverId(isOpen ? operasional.id : null)}
+            >
+              <PopoverTrigger asChild>
+                <Input
+                  type="text"
+                  placeholder="Pilih atau ketik"
+                  value={operasional.jenis}
+                  onChange={(e) => {
+                    updateOperasionalAlatBerat(operasional.id, "jenis", e.target.value);
+                    setOpenPopoverId(operasional.id);
+                  }}
+                />
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                <Command>
+                  <CommandList>
+                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                    <CommandGroup>
+                      {alatBeratOptions
+                        .filter((jenis) =>
+                          jenis.toLowerCase().includes(operasional.jenis.toLowerCase())
+                        )
+                        .map((jenis) => (
+                          <CommandItem
+                            key={jenis}
+                            onSelect={() => {
+                              updateOperasionalAlatBerat(operasional.id, "jenis", jenis);
+                              setOpenPopoverId(null);
+                            }}
+                          >
+                            {jenis}
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </CommandList>
                 </PopoverContent>
               </Popover>
             </div>
@@ -125,47 +123,45 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             </div>
             {/* Dexlite Jumlah */}
             <div className="space-y-2 md:col-span-1">
-              <Label>Dexlite (L)</Label>
+              <Label>Dexlite</Label>
               <Input
                 type="text"
-                placeholder="Jumlah"
+                placeholder="Jumlah (L)"
                 value={operasional.dexliteJumlah}
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
               />
             </div>
             {/* Pertalite Jumlah */}
             <div className="space-y-2 md:col-span-1">
-              <Label>Pertalite (L)</Label>
+              <Label>Pertalite</Label>
               <Input
                 type="text"
-                placeholder="Jumlah"
+                placeholder="Jumlah (L)"
                 value={operasional.pertaliteJumlah}
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
               />
             </div>
             {/* Bio Solar Jumlah */}
             <div className="space-y-2 md:col-span-1">
-              <Label>Bio Solar (L)</Label>
+              <Label>Bio Solar</Label>
               <Input
                 type="text"
-                placeholder="Jumlah"
+                placeholder="Jumlah (L)"
                 value={operasional.bioSolarJumlah}
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
               />
             </div>
-          </div>
-
-          {/* Keterangan and Remove Button */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-            <div className="space-y-2 md:col-span-5">
+            {/* Keterangan */}
+            <div className="space-y-2 md:col-span-3">
               <Label>Keterangan</Label>
               <Textarea
-                placeholder="Catatan tambahan untuk operasional alat berat ini"
+                placeholder="Catatan tambahan"
                 value={operasional.keterangan}
                 onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
-                rows={2}
+                rows={1}
               />
             </div>
+            {/* Remove Button */}
             <div className="md:col-span-1 flex justify-end">
               <Button
                 type="button"
