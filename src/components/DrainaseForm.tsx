@@ -103,14 +103,19 @@ export const DrainaseForm = () => {
     }
   }, [id]);
 
+  // Effect to synchronize selectedKecamatan and kelurahanOptions when formData.kegiatans or currentKegiatanIndex changes
   useEffect(() => {
-    if (currentKegiatan.kecamatan) {
-      const kecData = kecamatanKelurahanData.find((k) => k.kecamatan === currentKegiatan.kecamatan);
-      setKelurahanOptions(kecData?.kelurahan || []);
+    if (formData.kegiatans.length > 0) {
+      const currentKecamatan = formData.kegiatans[currentKegiatanIndex].kecamatan;
+      setSelectedKecamatan(currentKecamatan);
+      const selected = kecamatanKelurahanData.find((k) => k.kecamatan === currentKecamatan);
+      setKelurahanOptions(selected?.kelurahan || []);
     } else {
+      setSelectedKecamatan("");
       setKelurahanOptions([]);
     }
-  }, [currentKegiatan.kecamatan]);
+  }, [formData.kegiatans, currentKegiatanIndex]);
+
 
   // Effect to synchronize dateInputString with formData.tanggal
   useEffect(() => {
@@ -241,9 +246,11 @@ export const DrainaseForm = () => {
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
       });
 
-      // Ensure selectedKecamatan is set for the initial activity
+      // Explicitly set to the first activity after loading
       if (kegiatansWithDetails.length > 0) {
-        setSelectedKecamatan(kegiatansWithDetails[0].kecamatan);
+        setCurrentKegiatanIndex(0); 
+      } else {
+        setCurrentKegiatanIndex(0); // If no activities, still show the first (empty) one
       }
 
       toast.success('Laporan berhasil dimuat');
