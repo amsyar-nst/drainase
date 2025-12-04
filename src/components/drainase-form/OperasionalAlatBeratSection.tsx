@@ -88,9 +88,8 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               </PopoverTrigger>
               <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                 <Command>
-                  {/* CommandInput dihapus di sini */}
                   <CommandList>
-                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                    <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis alat berat baru.</CommandEmpty>
                     <CommandGroup>
                       {alatBeratOptions
                         .filter((jenis) =>
