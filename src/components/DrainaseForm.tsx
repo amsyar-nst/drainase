@@ -531,7 +531,7 @@ export const DrainaseForm = () => {
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
             panjang_penanganan: kegiatan.panjangPenanganan,
             lebar_rata_rata: kegiatan.lebarRataRata,
-            rata_rata_sedimen: kegiatan.rataRataSedimen, // Corrected column name here
+            rata_rata_sedimen: kegiatan.rataRataSedimen, 
             volume_galian: kegiatan.volumeGalian,
             koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
@@ -608,7 +608,7 @@ export const DrainaseForm = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => { // Added async keyword here
     if (!formData.tanggal) {
       toast.error("Mohon isi tanggal laporan.");
       return;
