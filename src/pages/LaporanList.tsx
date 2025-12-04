@@ -98,8 +98,8 @@ const LaporanList = () => {
       }
       console.log("Fetched Unique Periods Data:", periodsData); // Debug log: Periksa ini di console
 
-      // Explicitly cast periodsData to PeriodData[] using 'any' as an intermediate step
-      setUniquePeriods((periodsData as any as PeriodData[] || []).map(p => p.periode));
+      // Explicitly cast periodsData to PeriodData[] using 'unknown' as an intermediate step
+      setUniquePeriods((periodsData as unknown as PeriodData[] || []).map(p => p.periode));
 
       // 3. Fetch kegiatan count for each laporan
       const laporansWithCount = await Promise.all(
