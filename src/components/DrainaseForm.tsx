@@ -242,18 +242,28 @@ export const DrainaseForm = () => {
             });
           }
 
+          // Helper function to ensure photo URLs are always arrays
+          const ensureArray = (value: string | string[] | null | undefined): string[] => {
+            if (Array.isArray(value)) {
+              return value;
+            }
+            if (typeof value === 'string' && value) {
+              return [value];
+            }
+            return [];
+          };
+
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            // Ensure these are arrays, even if null from DB
-            foto0: (kegiatan.foto_0_url || []),
-            foto50: (kegiatan.foto_50_url || []),
-            foto100: (kegiatan.foto_100_url || []),
-            foto0Url: (kegiatan.foto_0_url || []),
-            foto50Url: (kegiatan.foto_50_url || []),
-            foto100Url: (kegiatan.foto_100_url || []),
+            foto0: ensureArray(kegiatan.foto_0_url),
+            foto50: ensureArray(kegiatan.foto_50_url),
+            foto100: ensureArray(kegiatan.foto_100_url),
+            foto0Url: ensureArray(kegiatan.foto_0_url),
+            foto50Url: ensureArray(kegiatan.foto_50_url),
+            foto100Url: ensureArray(kegiatan.foto_100_url),
             jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
             jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "",
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
@@ -843,7 +853,7 @@ export const DrainaseForm = () => {
                 onChange={(e) => handleFileChange(e, 'foto0')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {(currentKegiatan.foto0 || []).map((photo, index) => (
+                {(Array.isArray(currentKegiatan.foto0) ? currentKegiatan.foto0 : []).map((photo, index) => (
                   <div key={index} className="relative group">
                     <img 
                       src={
@@ -885,7 +895,7 @@ export const DrainaseForm = () => {
                 onChange={(e) => handleFileChange(e, 'foto50')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {(currentKegiatan.foto50 || []).map((photo, index) => (
+                {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
                   <div key={index} className="relative group">
                     <img 
                       src={
@@ -927,7 +937,7 @@ export const DrainaseForm = () => {
                 onChange={(e) => handleFileChange(e, 'foto100')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {(currentKegiatan.foto100 || []).map((photo, index) => (
+                {(Array.isArray(currentKegiatan.foto100) ? currentKegiatan.foto100 : []).map((photo, index) => (
                   <div key={index} className="relative group">
                     <img 
                       src={
