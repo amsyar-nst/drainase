@@ -92,6 +92,7 @@ export const DrainaseForm = () => {
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
   const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false);
   const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview");
+  const [customSedimen, setCustomSedimen] = useState(""); // New state for custom sedimen input
 
   // State for manual date input string
   const [dateInputString, setDateInputString] = useState<string>(
@@ -128,6 +129,18 @@ export const DrainaseForm = () => {
       setDateInputString("");
     }
   }, [formData.tanggal]);
+
+  // Effect to set customSedimen when loading an existing report
+  useEffect(() => {
+    if (currentKegiatan.jenisSedimen && ![
+      "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
+      "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput"
+    ].includes(currentKegiatan.jenisSedimen)) {
+      setCustomSedimen(currentKegiatan.jenisSedimen);
+    } else {
+      setCustomSedimen("");
+    }
+  }, [currentKegiatan.jenisSedimen]);
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
@@ -229,7 +242,7 @@ export const DrainaseForm = () => {
             foto50Url: (kegiatan.foto_50_url || []),
             foto100Url: (kegiatan.foto_100_url || []),
             jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
-            jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "",
+            jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "",
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
             panjangPenanganan: kegiatan.panjang_penanganan || "",
             lebarRataRata: kegiatan.lebar_rata_rata || "",
@@ -955,8 +968,23 @@ export const DrainaseForm = () => {
             <div className="space-y-2">
               <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
               <Select
-                value={currentKegiatan.jenisSedimen}
-                onValueChange={(value) => updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "" })}
+                value={
+                  [
+                    "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
+                    "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput"
+                  ].includes(currentKegiatan.jenisSedimen)
+                    ? currentKegiatan.jenisSedimen
+                    : "custom" // If not in predefined list, show "custom"
+                }
+                onValueChange={(value) => {
+                  if (value === "custom") {
+                    updateCurrentKegiatan({ jenisSedimen: "" }); // Clear current selection for custom input
+                    setCustomSedimen("");
+                  } else {
+                    updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" });
+                    setCustomSedimen(""); // Clear custom input if a predefined option is selected
+                  }
+                }}
               >
                 <SelectTrigger id="jenis-sedimen">
                   <SelectValue placeholder="Pilih jenis sedimen" />
@@ -972,8 +1000,22 @@ export const DrainaseForm = () => {
                   <SelectItem value="Padat & Sampah">Padat & Sampah</SelectItem>
                   <SelectItem value="Padat/ Gulma & Sampah">Padat/ Gulma & Sampah</SelectItem>
                   <SelectItem value="Padat/ Cair/Sampah">Padat/ Cair/Sampah</SelectItem>
+                  <SelectItem value="Gulma/Rumput">Gulma/Rumput</SelectItem>
+                  <SelectItem value="custom">Lainnya</SelectItem>
                 </SelectContent>
               </Select>
+              {currentKegiatan.jenisSedimen === "" && (
+                <Input
+                  type="text"
+                  placeholder="Masukkan jenis sedimen manual"
+                  value={customSedimen}
+                  onChange={(e) => {
+                    setCustomSedimen(e.target.value);
+                    updateCurrentKegiatan({ jenisSedimen: e.target.value });
+                  }}
+                  className="mt-2"
+                />
+              )}
             </div>
           </div>
 
