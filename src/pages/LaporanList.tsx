@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer } from "lucide-react"; // Removed MoreHorizontal
+import { Trash2, Edit, Plus, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -199,7 +199,7 @@ const LaporanList = () => {
                       <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
                       <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
                       <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
-                      <TableHead className="text-right min-w-[120px]">Aksi</TableHead> {/* Adjusted min-width */}
+                      <TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead> {/* Adjusted min-width for desktop */}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -214,28 +214,33 @@ const LaporanList = () => {
                           {format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1"> {/* Reduced gap for smaller buttons */}
+                          <div className="flex justify-end gap-1">
                             <Button
                               variant="outline"
-                              size="icon" // Changed to icon size
+                              size="icon" // Default size for mobile (icon only)
                               onClick={() => handleIndividualPrintClick(laporan.id)}
+                              className="md:size-sm md:w-auto" // Override for desktop (sm size, auto width)
                             >
-                              <Printer className="h-4 w-4" />
+                              <Printer className="h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">Cetak</span> {/* Hidden on mobile, inline on desktop */}
                             </Button>
                             <Button
                               variant="outline"
-                              size="icon" // Changed to icon size
+                              size="icon" // Default size for mobile (icon only)
                               onClick={() => navigate(`/drainase/edit/${laporan.id}`)}
+                              className="md:size-sm md:w-auto" // Override for desktop (sm size, auto width)
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">Edit</span> {/* Hidden on mobile, inline on desktop */}
                             </Button>
                             <Button
                               variant="outline"
-                              size="icon" // Changed to icon size
+                              size="icon" // Default size for mobile (icon only)
                               onClick={() => setDeleteId(laporan.id)}
-                              className="text-destructive hover:text-destructive"
+                              className="text-destructive hover:text-destructive md:size-sm md:w-auto" // Override for desktop
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">Hapus</span> {/* Hidden on mobile, inline on desktop */}
                             </Button>
                           </div>
                         </TableCell>
