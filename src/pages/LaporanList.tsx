@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer } from "lucide-react";
+import { Trash2, Edit, Plus, Printer, MoreHorizontal } from "lucide-react"; // Added MoreHorizontal
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -196,10 +196,10 @@ const LaporanList = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[120px]">Tanggal</TableHead>
-                      <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead> {/* Hidden on mobile */}
-                      <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead> {/* Hidden on mobile */}
-                      <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead> {/* Hidden on mobile */}
-                      <TableHead className="text-right min-w-[200px]">Aksi</TableHead>
+                      <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
+                      <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
+                      <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
+                      <TableHead className="text-right min-w-[60px]">Aksi</TableHead> {/* Adjusted min-width for dropdown */}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -208,13 +208,34 @@ const LaporanList = () => {
                         <TableCell className="font-medium">
                           {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{laporan.periode}</TableCell> {/* Hidden on mobile */}
-                        <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell> {/* Hidden on mobile */}
+                        <TableCell className="hidden md:table-cell">{laporan.periode}</TableCell>
+                        <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell>
                         <TableCell className="hidden md:table-cell">
                           {format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-2 md:hidden"> {/* Hidden on md and up */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Buka menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleIndividualPrintClick(laporan.id)}>
+                                  <Printer className="mr-2 h-4 w-4" /> Cetak
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate(`/drainase/edit/${laporan.id}`)}>
+                                  <Edit className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setDeleteId(laporan.id)} className="text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <div className="hidden md:flex justify-end gap-2"> {/* Visible on md and up */}
                             <Button
                               variant="outline"
                               size="sm"
