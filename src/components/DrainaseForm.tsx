@@ -157,6 +157,57 @@ export const DrainaseForm = () => {
             supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
           ]);
 
+          let materials = (materialsRes.data || []).map(m => ({
+            id: m.id,
+            jenis: m.jenis,
+            jumlah: m.jumlah,
+            satuan: m.satuan,
+            keterangan: m.keterangan || "",
+          }));
+          // Ensure at least one empty material row if none exist
+          if (materials.length === 0) {
+            materials.push({ id: Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "" });
+          }
+
+          let peralatans = (peralatanRes.data || []).map(p => ({
+            id: p.id,
+            nama: p.nama,
+            jumlah: p.jumlah,
+            satuan: p.satuan || "Unit",
+          }));
+          // Ensure at least one empty peralatan row if none exist
+          if (peralatans.length === 0) {
+            peralatans.push({ id: Date.now().toString() + '-per', nama: "", jumlah: 1, satuan: "Unit" });
+          }
+
+          let operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
+            id: o.id,
+            jenis: o.jenis,
+            jumlah: o.jumlah,
+            dexliteJumlah: o.dexlite_jumlah || "",
+            dexliteSatuan: o.dexlite_satuan || "Liter",
+            pertaliteJumlah: o.pertalite_jumlah || "",
+            pertaliteSatuan: o.pertalite_satuan || "Liter",
+            bioSolarJumlah: o.bio_solar_jumlah || "",
+            bioSolarSatuan: o.bio_solar_satuan || "Liter",
+            keterangan: o.keterangan || "",
+          }));
+          // Ensure at least one empty operasional alat berat row if none exist
+          if (operasionalAlatBerats.length === 0) {
+            operasionalAlatBerats.push({
+              id: Date.now().toString() + '-op',
+              jenis: "",
+              jumlah: 1,
+              dexliteJumlah: "",
+              dexliteSatuan: "Liter",
+              pertaliteJumlah: "",
+              pertaliteSatuan: "Liter",
+              bioSolarJumlah: "",
+              bioSolarSatuan: "Liter",
+              keterangan: "",
+            });
+          }
+
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
@@ -175,31 +226,9 @@ export const DrainaseForm = () => {
             lebarRataRata: kegiatan.lebar_rata_rata || "",
             rataRataSedimen: kegiatan.rata_rata_sedimen || "",
             volumeGalian: kegiatan.volume_galian || "",
-            materials: (materialsRes.data || []).map(m => ({
-              id: m.id,
-              jenis: m.jenis,
-              jumlah: m.jumlah,
-              satuan: m.satuan,
-              keterangan: m.keterangan || "",
-            })),
-            peralatans: (peralatanRes.data || []).map(p => ({
-              id: p.id,
-              nama: p.nama,
-              jumlah: p.jumlah,
-              satuan: p.satuan || "Unit",
-            })),
-            operasionalAlatBerats: (operasionalRes.data || []).map(o => ({
-              id: o.id,
-              jenis: o.jenis,
-              jumlah: o.jumlah,
-              dexliteJumlah: o.dexlite_jumlah || "",
-              dexliteSatuan: o.dexlite_satuan || "Liter",
-              pertaliteJumlah: o.pertalite_jumlah || "",
-              pertaliteSatuan: o.pertalite_satuan || "Liter",
-              bioSolarJumlah: o.bio_solar_jumlah || "",
-              bioSolarSatuan: o.bio_solar_satuan || "Liter",
-              keterangan: o.keterangan || "",
-            })),
+            materials: materials,
+            peralatans: peralatans,
+            operasionalAlatBerats: operasionalAlatBerats,
             koordinator: kegiatan.koordinator || [],
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
@@ -211,6 +240,11 @@ export const DrainaseForm = () => {
         tanggal: new Date(laporanData.tanggal),
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
       });
+
+      // Ensure selectedKecamatan is set for the initial activity
+      if (kegiatansWithDetails.length > 0) {
+        setSelectedKecamatan(kegiatansWithDetails[0].kecamatan);
+      }
 
       toast.success('Laporan berhasil dimuat');
     } catch (error) {
@@ -502,7 +536,7 @@ export const DrainaseForm = () => {
         if (kegiatanError) throw kegiatanError;
 
         // Insert materials
-        const materialsToInsert = kegiatan.materials.map(m => ({
+        const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({ // Filter out empty rows
           kegiatan_id: kegiatanData.id,
           jenis: m.jenis,
           jumlah: m.jumlah,
@@ -510,28 +544,32 @@ export const DrainaseForm = () => {
           keterangan: m.keterangan,
         }));
 
-        const { error: materialsError } = await supabase
-          .from('material_kegiatan')
-          .insert(materialsToInsert);
+        if (materialsToInsert.length > 0) {
+          const { error: materialsError } = await supabase
+            .from('material_kegiatan')
+            .insert(materialsToInsert);
 
-        if (materialsError) throw materialsError;
+          if (materialsError) throw materialsError;
+        }
 
         // Insert peralatan
-        const peralatanToInsert = kegiatan.peralatans.map(p => ({
+        const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({ // Filter out empty rows
           kegiatan_id: kegiatanData.id,
           nama: p.nama,
           jumlah: p.jumlah,
           satuan: p.satuan,
         }));
 
-        const { error: peralatanError } = await supabase
-          .from('peralatan_kegiatan')
-          .insert(peralatanToInsert); // Corrected typo here
+        if (peralatanToInsert.length > 0) {
+          const { error: peralatanError } = await supabase
+            .from('peralatan_kegiatan')
+            .insert(peralatanToInsert);
 
-        if (peralatanError) throw peralatanError;
+          if (peralatanError) throw peralatanError;
+        }
 
         // Insert operasional alat berat
-        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.map(o => ({
+        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({ // Filter out empty rows
           kegiatan_id: kegiatanData.id,
           jenis: o.jenis,
           jumlah: o.jumlah,
@@ -544,11 +582,13 @@ export const DrainaseForm = () => {
           keterangan: o.keterangan,
         }));
 
-        const { error: operasionalError } = await supabase
-          .from('operasional_alat_berat_kegiatan')
-          .insert(operasionalAlatBeratsToInsert);
+        if (operasionalAlatBeratsToInsert.length > 0) {
+          const { error: operasionalError } = await supabase
+            .from('operasional_alat_berat_kegiatan')
+            .insert(operasionalAlatBeratsToInsert);
 
-        if (operasionalError) throw operasionalError;
+          if (operasionalError) throw operasionalError;
+        }
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
