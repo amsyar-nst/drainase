@@ -526,7 +526,7 @@ export const DrainaseForm = () => {
 
         const { error: peralatanError } = await supabase
           .from('peralatan_kegiatan')
-          .insert(peralataanToInsert);
+          .insert(peralatanToInsert); // Corrected typo here
 
         if (peralatanError) throw peralatanError;
 
