@@ -82,7 +82,8 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                   value={operasional.jenis}
                   onChange={(e) => {
                     updateOperasionalAlatBerat(operasional.id, "jenis", e.target.value);
-                    setOpenPopoverId(operasional.id);
+                    // Baris ini dihapus agar popover tidak dipaksa terbuka pada setiap ketikan
+                    // setOpenPopoverId(operasional.id); 
                   }}
                 />
               </PopoverTrigger>
