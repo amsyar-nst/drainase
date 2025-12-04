@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -34,7 +33,8 @@ import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection"; // Import new component
+import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection";
+import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Import the new dialog
 
 const bulanOptions = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -49,8 +49,6 @@ const jenisSedimenOptions = [
   "Padat dan Cair"
 ];
 
-// Removed alatOptions as it's now used within AlatYangDibutuhkanSection
-
 export const DrainaseTersierForm = () => {
   const navigate = useNavigate();
   const { id: laporanId } = useParams();
@@ -64,8 +62,8 @@ export const DrainaseTersierForm = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [kelurahanOptions, setKelurahanOptions] = useState<string[]>([]);
   const [customSedimen, setCustomSedimen] = useState("");
-  // Removed selectedAlat and alatJumlah states
   const [selectedPenanggungJawab, setSelectedPenanggungJawab] = useState<string[]>([]);
+  const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false); // New state for print selection dialog
 
   const emptyKegiatan: KegiatanDrainaseTersier = {
     id: crypto.randomUUID(),
@@ -75,7 +73,7 @@ export const DrainaseTersierForm = () => {
     kelurahan: "",
     kota: "Kota Medan",
     jenisSedimen: "",
-    alatYangDibutuhkan: [], // Managed by AlatYangDibutuhkanSection
+    alatYangDibutuhkan: [],
     useUpt: false,
     uptCount: 0,
     useP3su: false,
@@ -177,8 +175,6 @@ export const DrainaseTersierForm = () => {
     setKelurahanOptions(selected?.kelurahan || []);
   };
 
-  // Removed toggleAlat and updateAlatJumlah functions
-
   const togglePenanggungJawab = (nama: string) => {
     if (selectedPenanggungJawab.includes(nama)) {
       setSelectedPenanggungJawab(selectedPenanggungJawab.filter(p => p !== nama));
@@ -188,7 +184,6 @@ export const DrainaseTersierForm = () => {
   };
 
   const addKegiatan = () => {
-    // alatYangDibutuhkan is now managed directly by currentKegiatan state
     const newKegiatan = {
       ...currentKegiatan,
       penanggungjawab: selectedPenanggungJawab,
@@ -200,7 +195,6 @@ export const DrainaseTersierForm = () => {
     });
 
     setCurrentKegiatan(emptyKegiatan);
-    // Removed selectedAlat and alatJumlah resets
     setSelectedPenanggungJawab([]);
     toast.success("Kegiatan ditambahkan");
   };
@@ -214,14 +208,12 @@ export const DrainaseTersierForm = () => {
     const selected = kecamatanKelurahanData.find((k) => k.kecamatan === kegiatan.kecamatan);
     setKelurahanOptions(selected?.kelurahan || []);
 
-    // No need to set selectedAlat and alatJumlah anymore, as alatYangDibutuhkan is directly in currentKegiatan
     setSelectedPenanggungJawab(kegiatan.penanggungjawab);
   };
 
   const updateKegiatan = () => {
     if (currentKegiatanIndex === null) return;
 
-    // alatYangDibutuhkan is now managed directly by currentKegiatan state
     const updatedKegiatan = {
       ...currentKegiatan,
       penanggungjawab: selectedPenanggungJawab,
@@ -238,7 +230,6 @@ export const DrainaseTersierForm = () => {
     setCurrentKegiatan(emptyKegiatan);
     setCurrentKegiatanIndex(null);
     setIsEditing(false);
-    // Removed selectedAlat and alatJumlah resets
     setSelectedPenanggungJawab([]);
     toast.success("Kegiatan diperbarui");
   };
@@ -256,7 +247,6 @@ export const DrainaseTersierForm = () => {
     setCurrentKegiatan(emptyKegiatan);
     setCurrentKegiatanIndex(null);
     setIsEditing(false);
-    // Removed selectedAlat and alatJumlah resets
     setSelectedPenanggungJawab([]);
   };
 
@@ -328,7 +318,7 @@ export const DrainaseTersierForm = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handlePrintSelection = (type: "harian" | "bulanan" | "tersier", action: "preview" | "download") => {
     if (!laporan.bulan) {
       toast.error("Mohon isi bulan laporan");
       return;
@@ -336,6 +326,11 @@ export const DrainaseTersierForm = () => {
 
     if (laporan.kegiatans.length === 0) {
       toast.error("Mohon tambahkan minimal satu kegiatan");
+      return;
+    }
+
+    if (type !== "tersier") {
+      toast.error("Hanya Laporan Tersier yang dapat diunduh dari form ini.");
       return;
     }
 
@@ -783,7 +778,11 @@ export const DrainaseTersierForm = () => {
         )}
 
         <div className="flex justify-end space-x-2">
-          <Button variant="secondary" onClick={handleDownload} className="gap-2">
+          <Button 
+            variant="secondary" 
+            onClick={() => setIsPrintSelectionDialogOpen(true)} 
+            className="gap-2"
+          >
             <Download className="h-4 w-4" />
             Download PDF
           </Button>
@@ -793,6 +792,15 @@ export const DrainaseTersierForm = () => {
           </Button>
         </div>
       </div>
+
+      {/* Print Selection Dialog */}
+      <PrintSelectionDialog
+        isOpen={isPrintSelectionDialogOpen}
+        onClose={() => setIsPrintSelectionDialogOpen(false)}
+        onSelectReportType={handlePrintSelection}
+        actionType="download" // For tersier form, assume "download" action
+        currentFormType="tersier"
+      />
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer } from "lucide-react"; // Added Printer icon
+import { Trash2, Edit, Plus, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -19,7 +19,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
-import { PrintDrainaseDialog } from "@/components/PrintDrainaseDialog"; // Import the new dialog component
+import { PrintSelectionDialog } from "@/components/PrintSelectionDialog"; // Import the new dialog component
+import { generatePDF } from "@/lib/pdf-generator"; // Import generatePDF
 
 interface LaporanItem {
   id: string;
@@ -33,8 +34,8 @@ const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false); // State for print dialog
-  const [laporanToPrintId, setLaporanToPrintId] = useState<string | null>(null); // State for selected laporan to print
+  const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false); // State for print selection dialog
+  const [selectedLaporanIdForPrint, setSelectedLaporanIdForPrint] = useState<string | null>(null); // State for selected laporan to print
   const navigate = useNavigate();
 
   const fetchLaporans = async () => {
@@ -104,8 +105,118 @@ const LaporanList = () => {
   };
 
   const handlePrintClick = (laporanId: string) => {
-    setLaporanToPrintId(laporanId);
-    setIsPrintDialogOpen(true);
+    setSelectedLaporanIdForPrint(laporanId);
+    setIsPrintSelectionDialogOpen(true);
+  };
+
+  const handlePrintSelection = async (type: "harian" | "bulanan" | "tersier", action: "preview" | "download") => {
+    if (!selectedLaporanIdForPrint) {
+      toast.error("Tidak ada laporan yang dipilih untuk dicetak.");
+      return;
+    }
+
+    if (type === "tersier") {
+      toast.error("Laporan Tersier tidak dapat dicetak dari daftar laporan drainase utama.");
+      return;
+    }
+
+    try {
+      // Fetch full laporan data including all activities, materials, etc.
+      const { data: laporanData, error: laporanError } = await supabase
+        .from('laporan_drainase')
+        .select('*')
+        .eq('id', selectedLaporanIdForPrint)
+        .single();
+
+      if (laporanError) throw laporanError;
+      if (!laporanData) {
+        toast.error('Laporan tidak ditemukan.');
+        return;
+      }
+
+      const { data: kegiatanData, error: kegiatanError } = await supabase
+        .from('kegiatan_drainase')
+        .select('*')
+        .eq('laporan_id', selectedLaporanIdForPrint);
+
+      if (kegiatanError) throw kegiatanError;
+
+      const kegiatansWithDetails = await Promise.all(
+        (kegiatanData || []).map(async (kegiatan) => {
+          const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
+            supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
+          ]);
+
+          const materials = (materialsRes.data || []).map(m => ({
+            id: m.id,
+            jenis: m.jenis,
+            jumlah: m.jumlah,
+            satuan: m.satuan,
+            keterangan: m.keterangan || "",
+          }));
+          const peralatans = (peralatanRes.data || []).map(p => ({
+            id: p.id,
+            nama: p.nama,
+            jumlah: p.jumlah,
+            satuan: p.satuan || "Unit",
+          }));
+          const operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
+            id: o.id,
+            jenis: o.jenis,
+            jumlah: o.jumlah,
+            dexliteJumlah: o.dexlite_jumlah || "",
+            dexliteSatuan: o.dexlite_satuan || "Liter",
+            pertaliteJumlah: o.pertalite_jumlah || "",
+            pertaliteSatuan: o.pertalite_satuan || "Liter",
+            bioSolarJumlah: o.bio_solar_jumlah || "",
+            bioSolarSatuan: o.bio_solar_satuan || "Liter",
+            keterangan: o.keterangan || "",
+          }));
+
+          return {
+            id: kegiatan.id,
+            namaJalan: kegiatan.nama_jalan,
+            kecamatan: kegiatan.kecamatan,
+            kelurahan: kegiatan.kelurahan,
+            foto0: kegiatan.foto_0_url || null,
+            foto50: kegiatan.foto_50_url || null,
+            foto100: kegiatan.foto_100_url || null,
+            foto0Url: kegiatan.foto_0_url || undefined,
+            foto50Url: kegiatan.foto_50_url || undefined,
+            foto100Url: kegiatan.foto_100_url || undefined,
+            jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup",
+            jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair",
+            aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
+            panjangPenanganan: kegiatan.panjang_penanganan || "",
+            lebarRataRata: kegiatan.lebar_rata_rata || "",
+            rataRataSedimen: kegiatan.rata_rata_sedimen || "",
+            volumeGalian: kegiatan.volume_galian || "",
+            materials: materials,
+            peralatans: peralatans,
+            operasionalAlatBerats: operasionalAlatBerats,
+            koordinator: kegiatan.koordinator || [],
+            jumlahPHL: kegiatan.jumlah_phl || 1,
+            keterangan: kegiatan.keterangan || "",
+          };
+        })
+      );
+
+      const fullLaporan = {
+        tanggal: new Date(laporanData.tanggal),
+        kegiatans: kegiatansWithDetails,
+      };
+
+      await generatePDF(fullLaporan, action === "download");
+      toast.success(`Laporan ${type} berhasil di${action === "preview" ? "pratinjau" : "unduh"}.`);
+
+    } catch (error: any) {
+      console.error("Error generating PDF:", error);
+      toast.error("Gagal membuat laporan PDF: " + error.message);
+    } finally {
+      setSelectedLaporanIdForPrint(null);
+    }
   };
 
   if (loading) {
@@ -166,7 +277,7 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handlePrintClick(laporan.id)} // Added print button handler
+                              onClick={() => handlePrintClick(laporan.id)}
                               className="gap-2"
                             >
                               <Printer className="h-4 w-4" />
@@ -222,13 +333,14 @@ const LaporanList = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {laporanToPrintId && (
-          <PrintDrainaseDialog
-            laporanId={laporanToPrintId}
-            isOpen={isPrintDialogOpen}
-            onClose={() => setIsPrintDialogOpen(false)}
-          />
-        )}
+        {/* Print Selection Dialog */}
+        <PrintSelectionDialog
+          isOpen={isPrintSelectionDialogOpen}
+          onClose={() => setIsPrintSelectionDialogOpen(false)}
+          onSelectReportType={handlePrintSelection}
+          actionType="download" // For list, assume "download" action for print button
+          currentFormType="list"
+        />
       </div>
     </>
   );

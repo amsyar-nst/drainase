@@ -36,6 +36,7 @@ import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Import the new dialog
 
 export const DrainaseForm = () => {
   const { id } = useParams();
@@ -83,12 +84,14 @@ export const DrainaseForm = () => {
   const [currentKegiatanIndex, setCurrentKegiatanIndex] = useState(0);
   const [selectedKecamatan, setSelectedKecamatan] = useState("");
   const [kelurahanOptions, setKelurahanOptions] = useState<string[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false); // Renamed to avoid conflict
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
+  const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false); // New state for print selection dialog
+  const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview"); // New state to store action type
 
   // State for manual date input string
   const [dateInputString, setDateInputString] = useState<string>(
@@ -429,19 +432,30 @@ export const DrainaseForm = () => {
     }
   };
 
-  const handlePreview = async () => {
+  const handlePrintSelection = async (type: "harian" | "bulanan" | "tersier", action: "preview" | "download") => {
     if (!formData.tanggal) {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
+
+    if (type === "tersier") {
+      toast.error("Laporan Tersier tidak dapat dibuat dari Form Drainase ini.");
+      return;
+    }
+
     try {
-      const blob = await generatePDF(formData, false);
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setShowPreview(true);
+      if (action === "preview") {
+        const blob = await generatePDF(formData, false);
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        setShowPreviewDialog(true);
+      } else { // action === "download"
+        await generatePDF(formData, true);
+      }
+      toast.success(`Laporan ${type} berhasil di${action === "preview" ? "pratinjau" : "unduh"}.`);
     } catch (error) {
-      console.error('Preview error:', error);
-      toast.error('Gagal membuat preview PDF');
+      console.error(`${action === "preview" ? "Preview" : "Download"} error:`, error);
+      toast.error(`Gagal ${action === "preview" ? "membuat pratinjau" : "mengunduh"} PDF.`);
     }
   };
 
@@ -605,19 +619,6 @@ export const DrainaseForm = () => {
       toast.error('Gagal menyimpan laporan: ' + error.message);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleDownload = async () => { // Added async keyword here
-    if (!formData.tanggal) {
-      toast.error("Mohon isi tanggal laporan.");
-      return;
-    }
-    try {
-      await generatePDF(formData, true);
-    } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Gagal mendownload PDF');
     }
   };
 
@@ -813,7 +814,7 @@ export const DrainaseForm = () => {
                         ? URL.createObjectURL(currentKegiatan.foto0)
                         : currentKegiatan.foto0Url || '';
                       setPreviewUrl(url);
-                      setShowPreview(true);
+                      setShowPreviewDialog(true);
                     }}
                   />
                 </div>
@@ -842,7 +843,7 @@ export const DrainaseForm = () => {
                         ? URL.createObjectURL(currentKegiatan.foto50)
                         : currentKegiatan.foto50Url || '';
                       setPreviewUrl(url);
-                      setShowPreview(true);
+                      setShowPreviewDialog(true);
                     }}
                   />
                 </div>
@@ -871,7 +872,7 @@ export const DrainaseForm = () => {
                         ? URL.createObjectURL(currentKegiatan.foto100)
                         : currentKegiatan.foto100Url || '';
                       setPreviewUrl(url);
-                      setShowPreview(true);
+                      setShowPreviewDialog(true);
                     }}
                   />
                 </div>
@@ -1165,7 +1166,14 @@ export const DrainaseForm = () => {
 
           {/* Actions */}
           <div className="flex gap-4 pt-4">
-            <Button onClick={handlePreview} variant="outline" className="flex-1">
+            <Button 
+              onClick={() => {
+                setCurrentPrintActionType("preview");
+                setIsPrintSelectionDialogOpen(true);
+              }} 
+              variant="outline" 
+              className="flex-1"
+            >
               <Eye className="mr-2 h-4 w-4" />
               Preview PDF
             </Button>
@@ -1179,7 +1187,14 @@ export const DrainaseForm = () => {
                 </>
               )}
             </Button>
-            <Button onClick={handleDownload} variant="default" className="flex-1">
+            <Button 
+              onClick={() => {
+                setCurrentPrintActionType("download");
+                setIsPrintSelectionDialogOpen(true);
+              }} 
+              variant="default" 
+              className="flex-1"
+            >
               <Download className="mr-2 h-4 w-4" />
               Download
             </Button>
@@ -1187,7 +1202,7 @@ export const DrainaseForm = () => {
         </Card>
 
         {/* Preview Dialog */}
-        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
           <DialogContent className="max-w-4xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>Preview PDF</DialogTitle>
@@ -1204,6 +1219,15 @@ export const DrainaseForm = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Print Selection Dialog */}
+        <PrintSelectionDialog
+          isOpen={isPrintSelectionDialogOpen}
+          onClose={() => setIsPrintSelectionDialogOpen(false)}
+          onSelectReportType={handlePrintSelection}
+          actionType={currentPrintActionType}
+          currentFormType="drainase"
+        />
       </div>
     </div>
   );
