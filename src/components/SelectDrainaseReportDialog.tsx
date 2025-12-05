@@ -155,7 +155,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
           <p className="text-muted-foreground text-center py-4">Tidak ada laporan drainase yang tersedia untuk periode ini.</p>
         ) : (
           <>
-            <div className="flex items-center space-x-2 mb-4">
+            <div className="flex items-center space-x-2 my-4"> {/* Added my-4 for vertical spacing */}
               <Checkbox
                 id="select-all-laporans"
                 checked={selectedLaporanIds.size === laporans.length && laporans.length > 0}
