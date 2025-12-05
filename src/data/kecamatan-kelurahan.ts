@@ -136,7 +136,9 @@ export const alatBeratOptions = [
   "Crane",
   "Wheel Loader",
   "Skid Steer Loader",
-  "Asphalt Finisher"
+  "Asphalt Finisher",
+  "Exc. Mini", // Added
+  "Trado Mini"  // Added
 ];
 
 export const alatOptions = [

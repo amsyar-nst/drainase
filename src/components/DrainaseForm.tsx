@@ -41,7 +41,8 @@ import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Import the new
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
   "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
-  "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput"
+  "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
+  "Batu/ Padat & Cair" // Add this new option
 ];
 
 export const DrainaseForm = () => {
@@ -96,8 +97,6 @@ export const DrainaseForm = () => {
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
-  // const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false); // No longer needed for DrainaseForm
-  // const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview"); // No longer needed for DrainaseForm
   
   // New state to manage the selected value in the dropdown, including "custom"
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
@@ -265,7 +264,7 @@ export const DrainaseForm = () => {
             foto50Url: ensureArray(kegiatan.foto_50_url),
             foto100Url: ensureArray(kegiatan.foto_100_url),
             jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
-            jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "",
+            jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" | "Batu/ Padat & Cair",
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
             panjangPenanganan: kegiatan.panjang_penanganan || "",
             lebarRataRata: kegiatan.lebar_rata_rata || "",
@@ -1003,7 +1002,7 @@ export const DrainaseForm = () => {
                   if (value === "custom") {
                     updateCurrentKegiatan({ jenisSedimen: customSedimen }); // Set to current custom input value
                   } else {
-                    updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" });
+                    updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" | "Batu/ Padat & Cair" });
                     setCustomSedimen(""); // Clear custom input if a predefined option is selected
                   }
                 }}
@@ -1267,7 +1266,14 @@ export const DrainaseForm = () => {
                 type="number"
                 min="1"
                 value={currentKegiatan.jumlahPHL}
-                onChange={(e) => updateCurrentKegiatan({ jumlahPHL: parseInt(e.target.value) || 1 })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Restrict to 2 digits
+                  if (value.length <= 2 || value === "") {
+                    updateCurrentKegiatan({ jumlahPHL: parseInt(value) || 1 });
+                  }
+                }}
+                maxLength={2} // Add maxLength attribute
               />
             </div>
           </div>

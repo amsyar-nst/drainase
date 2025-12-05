@@ -114,7 +114,14 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               type="number"
               min="1"
               value={operasional.jumlah}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(e.target.value) || 1)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Restrict to 2 digits
+                if (value.length <= 2 || value === "") {
+                  updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(value) || 1);
+                }
+              }}
+              maxLength={2} // Add maxLength attribute
             />
           </div>
           {/* Dexlite Jumlah */}
