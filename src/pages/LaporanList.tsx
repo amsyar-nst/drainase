@@ -45,75 +45,6 @@ interface PeriodData {
 
 const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
-<dyad-problem-report summary="1 problems">
-<problem file="src/pages/LaporanList.tsx" line="371" column="92" code="1005">'...' expected.</problem>
-</dyad-problem-report><think>**Debugging JSX Comments**
-
-I'm revisiting that persistent TypeScript error. It's the `TS1005: '...' expected.` at `filterPeriod={selectedFilterPeriod} {/* Pass the selected filter period here */}`. The JSX comment is clearly causing the issue. I suspect the parser is struggling with it. I have to find a workaround for this comment.
-
-
-**Isolating the Syntax Issue**
-
-I'm still encountering the TypeScript error. It looks like the parser is stumbling over the JSX comment within the attribute. I'm going to attempt a quick correction:  moving the comment outside of the `filterPeriod` attribute. I believe I have the right solution.
-
-
-**Correcting JSX Attribute Comment**
-
-That pesky TypeScript error is back, which means my last attempt didn't work. The issue remains: `TS1005` at the `filterPeriod` prop. It's clear the JSX comment within the attribute is the culprit. I now think the parser is incorrectly interpreting ` {/* ... */} ` as part of the prop value. The fix is straightforward: move the comment outside the curly braces. I'll place it on a separate line above the attribute, as a block comment. This should finally resolve the syntax conflict.
-
-
-</think>Anda benar, saya mohon maaf atas kesalahan sebelumnya. Komentar JSX di dalam atribut memang menyebabkan error tersebut.
-
-Saya akan memindahkan komentar `/* Pass the selected filter period here */` ke baris terpisah di atas atribut `filterPeriod` untuk memperbaiki masalah sintaks ini.
-
-<dyad-write path="src/pages/LaporanList.tsx" description="Memperbaiki penempatan komentar JSX di SelectDrainaseReportDialog.">
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { toast } from "sonner";
-import { Trash2, Edit, Plus, Printer, CalendarDays } from "lucide-react";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Navigation } from "@/components/Navigation";
-import { supabase } from "@/integrations/supabase/client";
-import { PrintDrainaseDialog } from "@/components/PrintDrainaseDialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import SelectDrainaseReportDialog from "@/components/SelectDrainaseReportDialog";
-
-interface LaporanItem {
-  id: string;
-  tanggal: string;
-  periode: string;
-  created_at: string;
-  kegiatan_count: number;
-}
-
-// Define a type for the period data
-interface PeriodData {
-  periode: string;
-}
-
-const LaporanList = () => {
-  const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
@@ -437,8 +368,7 @@ const LaporanList = () => {
             onClose={() => setIsSelectDrainaseReportDialogOpen(false)}
             onSelect={handleSelectSpecificDrainaseReport}
             reportType={selectedGlobalReportType}
-            {/* Pass the selected filter period here */}
-            filterPeriod={selectedFilterPeriod}
+            filterPeriod={selectedFilterPeriod} /* Pass the selected filter period here */
           />
         )}
       </div>
