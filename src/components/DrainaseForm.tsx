@@ -96,8 +96,8 @@ export const DrainaseForm = () => {
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
-  const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false);
-  const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview");
+  // const [isPrintSelectionDialogOpen, setIsPrintSelectionDialogOpen] = useState(false); // No longer needed for DrainaseForm
+  // const [currentPrintActionType, setCurrentPrintActionType] = useState<"preview" | "download">("preview"); // No longer needed for DrainaseForm
   
   // New state to manage the selected value in the dropdown, including "custom"
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
@@ -497,6 +497,12 @@ export const DrainaseForm = () => {
 
     if (type === "tersier") {
       toast.error("Laporan Tersier tidak dapat dibuat dari Form Drainase ini.");
+      return;
+    }
+    // The "bulanan" check is now effectively removed from this form's direct print actions.
+    // If it were to be called with "bulanan" from somewhere else, this check would still apply.
+    if (type === "bulanan") {
+      toast.error("Laporan Bulanan tidak dapat dibuat dari Form Drainase ini.");
       return;
     }
 
@@ -1281,10 +1287,7 @@ export const DrainaseForm = () => {
           {/* Actions */}
           <div className="flex gap-4 pt-4">
             <Button 
-              onClick={() => {
-                setCurrentPrintActionType("preview");
-                setIsPrintSelectionDialogOpen(true);
-              }} 
+              onClick={() => handlePrintSelection("harian", "preview")} 
               variant="outline" 
               className="flex-1"
             >
@@ -1302,10 +1305,7 @@ export const DrainaseForm = () => {
               )}
             </Button>
             <Button 
-              onClick={() => {
-                setCurrentPrintActionType("download");
-                setIsPrintSelectionDialogOpen(true);
-              }} 
+              onClick={() => handlePrintSelection("harian", "download")} 
               variant="default" 
               className="flex-1"
             >
@@ -1334,14 +1334,14 @@ export const DrainaseForm = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Print Selection Dialog */}
-        <PrintSelectionDialog
+        {/* Print Selection Dialog (No longer used by DrainaseForm for its own reports) */}
+        {/* <PrintSelectionDialog
           isOpen={isPrintSelectionDialogOpen}
           onClose={() => setIsPrintSelectionDialogOpen(false)}
           onSelectReportType={handlePrintSelection}
           actionType={currentPrintActionType}
           currentFormType="drainase"
-        />
+        /> */}
       </div>
     </div>
   );
