@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { cn } from "@/lib/utils"; // Import cn for conditional classNames
 
 interface SelectDrainaseReportDialogProps {
   isOpen: boolean;
@@ -167,30 +168,41 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
                 Pilih Semua ({selectedLaporanIds.size}/{laporans.length})
               </Label>
             </div>
-            <ScrollArea className="h-full pr-4"> {/* Changed max-h-[60vh] to h-full */}
+            <ScrollArea className="max-h-[calc(90vh-150px)] pr-4"> {/* Adjusted max-h */}
               <div className="space-y-3">
-                {laporans.map((laporan) => (
-                  <div key={laporan.id} className="flex items-start space-x-2 border-b pb-2 last:border-b-0">
-                    <Checkbox
-                      id={`laporan-${laporan.id}`}
-                      checked={selectedLaporanIds.has(laporan.id)}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxChange(laporan.id, checked as boolean)
-                      }
-                    />
-                    <Label htmlFor={`laporan-${laporan.id}`} className="grid gap-1.5 leading-none flex-1">
-                      <span className="font-medium text-base">
-                        {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        Aktivitas Penanganan: {laporan.aktifitas_penanganan_summary}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Periode: {laporan.periode}
-                      </span>
-                    </Label>
-                  </div>
-                ))}
+                {laporans.map((laporan) => {
+                  const isSelected = selectedLaporanIds.has(laporan.id);
+                  return (
+                    <div
+                      key={laporan.id}
+                      className={cn(
+                        "flex items-start space-x-2 border-b pb-2 last:border-b-0 p-2 rounded-md cursor-pointer",
+                        "hover:bg-muted/50 transition-colors",
+                        isSelected && "bg-primary/10" // Highlight selected items
+                      )}
+                      onClick={() => handleCheckboxChange(laporan.id, !isSelected)}
+                    >
+                      <Checkbox
+                        id={`laporan-${laporan.id}`}
+                        checked={isSelected}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxChange(laporan.id, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={`laporan-${laporan.id}`} className="grid gap-1.5 leading-none flex-1 cursor-pointer">
+                        <span className="font-medium text-base">
+                          {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Aktivitas Penanganan: {laporan.aktifitas_penanganan_summary}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Periode: {laporan.periode}
+                        </span>
+                      </Label>
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
           </div>

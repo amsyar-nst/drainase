@@ -18,6 +18,7 @@ import { generatePDF } from "@/lib/pdf-generator";
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { cn } from "@/lib/utils"; // Import cn for conditional classNames
 
 interface PrintDrainaseDialogProps {
   laporanIds: string[];
@@ -274,30 +275,41 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <ScrollArea className="h-full pr-4"> {/* Changed max-h-[60vh] to h-full */}
+            <ScrollArea className="max-h-[calc(90vh-150px)] pr-4"> {/* Adjusted max-h */}
               <div className="space-y-3">
                 {allKegiatans.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
                 ) : (
-                  allKegiatans.map((kegiatan) => (
-                    <div key={kegiatan.id} className="flex items-start space-x-2 border-b pb-2 last:border-b-0">
-                      <Checkbox
-                        id={`kegiatan-${kegiatan.id}`}
-                        checked={selectedKegiatanIds.has(kegiatan.id)}
-                        onCheckedChange={(checked) =>
-                          handleCheckboxChange(kegiatan.id, checked as boolean)
-                        }
-                      />
-                      <div className="grid gap-1.5 leading-none">
-                        <Label htmlFor={`kegiatan-${kegiatan.id}`} className="font-medium text-base">
-                          {kegiatan.namaJalan} - {kegiatan.kelurahan}, {kegiatan.kecamatan}
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          {kegiatan.aktifitasPenanganan} ({format(kegiatan.laporanTanggal, "dd MMMM yyyy", { locale: idLocale })})
-                        </p>
+                  allKegiatans.map((kegiatan) => {
+                    const isSelected = selectedKegiatanIds.has(kegiatan.id);
+                    return (
+                      <div
+                        key={kegiatan.id}
+                        className={cn(
+                          "flex items-start space-x-2 border-b pb-2 last:border-b-0 p-2 rounded-md cursor-pointer",
+                          "hover:bg-muted/50 transition-colors",
+                          isSelected && "bg-primary/10" // Highlight selected items
+                        )}
+                        onClick={() => handleCheckboxChange(kegiatan.id, !isSelected)}
+                      >
+                        <Checkbox
+                          id={`kegiatan-${kegiatan.id}`}
+                          checked={isSelected}
+                          onCheckedChange={(checked) =>
+                            handleCheckboxChange(kegiatan.id, checked as boolean)
+                          }
+                        />
+                        <div className="grid gap-1.5 leading-none">
+                          <Label htmlFor={`kegiatan-${kegiatan.id}`} className="font-medium text-base cursor-pointer">
+                            {kegiatan.namaJalan} - {kegiatan.kelurahan}, {kegiatan.kecamatan}
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            {kegiatan.aktifitasPenanganan} ({format(kegiatan.laporanTanggal, "dd MMMM yyyy", { locale: idLocale })})
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
