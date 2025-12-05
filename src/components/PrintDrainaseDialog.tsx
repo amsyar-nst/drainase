@@ -259,7 +259,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
             <span className="ml-2 text-muted-foreground">Memuat kegiatan...</span>
           </div>
         ) : (
-          <div className="flex flex-col flex-1 overflow-hidden"> {/* Added flex-1 and overflow-hidden */}
+          <div className="flex flex-col flex-1 overflow-hidden">
             <div className="flex items-center space-x-2 mb-4">
               <Checkbox
                 id="select-all"
@@ -271,7 +271,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <ScrollArea className="h-full pr-4"> {/* Changed flex-1 to h-full */}
+            <ScrollArea className="max-h-[60vh] pr-4"> {/* Changed h-full to max-h-[60vh] */}
               <div className="space-y-3">
                 {allKegiatans.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
