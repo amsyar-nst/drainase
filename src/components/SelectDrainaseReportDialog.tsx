@@ -96,6 +96,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
         };
       });
 
+      console.log("Fetched Laporans for SelectDrainaseReportDialog:", processedLaporans); // Debug log
       setLaporans(processedLaporans);
     } catch (error) {
       console.error("Error fetching drainase reports:", error);
@@ -113,6 +114,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
       } else {
         newSet.delete(laporanId);
       }
+      console.log(`Checkbox for ${laporanId} changed to ${checked}. Current selected IDs:`, newSet); // Debug log
       return newSet;
     });
   };
@@ -123,6 +125,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
     } else {
       setSelectedLaporanIds(new Set());
     }
+    console.log(`Select All changed to ${checked}. Current selected IDs:`, selectedLaporanIds); // Debug log
   };
 
   const handleSelectAndClose = () => {
@@ -164,7 +167,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
                 Pilih Semua ({selectedLaporanIds.size}/{laporans.length})
               </Label>
             </div>
-            <ScrollArea className="max-h-[60vh] pr-4"> {/* Changed h-full to max-h-[60vh] */}
+            <ScrollArea className="h-full pr-4"> {/* Changed max-h-[60vh] to h-full */}
               <div className="space-y-3">
                 {laporans.map((laporan) => (
                   <div key={laporan.id} className="flex items-start space-x-2 border-b pb-2 last:border-b-0">

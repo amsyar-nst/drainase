@@ -123,6 +123,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
       });
 
+      console.log("Fetched Kegiatans for PrintDrainaseDialog:", allFetchedKegiatans); // Debug log
       setAllKegiatans(allFetchedKegiatans);
       setSelectedKegiatanIds(new Set(allFetchedKegiatans.map(k => k.id)));
     } catch (error: any) {
@@ -141,6 +142,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
       } else {
         newSet.delete(kegiatanId);
       }
+      console.log(`Checkbox for ${kegiatanId} changed to ${checked}. Current selected IDs:`, newSet); // Debug log
       return newSet;
     });
   };
@@ -151,6 +153,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
     } else {
       setSelectedKegiatanIds(new Set());
     }
+    console.log(`Select All changed to ${checked}. Current selected IDs:`, selectedKegiatanIds); // Debug log
   };
 
   const handlePrintSelected = async () => {
@@ -271,7 +274,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <ScrollArea className="max-h-[60vh] pr-4"> {/* Changed h-full to max-h-[60vh] */}
+            <ScrollArea className="h-full pr-4"> {/* Changed max-h-[60vh] to h-full */}
               <div className="space-y-3">
                 {allKegiatans.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
