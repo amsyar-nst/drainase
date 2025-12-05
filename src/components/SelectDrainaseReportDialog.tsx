@@ -168,7 +168,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
                 Pilih Semua ({selectedLaporanIds.size}/{laporans.length})
               </Label>
             </div>
-            <ScrollArea className="max-h-[calc(90vh-150px)] pr-4"> {/* Adjusted max-h */}
+            <ScrollArea className="flex-1 h-full pr-4"> {/* Menggunakan flex-1 h-full */}
               <div className="space-y-3">
                 {laporans.map((laporan) => {
                   const isSelected = selectedLaporanIds.has(laporan.id);

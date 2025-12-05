@@ -275,7 +275,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <ScrollArea className="max-h-[calc(90vh-150px)] pr-4"> {/* Adjusted max-h */}
+            <ScrollArea className="flex-1 h-full pr-4"> {/* Menggunakan flex-1 h-full */}
               <div className="space-y-3">
                 {allKegiatans.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
