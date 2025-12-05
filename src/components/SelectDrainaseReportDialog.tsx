@@ -22,6 +22,7 @@ interface SelectDrainaseReportDialogProps {
   onClose: () => void;
   onSelect: (laporanIds: string[]) => void; // Changed to array of IDs
   reportType: "harian" | "bulanan";
+  filterPeriod: string | null; // New prop to receive the filter period
 }
 
 interface LaporanItem {
@@ -36,6 +37,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
   onClose,
   onSelect,
   reportType,
+  filterPeriod, // Destructure the new prop
 }) => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,13 +50,13 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
       setLaporans([]);
       setSelectedLaporanIds(new Set()); // Reset on close
     }
-  }, [isOpen]);
+  }, [isOpen, filterPeriod]); // Add filterPeriod to dependencies
 
   const fetchLaporans = async () => {
     setLoading(true);
     try {
       // Fetch laporan_drainase and related kegiatan_drainase for activity summary
-      const { data, error } = await supabase
+      let query = supabase
         .from("laporan_drainase")
         .select(`
           id,
@@ -63,6 +65,13 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
           kegiatan_drainase(aktifitas_penanganan)
         `)
         .order("tanggal", { ascending: false });
+
+      // Apply filterPeriod if it exists
+      if (filterPeriod) {
+        query = query.eq("periode", filterPeriod);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -134,6 +143,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
           <DialogTitle>Pilih Laporan Drainase ({reportType === "harian" ? "Harian" : "Bulanan"})</DialogTitle>
           <DialogDescription>
             Pilih laporan drainase yang ingin Anda cetak.
+            {filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
           </DialogDescription>
         </DialogHeader>
         {loading ? (
@@ -142,7 +152,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
             <span className="ml-2 text-muted-foreground">Memuat laporan...</span>
           </div>
         ) : laporans.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">Tidak ada laporan drainase yang tersedia.</p>
+          <p className="text-muted-foreground text-center py-4">Tidak ada laporan drainase yang tersedia untuk periode ini.</p>
         ) : (
           <>
             <div className="flex items-center space-x-2 mb-4">
