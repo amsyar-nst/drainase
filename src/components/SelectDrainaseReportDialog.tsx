@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox"; // Changed from RadioGroup
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,16 +20,16 @@ import { id as idLocale } from "date-fns/locale";
 interface SelectDrainaseReportDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (laporanIds: string[]) => void; // Changed to array of IDs
+  onSelect: (laporanIds: string[]) => void;
   reportType: "harian" | "bulanan";
-  filterPeriod: string | null; // New prop to receive the filter period
+  filterPeriod: string | null;
 }
 
 interface LaporanItem {
   id: string;
   tanggal: string;
   periode: string;
-  aktifitas_penanganan_summary: string; // New field for activity summary
+  aktifitas_penanganan_summary: string;
 }
 
 const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
@@ -37,25 +37,24 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
   onClose,
   onSelect,
   reportType,
-  filterPeriod, // Destructure the new prop
+  filterPeriod,
 }) => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLaporanIds, setSelectedLaporanIds] = useState<Set<string>>(new Set()); // Changed to Set
+  const [selectedLaporanIds, setSelectedLaporanIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
       fetchLaporans();
     } else {
       setLaporans([]);
-      setSelectedLaporanIds(new Set()); // Reset on close
+      setSelectedLaporanIds(new Set());
     }
-  }, [isOpen, filterPeriod]); // Add filterPeriod to dependencies
+  }, [isOpen, filterPeriod]);
 
   const fetchLaporans = async () => {
     setLoading(true);
     try {
-      // Fetch laporan_drainase and related kegiatan_drainase for activity summary
       let query = supabase
         .from("laporan_drainase")
         .select(`
@@ -66,7 +65,6 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
         `)
         .order("tanggal", { ascending: false });
 
-      // Apply filterPeriod if it exists
       if (filterPeriod) {
         query = query.eq("periode", filterPeriod);
       }
@@ -78,8 +76,8 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
       const processedLaporans: LaporanItem[] = (data || []).map((laporan) => {
         const activities = (laporan.kegiatan_drainase || [])
           .map((k: any) => k.aktifitas_penanganan)
-          .filter(Boolean) // Remove null/undefined activities
-          .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index); // Unique activities
+          .filter(Boolean)
+          .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index);
 
         let aktifitas_penanganan_summary = "";
         if (activities.length === 1) {
@@ -129,7 +127,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
 
   const handleSelectAndClose = () => {
     if (selectedLaporanIds.size > 0) {
-      onSelect(Array.from(selectedLaporanIds)); // Pass array of selected IDs
+      onSelect(Array.from(selectedLaporanIds));
       onClose();
     } else {
       toast.error("Mohon pilih setidaknya satu laporan.");
@@ -154,8 +152,8 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
         ) : laporans.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">Tidak ada laporan drainase yang tersedia untuk periode ini.</p>
         ) : (
-          <>
-            <div className="flex items-center space-x-2 my-4"> {/* Added my-4 for vertical spacing */}
+          <div className="flex flex-col flex-1 overflow-hidden"> {/* Added flex-1 and overflow-hidden */}
+            <div className="flex items-center space-x-2 my-4">
               <Checkbox
                 id="select-all-laporans"
                 checked={selectedLaporanIds.size === laporans.length && laporans.length > 0}
@@ -166,7 +164,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
                 Pilih Semua ({selectedLaporanIds.size}/{laporans.length})
               </Label>
             </div>
-            <ScrollArea className="flex-1 pr-4">
+            <ScrollArea className="h-full pr-4"> {/* Changed flex-1 to h-full */}
               <div className="space-y-3">
                 {laporans.map((laporan) => (
                   <div key={laporan.id} className="flex items-start space-x-2 border-b pb-2 last:border-b-0">
@@ -192,7 +190,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
                 ))}
               </div>
             </ScrollArea>
-          </>
+          </div>
         )}
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
           <Button variant="outline" onClick={onClose}>

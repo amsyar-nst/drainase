@@ -20,18 +20,18 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 interface PrintDrainaseDialogProps {
-  laporanIds: string[]; // Changed to array of IDs
+  laporanIds: string[];
   isOpen: boolean;
   onClose: () => void;
 }
 
 interface KegiatanItemForPrint extends KegiatanDrainase {
-  tanggalKegiatan: string; // To display the date of the activity
-  laporanTanggal: Date; // To associate activity with its parent report date
+  tanggalKegiatan: string;
+  laporanTanggal: Date;
 }
 
 export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
-  laporanIds, // Changed to array
+  laporanIds,
   isOpen,
   onClose,
 }) => {
@@ -41,10 +41,9 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
-    if (isOpen && laporanIds.length > 0) { // Check for array length
-      fetchKegiatansForLaporans(laporanIds); // Call with array
+    if (isOpen && laporanIds.length > 0) {
+      fetchKegiatansForLaporans(laporanIds);
     } else {
-      // Reset state when dialog closes
       setAllKegiatans([]);
       setSelectedKegiatanIds(new Set());
       setLoading(true);
@@ -52,14 +51,13 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
     }
   }, [isOpen, laporanIds]);
 
-  const fetchKegiatansForLaporans = async (ids: string[]) => { // Function now accepts array
+  const fetchKegiatansForLaporans = async (ids: string[]) => {
     setLoading(true);
     try {
       const allFetchedKegiatans: KegiatanItemForPrint[] = [];
       let earliestLaporanDate: Date | null = null;
 
       for (const id of ids) {
-        // Fetch laporan details to get the main date
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
           .select('tanggal')
@@ -69,14 +67,13 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         if (laporanError) {
           console.error(`Error fetching laporan tanggal for ID ${id}:`, laporanError);
           toast.error(`Gagal memuat tanggal laporan untuk ID ${id}.`);
-          continue; // Skip to next laporan
+          continue;
         }
         const currentLaporanDate = new Date(laporanData.tanggal);
         if (!earliestLaporanDate || currentLaporanDate < earliestLaporanDate) {
           earliestLaporanDate = currentLaporanDate;
         }
 
-        // Fetch all activities for the current report
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .select('*')
@@ -86,7 +83,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         if (kegiatanError) {
           console.error(`Error fetching kegiatan list for laporan ID ${id}:`, kegiatanError);
           toast.error(`Gagal memuat daftar kegiatan untuk laporan ID ${id}.`);
-          continue; // Skip to next laporan
+          continue;
         }
 
         const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => ({
@@ -101,30 +98,28 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
           foto50Url: kegiatan.foto_50_url || undefined,
           foto100Url: kegiatan.foto_100_url || undefined,
           jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup" | "Terbuka & Tertutup",
-          jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair",
+          jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" | "Batu/ Padat & Cair",
           aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
           panjangPenanganan: kegiatan.panjang_penanganan || "",
           lebarRataRata: kegiatan.lebar_rata_rata || "",
           rataRataSedimen: kegiatan.rata_rata_sedimen || "",
           volumeGalian: kegiatan.volume_galian || "",
-          materials: [], // Will be fetched later if selected
-          peralatans: [], // Will be fetched later if selected
-          operasionalAlatBerats: [], // Will be fetched later if selected
+          materials: [],
+          peralatans: [],
+          operasionalAlatBerats: [],
           koordinator: kegiatan.koordinator || [],
           jumlahPHL: kegiatan.jumlah_phl || 1,
           keterangan: kegiatan.keterangan || "",
           tanggalKegiatan: format(new Date(kegiatan.created_at), "dd MMMM yyyy", { locale: idLocale }),
-          laporanTanggal: currentLaporanDate, // Store parent report date
+          laporanTanggal: currentLaporanDate,
         }));
         allFetchedKegiatans.push(...mappedKegiatans);
       }
 
-      // Sort all activities by their parent report date, then by activity creation date
       allFetchedKegiatans.sort((a, b) => {
         if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
           return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
         }
-        // Fallback to activity creation date if parent report dates are the same
         return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
       });
 
@@ -166,18 +161,16 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
 
     setIsPrinting(true);
     try {
-      const selectedKegiatans: KegiatanItemForPrint[] = []; // Changed type here
+      const selectedKegiatans: KegiatanItemForPrint[] = [];
       let earliestDate: Date | null = null;
 
       for (const kegiatanId of selectedKegiatanIds) {
         const baseKegiatan = allKegiatans.find(k => k.id === kegiatanId);
         if (baseKegiatan) {
-          // Update earliest date for the combined report
           if (!earliestDate || baseKegiatan.laporanTanggal < earliestDate) {
             earliestDate = baseKegiatan.laporanTanggal;
           }
 
-          // Fetch full details for selected activities
           const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
             supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatanId),
             supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatanId),
@@ -228,17 +221,15 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         }
       }
 
-      // Sort selected activities by their parent report date, then by activity creation date
       selectedKegiatans.sort((a, b) => {
         if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
           return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
         }
-        // Fallback to activity creation date if parent report dates are the same
         return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
       });
 
       const laporanToPrint: LaporanDrainase = {
-        tanggal: earliestDate, // Use the earliest date from selected reports
+        tanggal: earliestDate,
         kegiatans: selectedKegiatans,
       };
 
@@ -268,7 +259,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
             <span className="ml-2 text-muted-foreground">Memuat kegiatan...</span>
           </div>
         ) : (
-          <>
+          <div className="flex flex-col flex-1 overflow-hidden"> {/* Added flex-1 and overflow-hidden */}
             <div className="flex items-center space-x-2 mb-4">
               <Checkbox
                 id="select-all"
@@ -280,7 +271,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <ScrollArea className="flex-1 pr-4">
+            <ScrollArea className="h-full pr-4"> {/* Changed flex-1 to h-full */}
               <div className="space-y-3">
                 {allKegiatans.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
@@ -307,7 +298,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 )}
               </div>
             </ScrollArea>
-          </>
+          </div>
         )}
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
           <Button variant="outline" onClick={onClose} disabled={isPrinting}>
