@@ -26,7 +26,7 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
         setSession(currentSession);
         setUser(currentSession?.user || null);
         if (currentSession && location.pathname === '/login') {
-          navigate('/'); // Redirect authenticated users from login page
+          navigate('/'); // Redirect authenticated users from login page to home
         }
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
