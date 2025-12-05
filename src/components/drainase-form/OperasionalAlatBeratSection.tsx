@@ -24,7 +24,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
     const newOperasional: OperasionalAlatBerat = {
       id: Date.now().toString(),
       jenis: "",
-      jumlah: 1,
+      jumlah: 0, // Default to 0 for empty display
       dexliteJumlah: "",
       dexliteSatuan: "Liter",
       pertaliteJumlah: "",
@@ -76,8 +76,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                   value={operasional.jenis}
                   onChange={(e) => {
                     updateOperasionalAlatBerat(operasional.id, "jenis", e.target.value);
-                    // Baris ini dihapus agar popover tidak dipaksa terbuka pada setiap ketikan
-                    // setOpenPopoverId(operasional.id); 
                   }}
                 />
               </PopoverTrigger>
@@ -111,14 +109,15 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           <div className="space-y-2 md:col-span-1">
             <Label>Jumlah</Label>
             <Input
-              type="number"
-              min="1"
-              value={operasional.jumlah}
+              type="text" // Changed to text
+              placeholder="0"
+              value={operasional.jumlah === 0 ? "" : operasional.jumlah.toString()} // Display empty if 0
               onChange={(e) => {
                 const value = e.target.value;
-                // Restrict to 2 digits
-                if (value.length <= 2 || value === "") {
-                  updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(value) || 1);
+                if (value === "") {
+                  updateOperasionalAlatBerat(operasional.id, "jumlah", 0); // Save as 0 if empty
+                } else if (/^\d{0,2}$/.test(value)) { // Allow 0 to 2 digits
+                  updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(value, 10));
                 }
               }}
               maxLength={2} // Add maxLength attribute

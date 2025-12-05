@@ -73,7 +73,7 @@ export const DrainaseForm = () => {
       operasionalAlatBerats: [{
         id: "1",
         jenis: "",
-        jumlah: 1,
+        jumlah: 0, // Default to 0 for empty display
         dexliteJumlah: "",
         dexliteSatuan: "Liter",
         pertaliteJumlah: "",
@@ -83,7 +83,7 @@ export const DrainaseForm = () => {
         keterangan: "",
       }],
       koordinator: [],
-      jumlahPHL: 1,
+      jumlahPHL: 0, // Default to 0 for empty display
       keterangan: "",
     }]
   });
@@ -230,7 +230,7 @@ export const DrainaseForm = () => {
             operasionalAlatBerats.push({
               id: Date.now().toString() + '-op',
               jenis: "",
-              jumlah: 1,
+              jumlah: 0, // Default to 0
               dexliteJumlah: "",
               dexliteSatuan: "Liter",
               pertaliteJumlah: "",
@@ -274,7 +274,7 @@ export const DrainaseForm = () => {
             peralatans: peralatans,
             operasionalAlatBerats: operasionalAlatBerats,
             koordinator: kegiatan.koordinator || [],
-            jumlahPHL: kegiatan.jumlah_phl || 1,
+            jumlahPHL: kegiatan.jumlah_phl || 0, // Default to 0
             keterangan: kegiatan.keterangan || "",
           };
         })
@@ -331,7 +331,7 @@ export const DrainaseForm = () => {
       operasionalAlatBerats: [{
         id: "1",
         jenis: "",
-        jumlah: 1,
+        jumlah: 0, // Default to 0
         dexliteJumlah: "",
         dexliteSatuan: "Liter",
         pertaliteJumlah: "",
@@ -341,7 +341,7 @@ export const DrainaseForm = () => {
         keterangan: "",
       }],
       koordinator: [],
-      jumlahPHL: 1,
+      jumlahPHL: 0, // Default to 0
       keterangan: "",
     };
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
@@ -1263,14 +1263,15 @@ export const DrainaseForm = () => {
               <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
               <Input
                 id="jumlah-phl"
-                type="number"
-                min="1"
-                value={currentKegiatan.jumlahPHL}
+                type="text" // Changed to text
+                placeholder="0"
+                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()} // Display empty if 0
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Restrict to 2 digits
-                  if (value.length <= 2 || value === "") {
-                    updateCurrentKegiatan({ jumlahPHL: parseInt(value) || 1 });
+                  if (value === "") {
+                    updateCurrentKegiatan({ jumlahPHL: 0 }); // Save as 0 if empty
+                  } else if (/^\d{0,2}$/.test(value)) { // Allow 0 to 2 digits
+                    updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
                   }
                 }}
                 maxLength={2} // Add maxLength attribute
