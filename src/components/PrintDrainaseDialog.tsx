@@ -20,97 +20,116 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 interface PrintDrainaseDialogProps {
-  laporanId: string;
+  laporanIds: string[]; // Changed to array of IDs
   isOpen: boolean;
   onClose: () => void;
 }
 
 interface KegiatanItemForPrint extends KegiatanDrainase {
   tanggalKegiatan: string; // To display the date of the activity
+  laporanTanggal: Date; // To associate activity with its parent report date
 }
 
 export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
-  laporanId,
+  laporanIds, // Changed to array
   isOpen,
   onClose,
 }) => {
-  const [laporanTanggal, setLaporanTanggal] = useState<Date | null>(null);
   const [allKegiatans, setAllKegiatans] = useState<KegiatanItemForPrint[]>([]);
   const [selectedKegiatanIds, setSelectedKegiatanIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
-    if (isOpen && laporanId) {
-      fetchKegiatansForLaporan(laporanId);
+    if (isOpen && laporanIds.length > 0) { // Check for array length
+      fetchKegiatansForLaporans(laporanIds); // Call with array
     } else {
       // Reset state when dialog closes
-      setLaporanTanggal(null);
       setAllKegiatans([]);
       setSelectedKegiatanIds(new Set());
       setLoading(true);
       setIsPrinting(false);
     }
-  }, [isOpen, laporanId]);
+  }, [isOpen, laporanIds]);
 
-  const fetchKegiatansForLaporan = async (id: string) => {
+  const fetchKegiatansForLaporans = async (ids: string[]) => { // Function now accepts array
     setLoading(true);
     try {
-      // Fetch laporan details to get the main date
-      const { data: laporanData, error: laporanError } = await supabase
-        .from('laporan_drainase')
-        .select('tanggal')
-        .eq('id', id)
-        .single();
+      const allFetchedKegiatans: KegiatanItemForPrint[] = [];
+      let earliestLaporanDate: Date | null = null;
 
-      if (laporanError) {
-        console.error("Error fetching laporan tanggal:", laporanError);
-        throw new Error("Gagal memuat tanggal laporan.");
+      for (const id of ids) {
+        // Fetch laporan details to get the main date
+        const { data: laporanData, error: laporanError } = await supabase
+          .from('laporan_drainase')
+          .select('tanggal')
+          .eq('id', id)
+          .single();
+
+        if (laporanError) {
+          console.error(`Error fetching laporan tanggal for ID ${id}:`, laporanError);
+          toast.error(`Gagal memuat tanggal laporan untuk ID ${id}.`);
+          continue; // Skip to next laporan
+        }
+        const currentLaporanDate = new Date(laporanData.tanggal);
+        if (!earliestLaporanDate || currentLaporanDate < earliestLaporanDate) {
+          earliestLaporanDate = currentLaporanDate;
+        }
+
+        // Fetch all activities for the current report
+        const { data: kegiatanData, error: kegiatanError } = await supabase
+          .from('kegiatan_drainase')
+          .select('*')
+          .eq('laporan_id', id)
+          .order('created_at', { ascending: true });
+
+        if (kegiatanError) {
+          console.error(`Error fetching kegiatan list for laporan ID ${id}:`, kegiatanError);
+          toast.error(`Gagal memuat daftar kegiatan untuk laporan ID ${id}.`);
+          continue; // Skip to next laporan
+        }
+
+        const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => ({
+          id: kegiatan.id,
+          namaJalan: kegiatan.nama_jalan,
+          kecamatan: kegiatan.kecamatan,
+          kelurahan: kegiatan.kelurahan,
+          foto0: kegiatan.foto_0_url || [],
+          foto50: kegiatan.foto_50_url || [],
+          foto100: kegiatan.foto_100_url || [],
+          foto0Url: kegiatan.foto_0_url || undefined,
+          foto50Url: kegiatan.foto_50_url || undefined,
+          foto100Url: kegiatan.foto_100_url || undefined,
+          jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup" | "Terbuka & Tertutup",
+          jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair",
+          aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
+          panjangPenanganan: kegiatan.panjang_penanganan || "",
+          lebarRataRata: kegiatan.lebar_rata_rata || "",
+          rataRataSedimen: kegiatan.rata_rata_sedimen || "",
+          volumeGalian: kegiatan.volume_galian || "",
+          materials: [], // Will be fetched later if selected
+          peralatans: [], // Will be fetched later if selected
+          operasionalAlatBerats: [], // Will be fetched later if selected
+          koordinator: kegiatan.koordinator || [],
+          jumlahPHL: kegiatan.jumlah_phl || 1,
+          keterangan: kegiatan.keterangan || "",
+          tanggalKegiatan: format(new Date(kegiatan.created_at), "dd MMMM yyyy", { locale: idLocale }),
+          laporanTanggal: currentLaporanDate, // Store parent report date
+        }));
+        allFetchedKegiatans.push(...mappedKegiatans);
       }
-      setLaporanTanggal(new Date(laporanData.tanggal));
 
-      // Fetch all activities for the report
-      const { data: kegiatanData, error: kegiatanError } = await supabase
-        .from('kegiatan_drainase')
-        .select('*')
-        .eq('laporan_id', id)
-        .order('created_at', { ascending: true }); // Order by creation to maintain consistency
+      // Sort all activities by their parent report date, then by activity creation date
+      allFetchedKegiatans.sort((a, b) => {
+        if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
+          return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
+        }
+        // Fallback to activity creation date if parent report dates are the same
+        return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
+      });
 
-      if (kegiatanError) {
-        console.error("Error fetching kegiatan list:", kegiatanError);
-        throw new Error("Gagal memuat daftar kegiatan.");
-      }
-
-      const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => ({
-        id: kegiatan.id,
-        namaJalan: kegiatan.nama_jalan,
-        kecamatan: kegiatan.kecamatan,
-        kelurahan: kegiatan.kelurahan,
-        foto0: kegiatan.foto_0_url || null,
-        foto50: kegiatan.foto_50_url || null,
-        foto100: kegiatan.foto_100_url || null,
-        foto0Url: kegiatan.foto_0_url || undefined,
-        foto50Url: kegiatan.foto_50_url || undefined,
-        foto100Url: kegiatan.foto_100_url || undefined,
-        jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup",
-        jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair",
-        aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
-        panjangPenanganan: kegiatan.panjang_penanganan || "",
-        lebarRataRata: kegiatan.lebar_rata_rata || "",
-        rataRataSedimen: kegiatan.rata_rata_sedimen || "",
-        volumeGalian: kegiatan.volume_galian || "",
-        materials: [], // Will be fetched later if selected
-        peralatans: [], // Will be fetched later if selected
-        operasionalAlatBerats: [], // Will be fetched later if selected
-        koordinator: kegiatan.koordinator || [],
-        jumlahPHL: kegiatan.jumlah_phl || 1,
-        keterangan: kegiatan.keterangan || "",
-        tanggalKegiatan: format(new Date(kegiatan.created_at), "dd MMMM yyyy", { locale: idLocale }), // Use created_at for display
-      }));
-
-      setAllKegiatans(mappedKegiatans);
-      // Select all by default
-      setSelectedKegiatanIds(new Set(mappedKegiatans.map(k => k.id)));
+      setAllKegiatans(allFetchedKegiatans);
+      setSelectedKegiatanIds(new Set(allFetchedKegiatans.map(k => k.id)));
     } catch (error: any) {
       console.error("Error fetching activities for print:", error);
       toast.error("Gagal memuat daftar kegiatan: " + error.message);
@@ -140,10 +159,6 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
   };
 
   const handlePrintSelected = async () => {
-    if (!laporanTanggal) {
-      toast.error("Tanggal laporan tidak ditemukan.");
-      return;
-    }
     if (selectedKegiatanIds.size === 0) {
       toast.error("Pilih setidaknya satu kegiatan untuk dicetak.");
       return;
@@ -151,11 +166,17 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
 
     setIsPrinting(true);
     try {
-      const selectedKegiatans: KegiatanDrainase[] = [];
+      const selectedKegiatans: KegiatanItemForPrint[] = []; // Changed type here
+      let earliestDate: Date | null = null;
 
       for (const kegiatanId of selectedKegiatanIds) {
         const baseKegiatan = allKegiatans.find(k => k.id === kegiatanId);
         if (baseKegiatan) {
+          // Update earliest date for the combined report
+          if (!earliestDate || baseKegiatan.laporanTanggal < earliestDate) {
+            earliestDate = baseKegiatan.laporanTanggal;
+          }
+
           // Fetch full details for selected activities
           const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
             supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatanId),
@@ -207,8 +228,17 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         }
       }
 
+      // Sort selected activities by their parent report date, then by activity creation date
+      selectedKegiatans.sort((a, b) => {
+        if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
+          return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
+        }
+        // Fallback to activity creation date if parent report dates are the same
+        return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
+      });
+
       const laporanToPrint: LaporanDrainase = {
-        tanggal: laporanTanggal,
+        tanggal: earliestDate, // Use the earliest date from selected reports
         kegiatans: selectedKegiatans,
       };
 
@@ -269,7 +299,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                           {kegiatan.namaJalan} - {kegiatan.kelurahan}, {kegiatan.kecamatan}
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          {kegiatan.aktifitasPenanganan} ({kegiatan.tanggalKegiatan})
+                          {kegiatan.aktifitasPenanganan} ({format(kegiatan.laporanTanggal, "dd MMMM yyyy", { locale: idLocale })})
                         </p>
                       </div>
                     </div>

@@ -28,7 +28,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { SelectDrainaseReportDialog } from "@/components/SelectDrainaseReportDialog";
+import SelectDrainaseReportDialog from "@/components/SelectDrainaseReportDialog";
 
 interface LaporanItem {
   id: string;
@@ -48,7 +48,7 @@ const LaporanList = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [selectedLaporanIdForPrint, setSelectedLaporanIdForPrint] = useState<string | null>(null);
+  const [selectedLaporanIdsForPrint, setSelectedLaporanIdsForPrint] = useState<string[]>([]); // Changed to array
   
   // States for global print selection
   const [isSelectDrainaseReportDialogOpen, setIsSelectDrainaseReportDialogOpen] = useState(false);
@@ -168,7 +168,7 @@ const LaporanList = () => {
   };
 
   const handleIndividualPrintClick = (laporanId: string) => {
-    setSelectedLaporanIdForPrint(laporanId);
+    setSelectedLaporanIdsForPrint([laporanId]); // Pass as array
     setIsPrintDialogOpen(true);
   };
 
@@ -182,10 +182,10 @@ const LaporanList = () => {
     }
   };
 
-  const handleSelectSpecificDrainaseReport = (laporanId: string) => {
-    setSelectedLaporanIdForPrint(laporanId);
+  const handleSelectSpecificDrainaseReport = (laporanIds: string[]) => { // Changed to array
+    setSelectedLaporanIdsForPrint(laporanIds); // Set array of IDs // Fixed typo here
     setIsPrintDialogOpen(true);
-    setIsSelectDrainaseReportDialogOpen(false); // Close the selection dialog
+    setIsSelectDrainaseReportDialogOpen(false);
   };
 
   if (loading) {
@@ -350,13 +350,13 @@ const LaporanList = () => {
         </AlertDialog>
 
         {/* Print Drainase Dialog (for individual or selected global reports) */}
-        {selectedLaporanIdForPrint && (
+        {selectedLaporanIdsForPrint.length > 0 && ( // Check for array length
           <PrintDrainaseDialog
-            laporanId={selectedLaporanIdForPrint}
+            laporanIds={selectedLaporanIdsForPrint} // Pass array
             isOpen={isPrintDialogOpen}
             onClose={() => {
               setIsPrintDialogOpen(false);
-              setSelectedLaporanIdForPrint(null);
+              setSelectedLaporanIdsForPrint([]); // Reset array
             }}
           />
         )}

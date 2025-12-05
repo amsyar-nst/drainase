@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox"; // Changed from RadioGroup
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,17 +20,18 @@ import { id as idLocale } from "date-fns/locale";
 interface SelectDrainaseReportDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (laporanId: string) => void;
-  reportType: "harian" | "bulanan"; // Indicates which type of report is being selected
+  onSelect: (laporanIds: string[]) => void; // Changed to array of IDs
+  reportType: "harian" | "bulanan";
 }
 
 interface LaporanItem {
   id: string;
   tanggal: string;
   periode: string;
+  aktifitas_penanganan_summary: string; // New field for activity summary
 }
 
-export const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
+const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
   isOpen,
   onClose,
   onSelect,
@@ -38,27 +39,57 @@ export const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProp
 }) => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLaporanId, setSelectedLaporanId] = useState<string | null>(null);
+  const [selectedLaporanIds, setSelectedLaporanIds] = useState<Set<string>>(new Set()); // Changed to Set
 
   useEffect(() => {
     if (isOpen) {
       fetchLaporans();
     } else {
       setLaporans([]);
-      setSelectedLaporanId(null);
+      setSelectedLaporanIds(new Set()); // Reset on close
     }
   }, [isOpen]);
 
   const fetchLaporans = async () => {
     setLoading(true);
     try {
+      // Fetch laporan_drainase and related kegiatan_drainase for activity summary
       const { data, error } = await supabase
         .from("laporan_drainase")
-        .select("id, tanggal, periode")
+        .select(`
+          id,
+          tanggal,
+          periode,
+          kegiatan_drainase(aktifitas_penanganan)
+        `)
         .order("tanggal", { ascending: false });
 
       if (error) throw error;
-      setLaporans(data || []);
+
+      const processedLaporans: LaporanItem[] = (data || []).map((laporan) => {
+        const activities = (laporan.kegiatan_drainase || [])
+          .map((k: any) => k.aktifitas_penanganan)
+          .filter(Boolean) // Remove null/undefined activities
+          .filter((value: string, index: number, self: string[]) => self.indexOf(value) === index); // Unique activities
+
+        let aktifitas_penanganan_summary = "";
+        if (activities.length === 1) {
+          aktifitas_penanganan_summary = activities[0];
+        } else if (activities.length > 1) {
+          aktifitas_penanganan_summary = `${activities[0]} dan ${activities.length - 1} lainnya`;
+        } else {
+          aktifitas_penanganan_summary = "Tidak ada aktivitas";
+        }
+
+        return {
+          id: laporan.id,
+          tanggal: laporan.tanggal,
+          periode: laporan.periode,
+          aktifitas_penanganan_summary,
+        };
+      });
+
+      setLaporans(processedLaporans);
     } catch (error) {
       console.error("Error fetching drainase reports:", error);
       toast.error("Gagal memuat daftar laporan drainase.");
@@ -67,12 +98,32 @@ export const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProp
     }
   };
 
+  const handleCheckboxChange = (laporanId: string, checked: boolean) => {
+    setSelectedLaporanIds((prev) => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(laporanId);
+      } else {
+        newSet.delete(laporanId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedLaporanIds(new Set(laporans.map(l => l.id)));
+    } else {
+      setSelectedLaporanIds(new Set());
+    }
+  };
+
   const handleSelectAndClose = () => {
-    if (selectedLaporanId) {
-      onSelect(selectedLaporanId);
+    if (selectedLaporanIds.size > 0) {
+      onSelect(Array.from(selectedLaporanIds)); // Pass array of selected IDs
       onClose();
     } else {
-      toast.error("Mohon pilih salah satu laporan.");
+      toast.error("Mohon pilih setidaknya satu laporan.");
     }
   };
 
@@ -93,33 +144,51 @@ export const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProp
         ) : laporans.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">Tidak ada laporan drainase yang tersedia.</p>
         ) : (
-          <ScrollArea className="flex-1 pr-4">
-            <RadioGroup
-              value={selectedLaporanId || ""}
-              onValueChange={setSelectedLaporanId}
-              className="space-y-3"
-            >
-              {laporans.map((laporan) => (
-                <div key={laporan.id} className="flex items-center space-x-2 border-b pb-2 last:border-b-0">
-                  <RadioGroupItem value={laporan.id} id={`laporan-${laporan.id}`} />
-                  <Label htmlFor={`laporan-${laporan.id}`} className="grid gap-1.5 leading-none flex-1">
-                    <span className="font-medium text-base">
-                      {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Periode: {laporan.periode}
-                    </span>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </ScrollArea>
+          <>
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="select-all-laporans"
+                checked={selectedLaporanIds.size === laporans.length && laporans.length > 0}
+                onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                disabled={laporans.length === 0}
+              />
+              <Label htmlFor="select-all-laporans" className="font-semibold">
+                Pilih Semua ({selectedLaporanIds.size}/{laporans.length})
+              </Label>
+            </div>
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-3">
+                {laporans.map((laporan) => (
+                  <div key={laporan.id} className="flex items-start space-x-2 border-b pb-2 last:border-b-0">
+                    <Checkbox
+                      id={`laporan-${laporan.id}`}
+                      checked={selectedLaporanIds.has(laporan.id)}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange(laporan.id, checked as boolean)
+                      }
+                    />
+                    <Label htmlFor={`laporan-${laporan.id}`} className="grid gap-1.5 leading-none flex-1">
+                      <span className="font-medium text-base">
+                        {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        Aktivitas Penanganan: {laporan.aktifitas_penanganan_summary}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Periode: {laporan.periode}
+                      </span>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </>
         )}
         <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
           <Button variant="outline" onClick={onClose}>
             Batal
           </Button>
-          <Button onClick={handleSelectAndClose} disabled={!selectedLaporanId || loading}>
+          <Button onClick={handleSelectAndClose} disabled={selectedLaporanIds.size === 0 || loading}>
             Pilih & Cetak
           </Button>
         </DialogFooter>
@@ -127,3 +196,5 @@ export const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProp
     </Dialog>
   );
 };
+
+export default SelectDrainaseReportDialog;
