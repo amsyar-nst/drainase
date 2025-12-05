@@ -26,6 +26,7 @@ export const PrintSelectionDialog: React.FC<PrintSelectionDialogProps> = ({
   currentFormType,
 }) => {
   const handleSelection = (type: "harian" | "bulanan" | "tersier") => {
+    // These checks are mostly for safety, as buttons will be conditionally rendered
     if (currentFormType === "drainase" && type === "tersier") {
       toast.error("Laporan Tersier tidak dapat dibuat dari Form Drainase.");
       return;
@@ -48,9 +49,20 @@ export const PrintSelectionDialog: React.FC<PrintSelectionDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <Button onClick={() => handleSelection("harian")}>Laporan Harian</Button>
-          <Button onClick={() => handleSelection("bulanan")}>Laporan Bulanan</Button>
-          <Button onClick={() => handleSelection("tersier")}>Laporan Tersier</Button>
+          {currentFormType === "drainase" && (
+            <Button onClick={() => handleSelection("harian")}>Laporan Harian</Button>
+          )}
+          {currentFormType === "tersier" && (
+            <Button onClick={() => handleSelection("tersier")}>Laporan Tersier</Button>
+          )}
+          {/* If currentFormType is 'list' (not currently used by this dialog, but for completeness) */}
+          {currentFormType === "list" && (
+            <>
+              <Button onClick={() => handleSelection("harian")}>Laporan Harian</Button>
+              <Button onClick={() => handleSelection("bulanan")}>Laporan Bulanan</Button>
+              <Button onClick={() => handleSelection("tersier")}>Laporan Tersier</Button>
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
