@@ -178,7 +178,17 @@ export const generateDrainaseReportPDF = async (
           border: 1px solid #ccc;
         }
 
-        /* Removed ul/li specific styles as they are no longer used for lists */
+        .material-list, .equipment-list {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+
+        .material-list li, .equipment-list li {
+          margin-bottom: 2px;
+          font-size: 6pt;
+        }
+
         .center {
           text-align: center;
         }
@@ -239,16 +249,16 @@ export const generateDrainaseReportPDF = async (
         <thead>
           <tr>
             <th rowspan="2" class="no-col">No</th>
-            <th rowspan="2" class="date-col">Hari/Tanggal</th>
+            <th rowspan="2" class="date-col">Hari/ Tanggal</th>
             <th rowspan="2" class="location-col">Lokasi</th>
             <th colspan="3">Foto Dokumentasi</th>
-            <th rowspan="2" class="jenis-col">Jenis Saluran (Terbuka/Tertutup)</th>
-            <th rowspan="2" class="jenis-col">Jenis Sedimen (Batu/Padat/Cair)</th>
+            <th rowspan="2" class="jenis-col">Jenis Saluran<br/>(Terbuka/ Tertutup)</th>
+            <th rowspan="2" class="jenis-col">Jenis Sedimen<br/>(Batu/ Padat/Cair)</th>
             <th rowspan="2" style="width: 80px;">Aktifitas Penanganan</th>
-            <th rowspan="2" class="number-col">Panjang Penanganan (meter)</th>
-            <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran (meter)</th>
-            <th rowspan="2" class="number-col">Rata-Rata Sedimen (meter)</th>
-            <th rowspan="2" class="number-col">Volume Galian (meter³)</th>
+            <th rowspan="2" class="number-col">Panjang Penanganan<br/>(meter)</th>
+            <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
+            <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
+            <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
             <th colspan="4">Material / Bahan</th>
             <th colspan="3">Peralatan & Alat Berat</th>
             <th colspan="2">Personil UPT</th>
@@ -298,39 +308,53 @@ export const generateDrainaseReportPDF = async (
               <td class="center">${kegiatan.rataRataSedimen || '-'}</td>
               <td class="center">${kegiatan.volumeGalian || '-'}</td>
               <td>
-                ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    ${material.jenis}
-                  `).join('<br/>')}
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.jenis}</li>
+                  `).join('')}
+                </ul>
               </td>
               <td class="center">
-                ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    ${material.jumlah}
-                  `).join('<br/>')}
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.jumlah}</li>
+                  `).join('')}
+                </ul>
               </td>
               <td class="center">
-                ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    ${material.satuan}
-                  `).join('<br/>')}
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.satuan}</li>
+                  `).join('')}
+                </ul>
               </td>
               <td>
-                ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    ${material.keterangan || '-'}
-                  `).join('<br/>')}
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.keterangan || '-'}</li>
+                  `).join('')}
+                </ul>
               </td>
               <td>
-                ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    ${peralatan.nama}
-                  `).join('<br/>')}
+                <ul class="equipment-list">
+                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    <li>${peralatan.nama}</li>
+                  `).join('')}
+                </ul>
               </td>
               <td class="center">
-                ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    ${peralatan.jumlah}
-                  `).join('<br/>')}
+                <ul class="equipment-list">
+                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    <li>${peralatan.jumlah}</li>
+                  `).join('')}
+                </ul>
               </td>
               <td class="center">
-                ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    ${peralatan.satuan || '-'}
-                  `).join('<br/>')}
+                <ul class="equipment-list">
+                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    <li>${peralatan.satuan || '-'}</li>
+                  `).join('')}
+                </ul>
               </td>
               <td>${kegiatan.koordinator.join(', ')}</td>
               <td class="center">${kegiatan.jumlahPHL}</td>
