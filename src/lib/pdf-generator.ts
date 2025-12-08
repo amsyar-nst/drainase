@@ -2,7 +2,25 @@ import { LaporanDrainase } from "@/types/laporan";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
+// Define an extended interface for KegiatanDrainase that includes laporanTanggal
+interface KegiatanDrainaseWithLaporanDate extends Omit<LaporanDrainase['kegiatans'][number], 'foto0' | 'foto50' | 'foto100'> {
+  foto0: (File | string | null)[];
+  foto50: (File | string | null)[];
+  foto100: (File | string | null)[];
+  laporanTanggal: Date; // Add the missing property
+}
+
+// Update the LaporanDrainase type to use the extended KegiatanDrainase for its kegiatans array
+interface LaporanDrainaseForPDF extends Omit<LaporanDrainase, 'kegiatans'> {
+  kegiatans: KegiatanDrainaseWithLaporanDate[];
+}
+
+export const generateDrainaseReportPDF = async (
+  data: LaporanDrainaseForPDF, // Use the new extended type here
+  reportType: "harian" | "bulanan",
+  downloadNow: boolean = true,
+  filterPeriod: string | null = null
+): Promise<Blob> => {
 
   // Convert images to base64
   const getBase64 = async (file: File | string | null): Promise<string> => {
@@ -43,16 +61,32 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
     }))
   );
 
+  const reportTitle = reportType === "harian"
+    ? "LAPORAN HARIAN PEMELIHARAAN DRAINASE"
+    : "REKAPITULASI LAPORAN HARIAN PEMELIHARAAN DRAINASE";
+
+  const reportPeriodText = reportType === "harian"
+    ? `Periode : ${format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}`
+    : `BULAN : ${filterPeriod || format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}`;
+
+  const fileNameDate = reportType === "harian"
+    ? format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })
+    : filterPeriod || format(data.tanggal || new Date(), "MMMM yyyy", { locale: id });
+
+  const filename = reportType === "harian"
+    ? `Laporan Drainase - ${fileNameDate}.pdf`
+    : `laporan drainase UPT OPJD Medan Kota ${fileNameDate}.pdf`;
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Laporan Drainase - ${format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })}</title>
+      <title>${filename}</title>
       <style>
         @page {
-          size: A3 landscape; /* Changed to A3 landscape */
-          margin: 10mm;
+          size: A3 landscape;
+          margin: 7mm; /* Adjusted margin */
         }
         
         body {
@@ -191,7 +225,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           
           @page {
             size: A3 landscape; /* Changed to A3 landscape */
-            margin: 10mm;
+            margin: 7mm; /* Adjusted margin */
           }
         }
       </style>
@@ -200,10 +234,10 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
       <div class="header">
         <div class="office">UPT OPERASIONAL PEMELIHARAAN JALAN DAN DRAINASE MEDAN KOTA</div>
         <div class="address">Jl. Garu I No.101, Kelurahan Sitirejo III, Kecamatan Medan Amplas</div>
-        <div class="report-title">LAPORAN HARIAN PEMELIHARAAN DRAINASE</div>
+        <div class="report-title">${reportTitle}</div>
       </div>
 
-      <div class="period">Periode : ${format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}</div>
+      <div class="period">${reportPeriodText}</div>
 
       <table>
         <thead>
@@ -243,7 +277,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           ${kegiatansWithImages.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
-              <td>${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
+              <td>${format(kegiatan.laporanTanggal, "EEEE", { locale: id })}<br/>${format(kegiatan.laporanTanggal, "dd/MM/yyyy", { locale: id })}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 <div class="photo-container">

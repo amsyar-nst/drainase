@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { generatePDF } from "@/lib/pdf-generator";
+import { generateDrainaseReportPDF } from "@/lib/pdf-generator"; // Updated import
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -260,7 +260,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         kegiatans: selectedKegiatansWithDetails,
       };
 
-      await generatePDF(laporanToPrint, true);
+      await generateDrainaseReportPDF(laporanToPrint, reportType, true, filterPeriod); // Pass reportType and filterPeriod
       toast.success("Laporan PDF berhasil dibuat.");
       onClose();
     } catch (error: any) {

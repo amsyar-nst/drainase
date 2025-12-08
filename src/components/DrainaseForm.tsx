@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
-import { generatePDF } from "@/lib/pdf-generator";
+import { generateDrainaseReportPDF } from "@/lib/pdf-generator"; // Updated import
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -505,14 +505,23 @@ export const DrainaseForm = () => {
       return;
     }
 
+    // Create a temporary LaporanDrainaseForPDF object
+    const laporanForPdf = {
+      tanggal: formData.tanggal,
+      kegiatans: formData.kegiatans.map(kegiatan => ({
+        ...kegiatan,
+        laporanTanggal: formData.tanggal!, // Assign formData.tanggal to laporanTanggal
+      }))
+    };
+
     try {
       if (action === "preview") {
-        const blob = await generatePDF(formData, false);
+        const blob = await generateDrainaseReportPDF(laporanForPdf, "harian", false); // Pass reportType "harian"
         const url = URL.createObjectURL(blob);
         setPreviewUrl(url);
         setShowPreviewDialog(true);
       } else { // action === "download"
-        await generatePDF(formData, true);
+        await generateDrainaseReportPDF(laporanForPdf, "harian", true); // Pass reportType "harian"
       }
       toast.success(`Laporan ${type} berhasil di${action === "preview" ? "pratinjau" : "unduh"}.`);
     } catch (error) {
