@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { generateDrainaseReportPDF } from "@/lib/pdf-generator"; // Updated import
+import { generateDrainaseReportPDF, LaporanDrainaseForPDF } from "@/lib/pdf-generator"; // Updated import to include LaporanDrainaseForPDF
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -255,7 +255,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
       });
 
-      const laporanToPrint: LaporanDrainase = {
+      const laporanToPrint: LaporanDrainaseForPDF = { // Changed type here
         tanggal: earliestDateForReport, // Use the earliest date as the report date
         kegiatans: selectedKegiatansWithDetails,
       };
