@@ -164,13 +164,14 @@ export const generateDrainaseReportPDF = async (
 
         /* Adjusted styles for single, smaller images in photo cells for daily report */
         .photo-cell {
-          width: ${reportType === "harian" ? '70px' : '100px'}; /* Smaller for daily */
-          height: ${reportType === "harian" ? '55px' : '75px'}; /* Smaller for daily */
+          width: ${reportType === "harian" ? '80px' : '100px'}; /* Slightly larger for daily */
+          height: ${reportType === "harian" ? '60px' : '75px'}; /* Slightly larger for daily */
           text-align: center;
           padding: 2px;
           display: flex; /* Use flex to center the single image */
           align-items: center;
           justify-content: center;
+          vertical-align: middle; /* Ensure vertical alignment for the cell itself */
         }
 
         .photo-container {
@@ -182,8 +183,8 @@ export const generateDrainaseReportPDF = async (
         }
 
         .photo-container img {
-          max-width: ${reportType === "harian" ? '65px' : '95px'}; /* Smaller for daily */
-          max-height: ${reportType === "harian" ? '50px' : '70px'}; /* Smaller for daily */
+          max-width: ${reportType === "harian" ? '75px' : '95px'}; /* Adjusted for new cell size */
+          max-height: ${reportType === "harian" ? '55px' : '70px'}; /* Adjusted for new cell size */
           object-fit: contain; /* Use 'contain' to ensure full image is visible, 'cover' might crop */
           border: 1px solid #ccc;
         }
