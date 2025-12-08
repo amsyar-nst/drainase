@@ -69,16 +69,12 @@ export const generateDrainaseReportPDF = async (
     ? `Periode : ${format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}`
     : `BULAN : ${filterPeriod || format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}`;
 
-  const dailyDateText = reportType === "harian"
-    ? `Hari/Tanggal : ${format(data.tanggal || new Date(), "EEEE, dd MMMM yyyy", { locale: id })}`
-    : '';
-
   const fileNameDate = reportType === "harian"
     ? format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })
     : filterPeriod || format(data.tanggal || new Date(), "MMMM yyyy", { locale: id });
 
   const filename = reportType === "harian"
-    ? `Laporan Drainase - ${fileNameDate}.pdf`
+    ? `Lap. Harian Drainase UPT OPJD Medan Kota ${fileNameDate}.pdf` // Updated filename for harian
     : `laporan bulanan drainase UPT OPJD Medan Kota ${fileNameDate}.pdf`;
 
   const htmlContent = `
@@ -90,7 +86,7 @@ export const generateDrainaseReportPDF = async (
       <style>
         @page {
           size: A3 landscape;
-          margin: 7mm; /* Adjusted margin */
+          margin: 7mm;
         }
         
         body {
@@ -105,6 +101,18 @@ export const generateDrainaseReportPDF = async (
         .header {
           text-align: center;
           margin-bottom: 5px;
+        }
+
+        .header .gov-title { /* New style for top government title */
+          font-size: 8pt;
+          font-weight: bold;
+          margin: 0;
+        }
+
+        .header .dept-title { /* New style for department title */
+          font-size: 9pt;
+          font-weight: bold;
+          margin: 2px 0;
         }
 
         .header .office {
@@ -128,21 +136,16 @@ export const generateDrainaseReportPDF = async (
           text-transform: uppercase;
         }
 
-        .period {
-          margin-bottom: 2px; /* Adjusted margin */
+        .period-info { /* Combined style for period and daily date */
           font-size: 8pt;
           font-weight: bold;
-        }
-
-        .daily-date { /* New style for daily date line */
-          margin-bottom: 10px;
-          font-size: 8pt;
-          font-weight: bold;
+          margin-bottom: 2px;
         }
 
         table {
           width: 100%;
           border-collapse: collapse;
+          margin-top: 5px; /* Adjusted margin-top for table */
         }
 
         table th {
@@ -162,16 +165,15 @@ export const generateDrainaseReportPDF = async (
           vertical-align: top;
         }
 
-        /* Adjusted styles for single, smaller images in photo cells for daily report */
         .photo-cell {
-          width: ${reportType === "harian" ? '80px' : '100px'}; /* Slightly larger for daily */
-          height: ${reportType === "harian" ? '60px' : '75px'}; /* Slightly larger for daily */
+          width: ${reportType === "harian" ? '70px' : '100px'}; /* Smaller for daily */
+          height: ${reportType === "harian" ? '55px' : '75px'}; /* Smaller for daily */
           text-align: center;
           padding: 2px;
-          display: flex; /* Use flex to center the single image */
+          display: flex;
           align-items: center;
           justify-content: center;
-          vertical-align: middle; /* Ensure vertical alignment for the cell itself */
+          vertical-align: middle;
         }
 
         .photo-container {
@@ -183,9 +185,9 @@ export const generateDrainaseReportPDF = async (
         }
 
         .photo-container img {
-          max-width: ${reportType === "harian" ? '75px' : '95px'}; /* Adjusted for new cell size */
-          max-height: ${reportType === "harian" ? '55px' : '70px'}; /* Adjusted for new cell size */
-          object-fit: contain; /* Use 'contain' to ensure full image is visible, 'cover' might crop */
+          max-width: ${reportType === "harian" ? '65px' : '95px'}; /* Smaller for daily */
+          max-height: ${reportType === "harian" ? '50px' : '70px'}; /* Smaller for daily */
+          object-fit: contain;
           border: 1px solid #ccc;
         }
 
@@ -235,46 +237,76 @@ export const generateDrainaseReportPDF = async (
           width: 60px;
         }
 
+        .footer-signature {
+          margin-top: 20px;
+          width: 100%;
+          display: flex;
+          justify-content: flex-end; /* Align to right */
+          font-size: 7pt;
+        }
+
+        .footer-signature-block {
+          text-align: center;
+          width: 250px; /* Fixed width for signature block */
+        }
+
+        .footer-signature-block p {
+          margin: 2px 0;
+        }
+
+        .footer-signature-block .name {
+          font-weight: bold;
+          text-decoration: underline;
+        }
+
         @media print {
           body {
             padding: 0;
           }
           
           @page {
-            size: A3 landscape; /* Changed to A3 landscape */
-            margin: 7mm; /* Adjusted margin */
+            size: A3 landscape;
+            margin: 7mm;
           }
         }
       </style>
     </head>
     <body>
       <div class="header">
+        ${reportType === "harian" ? `
+          <div class="gov-title">PEMERINTAH KOTA MEDAN</div>
+          <div class="dept-title">DINAS SUMBER DAYA AIR, BINA MARGA DAN BINA KONSTRUKSI</div>
+        ` : ''}
         <div class="office">UPT OPERASIONAL PEMELIHARAAN JALAN DAN DRAINASE MEDAN KOTA</div>
         <div class="address">Jl. Garu I No.101, Kelurahan Sitirejo III, Kecamatan Medan Amplas</div>
         <div class="report-title">${reportTitle}</div>
       </div>
 
-      <div class="period">${reportPeriodText}</div>
-      ${dailyDateText ? `<div class="daily-date">${dailyDateText}</div>` : ''}
+      ${reportType === "harian" ? `
+        <div class="period-info">Hari/Tanggal : ${format(data.tanggal || new Date(), "EEEE, dd MMMM yyyy", { locale: id })}</div>
+        <div class="period-info">Periode : ${format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}</div>
+      ` : `
+        <div class="period">${reportPeriodText}</div>
+      `}
 
       <table>
         <thead>
           <tr>
-            <th rowspan="2" class="no-col">No</th>
-            <th rowspan="2" class="date-col">Hari/Tanggal</th>
-            <th rowspan="2" class="location-col">Lokasi</th>
+            <th rowspan="3" class="no-col">No</th>
+            <th rowspan="3" class="date-col">Hari/Tanggal</th>
+            <th rowspan="3" class="location-col">Lokasi</th>
             <th colspan="3">Foto Dokumentasi</th>
-            <th rowspan="2" class="jenis-col">Jenis Saluran (Terbuka/Tertutup)</th>
-            <th rowspan="2" class="jenis-col">Jenis Sedimen (Batu/Padat/Cair)</th>
-            <th rowspan="2" style="width: 80px;">Aktifitas Penanganan</th>
-            <th rowspan="2" class="number-col">Panjang Penanganan (meter)</th>
-            <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran (meter)</th>
-            <th rowspan="2" class="number-col">Rata-Rata Sedimen (meter)</th>
-            <th rowspan="2" class="number-col">Volume Galian (meter³)</th>
+            <th rowspan="3" class="jenis-col">Jenis Saluran (Terbuka/Tertutup)</th>
+            <th rowspan="3" class="jenis-col">Jenis Sedimen (Batu/Padat/Cair)</th>
+            <th rowspan="3" style="width: 80px;">Aktifitas Penanganan</th>
+            <th rowspan="3" class="number-col">Panjang Penanganan (meter)</th>
+            <th rowspan="3" class="number-col">Lebar Rata-Rata Saluran (meter)</th>
+            <th rowspan="3" class="number-col">Rata-Rata Sedimen (meter)</th>
+            <th rowspan="3" class="number-col">Volume Galian (meter³)</th>
             <th colspan="4">Material / Bahan</th>
             <th colspan="3">Peralatan & Alat Berat</th>
             <th colspan="2">Personil UPT</th>
-            <th rowspan="2" class="keterangan-col">Ket</th>
+            <th rowspan="3" class="keterangan-col">Ket</th>
           </tr>
           <tr>
             <th class="photo-cell">0%</th>
@@ -289,6 +321,9 @@ export const generateDrainaseReportPDF = async (
             <th class="number-col">Sat.</th>
             <th style="width: 70px;">Koordinator</th>
             <th class="number-col">Jml PHL</th>
+          </tr>
+          <tr>
+            <!-- Empty row for rowspan alignment -->
           </tr>
         </thead>
         <tbody>
@@ -425,6 +460,18 @@ export const generateDrainaseReportPDF = async (
           `).join('')}
         </tbody>
       </table>
+
+      ${reportType === "harian" ? `
+        <div class="footer-signature">
+          <div class="footer-signature-block">
+            <p>Medan, ${format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })}</p>
+            <p>Kepala UPT OPJD Medan Kota</p>
+            <br/><br/><br/> <!-- Space for signature -->
+            <p class="name">MOCH EKA INDRAWAN K, S.T</p>
+            <p>NIP. 197805052009011001</p>
+          </div>
+        </div>
+      ` : ''}
 
       <script>
         window.onload = function() {
