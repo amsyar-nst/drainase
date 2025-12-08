@@ -69,6 +69,10 @@ export const generateDrainaseReportPDF = async (
     ? `Periode : ${format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}`
     : `BULAN : ${filterPeriod || format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}`;
 
+  const dailyDateText = reportType === "harian"
+    ? `Hari/Tanggal : ${format(data.tanggal || new Date(), "EEEE, dd MMMM yyyy", { locale: id })}`
+    : '';
+
   const fileNameDate = reportType === "harian"
     ? format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })
     : filterPeriod || format(data.tanggal || new Date(), "MMMM yyyy", { locale: id });
@@ -125,6 +129,12 @@ export const generateDrainaseReportPDF = async (
         }
 
         .period {
+          margin-bottom: 2px; /* Adjusted margin */
+          font-size: 8pt;
+          font-weight: bold;
+        }
+
+        .daily-date { /* New style for daily date line */
           margin-bottom: 10px;
           font-size: 8pt;
           font-weight: bold;
@@ -152,10 +162,10 @@ export const generateDrainaseReportPDF = async (
           vertical-align: top;
         }
 
-        /* Adjusted styles for single, larger images in photo cells */
+        /* Adjusted styles for single, smaller images in photo cells for daily report */
         .photo-cell {
-          width: 100px; /* Keep width, it's decent for a single image */
-          height: 75px; /* Fixed height to control image size */
+          width: ${reportType === "harian" ? '70px' : '100px'}; /* Smaller for daily */
+          height: ${reportType === "harian" ? '55px' : '75px'}; /* Smaller for daily */
           text-align: center;
           padding: 2px;
           display: flex; /* Use flex to center the single image */
@@ -172,8 +182,8 @@ export const generateDrainaseReportPDF = async (
         }
 
         .photo-container img {
-          max-width: 95px; /* Max width to fit within cell with padding */
-          max-height: 70px; /* Max height to fit within cell with padding */
+          max-width: ${reportType === "harian" ? '65px' : '95px'}; /* Smaller for daily */
+          max-height: ${reportType === "harian" ? '50px' : '70px'}; /* Smaller for daily */
           object-fit: contain; /* Use 'contain' to ensure full image is visible, 'cover' might crop */
           border: 1px solid #ccc;
         }
@@ -244,21 +254,22 @@ export const generateDrainaseReportPDF = async (
       </div>
 
       <div class="period">${reportPeriodText}</div>
+      ${dailyDateText ? `<div class="daily-date">${dailyDateText}</div>` : ''}
 
       <table>
         <thead>
           <tr>
             <th rowspan="2" class="no-col">No</th>
-            <th rowspan="2" class="date-col">Hari/ Tanggal</th>
+            <th rowspan="2" class="date-col">Hari/Tanggal</th>
             <th rowspan="2" class="location-col">Lokasi</th>
             <th colspan="3">Foto Dokumentasi</th>
-            <th rowspan="2" class="jenis-col">Jenis Saluran<br/>(Terbuka/ Tertutup)</th>
-            <th rowspan="2" class="jenis-col">Jenis Sedimen<br/>(Batu/ Padat/Cair)</th>
+            <th rowspan="2" class="jenis-col">Jenis Saluran (Terbuka/Tertutup)</th>
+            <th rowspan="2" class="jenis-col">Jenis Sedimen (Batu/Padat/Cair)</th>
             <th rowspan="2" style="width: 80px;">Aktifitas Penanganan</th>
-            <th rowspan="2" class="number-col">Panjang Penanganan<br/>(meter)</th>
-            <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
-            <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
-            <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
+            <th rowspan="2" class="number-col">Panjang Penanganan (meter)</th>
+            <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran (meter)</th>
+            <th rowspan="2" class="number-col">Rata-Rata Sedimen (meter)</th>
+            <th rowspan="2" class="number-col">Volume Galian (meter³)</th>
             <th colspan="4">Material / Bahan</th>
             <th colspan="3">Peralatan & Alat Berat</th>
             <th colspan="2">Personil UPT</th>
@@ -308,55 +319,105 @@ export const generateDrainaseReportPDF = async (
               <td class="center">${kegiatan.rataRataSedimen || '-'}</td>
               <td class="center">${kegiatan.volumeGalian || '-'}</td>
               <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jenis}</li>
-                  `).join('')}
-                </ul>
+                ${reportType === "harian" ?
+                  kegiatan.materials.filter(m => m.jenis).map(material => `
+                    ${material.jenis}
+                  `).join('<br/>')
+                  :
+                  `<ul class="material-list">
+                    ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                      <li>${material.jenis}</li>
+                    `).join('')}
+                  </ul>`
+                }
               </td>
               <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jumlah}</li>
-                  `).join('')}
-                </ul>
+                ${reportType === "harian" ?
+                  kegiatan.materials.filter(m => m.jenis).map(material => `
+                    ${material.jumlah}
+                  `).join('<br/>')
+                  :
+                  `<ul class="material-list">
+                    ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                      <li>${material.jumlah}</li>
+                    `).join('')}
+                  </ul>`
+                }
               </td>
               <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.satuan}</li>
-                  `).join('')}
-                </ul>
+                ${reportType === "harian" ?
+                  kegiatan.materials.filter(m => m.jenis).map(material => `
+                    ${material.satuan}
+                  `).join('<br/>')
+                  :
+                  `<ul class="material-list">
+                    ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                      <li>${material.satuan}</li>
+                    `).join('')}
+                  </ul>`
+                }
               </td>
               <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.keterangan || '-'}</li>
-                  `).join('')}
-                </ul>
+                ${reportType === "harian" ?
+                  kegiatan.materials.filter(m => m.jenis).map(material => `
+                    ${material.keterangan || '-'}
+                  `).join('<br/>')
+                  :
+                  `<ul class="material-list">
+                    ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                      <li>${material.keterangan || '-'}</li>
+                    `).join('')}
+                  </ul>`
+                }
               </td>
               <td>
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.nama}</li>
-                  `).join('')}
-                </ul>
+                ${reportType === "harian" ?
+                  kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    ${peralatan.nama}
+                  `).join('<br/>')
+                  :
+                  `<ul class="equipment-list">
+                    ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                      <li>${peralatan.nama}</li>
+                    `).join('')}
+                  </ul>`
+                }
               </td>
               <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.jumlah}</li>
-                  `).join('')}
-                </ul>
+                ${reportType === "harian" ?
+                  kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    ${peralatan.jumlah}
+                  `).join('<br/>')
+                  :
+                  `<ul class="equipment-list">
+                    ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                      <li>${peralatan.jumlah}</li>
+                    `).join('')}
+                  </ul>`
+                }
               </td>
               <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.satuan || '-'}</li>
-                  `).join('')}
-                </ul>
+                ${reportType === "harian" ?
+                  kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    ${peralatan.satuan || '-'}
+                  `).join('<br/>')
+                  :
+                  `<ul class="equipment-list">
+                    ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                      <li>${peralatan.satuan || '-'}</li>
+                    `).join('')}
+                  </ul>`
+                }
               </td>
-              <td>${kegiatan.koordinator.join(', ')}</td>
+              <td>
+                ${reportType === "harian" ?
+                  kegiatan.koordinator.map(koordinator => `
+                    ${koordinator}
+                  `).join('<br/>')
+                  :
+                  kegiatan.koordinator.join(', ')
+                }
+              </td>
               <td class="center">${kegiatan.jumlahPHL}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
