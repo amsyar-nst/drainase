@@ -11,7 +11,7 @@ interface KegiatanDrainaseWithLaporanDate extends Omit<LaporanDrainase['kegiatan
 }
 
 // Update the LaporanDrainase type to use the extended KegiatanDrainase for its kegiatans array
-interface LaporanDrainaseForPDF extends Omit<LaporanDrainase, 'kegiatans'> {
+export interface LaporanDrainaseForPDF extends Omit<LaporanDrainase, 'kegiatans'> {
   kegiatans: KegiatanDrainaseWithLaporanDate[];
 }
 
@@ -152,23 +152,29 @@ export const generateDrainaseReportPDF = async (
           vertical-align: top;
         }
 
+        /* Adjusted styles for single, larger images in photo cells */
         .photo-cell {
-          width: 100px; /* Adjusted width to accommodate multiple small images */
+          width: 100px; /* Keep width, it's decent for a single image */
+          height: 75px; /* Fixed height to control image size */
           text-align: center;
           padding: 2px;
+          display: flex; /* Use flex to center the single image */
+          align-items: center;
+          justify-content: center;
         }
 
         .photo-container {
+          width: 100%;
+          height: 100%;
           display: flex;
-          flex-wrap: wrap;
-          gap: 2px; /* Small gap between images */
+          align-items: center;
           justify-content: center;
         }
 
         .photo-container img {
-          width: 45px; /* Smaller width for multiple images */
-          height: 34px; /* Smaller height for multiple images */
-          object-fit: cover;
+          max-width: 95px; /* Max width to fit within cell with padding */
+          max-height: 70px; /* Max height to fit within cell with padding */
+          object-fit: contain; /* Use 'contain' to ensure full image is visible, 'cover' might crop */
           border: 1px solid #ccc;
         }
 
@@ -281,17 +287,17 @@ export const generateDrainaseReportPDF = async (
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 <div class="photo-container">
-                  ${kegiatan.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
+                  ${kegiatan.foto0Base64[0] ? `<img src="${kegiatan.foto0Base64[0]}" alt="Foto 0%" />` : ''}
                 </div>
               </td>
               <td class="photo-cell">
                 <div class="photo-container">
-                  ${kegiatan.foto50Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 50%" />` : '').join('')}
+                  ${kegiatan.foto50Base64[0] ? `<img src="${kegiatan.foto50Base64[0]}" alt="Foto 50%" />` : ''}
                 </div>
               </td>
               <td class="photo-cell">
                 <div class="photo-container">
-                  ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
+                  ${kegiatan.foto100Base64[0] ? `<img src="${kegiatan.foto100Base64[0]}" alt="Foto 100%" />` : ''}
                 </div>
               </td>
               <td class="center">${kegiatan.jenisSaluran || '-'}</td>
