@@ -32,11 +32,11 @@ import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
-import { generateDrainaseReportPDF } from "@/lib/pdf-generator"; // Updated import
+import { generatePDF } from "@/lib/pdf-generator"; // Updated import
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Import the new dialog
+// import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Removed import
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
@@ -488,45 +488,43 @@ export const DrainaseForm = () => {
     updateCurrentKegiatan({ [field]: updatedPhotos });
   };
 
-  const handlePrintSelection = async (type: "harian" | "bulanan" | "tersier", action: "preview" | "download") => {
+  // New functions for print preview and download, compatible with old generatePDF
+  const handlePrintPreview = async () => {
     if (!formData.tanggal) {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
-
-    if (type === "tersier") {
-      toast.error("Laporan Tersier tidak dapat dibuat dari Form Drainase ini.");
-      return;
-    }
-    // The "bulanan" check is now effectively removed from this form's direct print actions.
-    // If it were to be called with "bulanan" from somewhere else, this check would still apply.
-    if (type === "bulanan") {
-      toast.error("Laporan Bulanan tidak dapat dibuat dari Form Drainase ini.");
-      return;
-    }
-
-    // Create a temporary LaporanDrainaseForPDF object
-    const laporanForPdf = {
+    const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
       tanggal: formData.tanggal,
-      kegiatans: formData.kegiatans.map(kegiatan => ({
-        ...kegiatan,
-        laporanTanggal: formData.tanggal!, // Assign formData.tanggal to laporanTanggal
-      }))
+      kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
     };
-
     try {
-      if (action === "preview") {
-        const blob = await generateDrainaseReportPDF(laporanForPdf, "harian", false); // Pass reportType "harian"
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-        setShowPreviewDialog(true);
-      } else { // action === "download"
-        await generateDrainaseReportPDF(laporanForPdf, "harian", true); // Pass reportType "harian"
-      }
-      toast.success(`Laporan ${type} berhasil di${action === "preview" ? "pratinjau" : "unduh"}.`);
+      const blob = await generatePDF(laporanForPdf, false); // Call old generatePDF, downloadNow=false
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setShowPreviewDialog(true);
+      toast.success("Laporan berhasil dipratinjau.");
     } catch (error) {
-      console.error(`${action === "preview" ? "Preview" : "Download"} error:`, error);
-      toast.error(`Gagal ${action === "preview" ? "membuat pratinjau" : "mengunduh"} PDF.`);
+      console.error("Preview error:", error);
+      toast.error("Gagal membuat pratinjau PDF.");
+    }
+  };
+
+  const handlePrintDownload = async () => {
+    if (!formData.tanggal) {
+      toast.error("Mohon isi tanggal laporan.");
+      return;
+    }
+    const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
+      tanggal: formData.tanggal,
+      kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
+    };
+    try {
+      await generatePDF(laporanForPdf, true); // Call old generatePDF, downloadNow=true
+      toast.success("Laporan berhasil diunduh.");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Gagal mengunduh PDF.");
     }
   };
 
@@ -1303,7 +1301,7 @@ export const DrainaseForm = () => {
           {/* Actions */}
           <div className="flex gap-4 pt-4">
             <Button 
-              onClick={() => handlePrintSelection("harian", "preview")} 
+              onClick={handlePrintPreview} 
               variant="outline" 
               className="flex-1"
             >
@@ -1321,7 +1319,7 @@ export const DrainaseForm = () => {
               )}
             </Button>
             <Button 
-              onClick={() => handlePrintSelection("harian", "download")} 
+              onClick={handlePrintDownload} 
               variant="default" 
               className="flex-1"
             >
@@ -1349,15 +1347,6 @@ export const DrainaseForm = () => {
             )}
           </DialogContent>
         </Dialog>
-
-        {/* Print Selection Dialog (No longer used by DrainaseForm for its own reports) */}
-        {/* <PrintSelectionDialog
-          isOpen={isPrintSelectionDialogOpen}
-          onClose={() => setIsPrintSelectionDialogOpen(false)}
-          onSelectReportType={handlePrintSelection}
-          actionType={currentPrintActionType}
-          currentFormType="drainase"
-        /> */}
       </div>
     </div>
   );

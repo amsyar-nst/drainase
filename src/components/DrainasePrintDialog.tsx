@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { generateDrainaseReportPDF, LaporanDrainaseForPDF } from "@/lib/pdf-generator"; // Updated import to include LaporanDrainaseForPDF
+import { generatePDF } from "@/lib/pdf-generator"; // Updated import
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -23,13 +23,13 @@ interface DrainasePrintDialogProps {
   isOpen: boolean;
   onClose: () => void;
   laporanIdsToFetch: string[]; // Array of laporan IDs to fetch activities from
-  reportType: "harian" | "bulanan"; // Type of report to generate
-  filterPeriod: string | null; // Optional filter for bulanan reports
+  reportType: "harian" | "bulanan"; // Type of report to generate (Note: old generatePDF doesn't use this directly)
+  filterPeriod: string | null; // Optional filter for bulanan reports (Note: old generatePDF doesn't use this directly)
 }
 
 interface KegiatanItemForPrint extends KegiatanDrainase {
   tanggalKegiatan: string; // Formatted date of the activity's parent report
-  laporanTanggal: Date; // Actual date object of the activity's parent report
+  laporanTanggal: Date; // Actual date object of the activity's parent report (for internal use in dialog)
 }
 
 const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
@@ -59,8 +59,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
     setLoading(true);
     try {
       const fetchedKegiatans: KegiatanItemForPrint[] = [];
-      let earliestLaporanDate: Date | null = null;
-
+      
       // If reportType is 'bulanan' and filterPeriod is set, we need to fetch all laporan_drainase for that period
       // Otherwise, we use the provided laporanIdsToFetch
       let targetLaporanIds = laporanIdsToFetch;
@@ -95,10 +94,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           continue;
         }
         const currentLaporanDate = new Date(laporanData.tanggal);
-        if (!earliestLaporanDate || currentLaporanDate < earliestLaporanDate) {
-          earliestLaporanDate = currentLaporanDate;
-        }
-
+        
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .select('*')
@@ -146,7 +142,9 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
           return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
         }
-        return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
+        // Assuming 'created_at' is implicitly handled by the order in supabase query,
+        // or we might need to add a 'created_at' field to KegiatanItemForPrint if needed for secondary sort.
+        return 0; // Keep original order if dates are same
       });
 
       setAllKegiatans(fetchedKegiatans);
@@ -187,7 +185,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
 
     setIsPrinting(true);
     try {
-      const selectedKegiatansWithDetails: KegiatanItemForPrint[] = [];
+      const selectedKegiatansWithDetails: KegiatanDrainase[] = [];
       let earliestDateForReport: Date | null = null;
 
       for (const kegiatanId of selectedKegiatanIds) {
@@ -216,8 +214,11 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             throw new Error("Gagal memuat operasional alat berat untuk kegiatan.");
           }
 
+          // Destructure to remove internal-only properties like laporanTanggal and tanggalKegiatan
+          const { laporanTanggal, tanggalKegiatan, ...restKegiatan } = baseKegiatan;
+
           selectedKegiatansWithDetails.push({
-            ...baseKegiatan,
+            ...restKegiatan, // Use restKegiatan to exclude internal properties
             materials: (materialsRes.data || []).map(m => ({
               id: m.id,
               jenis: m.jenis,
@@ -249,18 +250,19 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
 
       // Sort again to ensure correct order in the final PDF
       selectedKegiatansWithDetails.sort((a, b) => {
-        if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
-          return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
-        }
-        return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
+        // This sort will be based on the original report's date, which is not directly available on KegiatanDrainase
+        // For simplicity with the old generatePDF, we'll rely on the order they were fetched/selected.
+        // If strict chronological order across multiple reports is needed, the old generatePDF cannot handle it.
+        return 0; 
       });
 
-      const laporanToPrint: LaporanDrainaseForPDF = { // Changed type here
+      const laporanToPrint: LaporanDrainase = { // Use LaporanDrainase type
         tanggal: earliestDateForReport, // Use the earliest date as the report date
         kegiatans: selectedKegiatansWithDetails,
       };
 
-      await generateDrainaseReportPDF(laporanToPrint, reportType, true, filterPeriod); // Pass reportType and filterPeriod
+      // The old generatePDF does not take reportType or filterPeriod
+      await generatePDF(laporanToPrint, true); 
       toast.success("Laporan PDF berhasil dibuat.");
       onClose();
     } catch (error: any) {
@@ -279,6 +281,10 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           <DialogDescription>
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
             {reportType === "bulanan" && filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
+            <p className="text-red-500 text-xs mt-1">
+              Catatan: Fungsi cetak laporan bulanan yang menggabungkan banyak tanggal tidak didukung oleh generator PDF saat ini.
+              Laporan akan dibuat berdasarkan tanggal laporan pertama yang dipilih.
+            </p>
           </DialogDescription>
         </DialogHeader>
         {loading ? (
