@@ -82,7 +82,7 @@ const LaporanList = () => {
         setUniquePeriods([]); // Reset periods on error
         return; // Exit early
       }
-      console.log("Fetched Laporan Data:", laporanData); // Debug log: Periksa ini di console
+      // console.log("Fetched Laporan Data:", laporanData); // Debug log: Periksa ini di console
 
       // 2. Fetch all periods and deduplicate client-side for the filter dropdown
       const { data: allPeriodsData, error: allPeriodsError } = await supabase
@@ -96,7 +96,7 @@ const LaporanList = () => {
         setUniquePeriods([]); // Reset periods on error
         return; // Exit early
       }
-      console.log("Fetched All Periods Data (before deduplication):", allPeriodsData); // Debug log
+      // console.log("Fetched All Periods Data (before deduplication):", allPeriodsData); // Debug log
 
       // Deduplicate periods client-side
       const uniquePeriodsSet = new Set((allPeriodsData || []).map((p: PeriodData) => p.periode));
@@ -123,7 +123,7 @@ const LaporanList = () => {
       );
 
       setLaporans(laporansWithCount);
-      console.log("Final Laporans state:", laporansWithCount); // Debug log: Periksa ini di console
+      // console.log("Final Laporans state:", laporansWithCount); // Debug log: Periksa ini di console
 
     } catch (error: any) {
       console.error("Error in fetchLaporans:", error);

@@ -124,7 +124,6 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
       });
 
-      console.log("Fetched Kegiatans for PrintDrainaseDialog:", allFetchedKegiatans); // Debug log
       setAllKegiatans(allFetchedKegiatans);
       setSelectedKegiatanIds(new Set(allFetchedKegiatans.map(k => k.id)));
     } catch (error: any) {
@@ -143,7 +142,6 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
       } else {
         newSet.delete(kegiatanId);
       }
-      console.log(`Checkbox for ${kegiatanId} changed to ${checked}. Current selected IDs:`, newSet); // Debug log
       return newSet;
     });
   };
@@ -154,7 +152,6 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
     } else {
       setSelectedKegiatanIds(new Set());
     }
-    console.log(`Select All changed to ${checked}. Current selected IDs:`, selectedKegiatanIds); // Debug log
   };
 
   const handlePrintSelected = async () => {
@@ -251,7 +248,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Cetak Laporan Drainase</DialogTitle>
           <DialogDescription>
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
@@ -263,8 +260,8 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
             <span className="ml-2 text-muted-foreground">Memuat kegiatan...</span>
           </div>
         ) : (
-          <div className="flex flex-col flex-1"> {/* Removed overflow-hidden */}
-            <div className="flex items-center space-x-2 mb-4">
+          <div className="flex flex-col flex-1 overflow-hidden"> {/* Added overflow-hidden */}
+            <div className="flex items-center space-x-2 mb-4 shrink-0"> {/* Added shrink-0 */}
               <Checkbox
                 id="select-all"
                 checked={selectedKegiatanIds.size === allKegiatans.length && allKegiatans.length > 0}
@@ -275,7 +272,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <ScrollArea className="flex-1 h-full pr-4">
+            <ScrollArea className="h-full pr-4"> {/* Ensured h-full */}
               <div className="space-y-3">
                 {allKegiatans.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
@@ -315,7 +312,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
             </ScrollArea>
           </div>
         )}
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 shrink-0"> {/* Added shrink-0 */}
           <Button variant="outline" onClick={onClose} disabled={isPrinting}>
             <X className="mr-2 h-4 w-4" />
             Batal

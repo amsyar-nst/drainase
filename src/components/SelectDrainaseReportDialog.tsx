@@ -97,7 +97,6 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
         };
       });
 
-      console.log("Fetched Laporans for SelectDrainaseReportDialog:", processedLaporans); // Debug log
       setLaporans(processedLaporans);
     } catch (error) {
       console.error("Error fetching drainase reports:", error);
@@ -115,7 +114,6 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
       } else {
         newSet.delete(laporanId);
       }
-      console.log(`Checkbox for ${laporanId} changed to ${checked}. Current selected IDs:`, newSet); // Debug log
       return newSet;
     });
   };
@@ -126,7 +124,6 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
     } else {
       setSelectedLaporanIds(new Set());
     }
-    console.log(`Select All changed to ${checked}. Current selected IDs:`, selectedLaporanIds); // Debug log
   };
 
   const handleSelectAndClose = () => {
@@ -141,7 +138,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Pilih Laporan Drainase ({reportType === "harian" ? "Harian" : "Bulanan"})</DialogTitle>
           <DialogDescription>
             Pilih laporan drainase yang ingin Anda cetak.
@@ -156,8 +153,8 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
         ) : laporans.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">Tidak ada laporan drainase yang tersedia untuk periode ini.</p>
         ) : (
-          <div className="flex flex-col flex-1"> {/* Removed overflow-hidden */}
-            <div className="flex items-center space-x-2 my-4">
+          <div className="flex flex-col flex-1 overflow-hidden"> {/* Added overflow-hidden */}
+            <div className="flex items-center space-x-2 my-4 shrink-0"> {/* Added shrink-0 */}
               <Checkbox
                 id="select-all-laporans"
                 checked={selectedLaporanIds.size === laporans.length && laporans.length > 0}
@@ -168,7 +165,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
                 Pilih Semua ({selectedLaporanIds.size}/{laporans.length})
               </Label>
             </div>
-            <ScrollArea className="flex-1 h-full pr-4">
+            <ScrollArea className="h-full pr-4"> {/* Ensured h-full */}
               <div className="space-y-3">
                 {laporans.map((laporan) => {
                   const isSelected = selectedLaporanIds.has(laporan.id);
@@ -207,7 +204,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
             </ScrollArea>
           </div>
         )}
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 shrink-0"> {/* Added shrink-0 */}
           <Button variant="outline" onClick={onClose}>
             Batal
           </Button>
