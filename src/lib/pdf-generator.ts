@@ -75,7 +75,7 @@ export const generateDrainaseReportPDF = async (
 
   const filename = reportType === "harian"
     ? `Laporan Drainase - ${fileNameDate}.pdf`
-    : `laporan drainase UPT OPJD Medan Kota ${fileNameDate}.pdf`;
+    : `laporan bulanan drainase UPT OPJD Medan Kota ${fileNameDate}.pdf`; // Added 'bulanan' here
 
   const htmlContent = `
     <!DOCTYPE html>
