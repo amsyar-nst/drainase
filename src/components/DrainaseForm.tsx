@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
-import { generateDrainaseReportPDF, LaporanDrainaseForPDF } from "@/lib/pdf-generator"; // Updated import
+import { generatePDF } from "@/lib/pdf-generator"; // Updated import
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -488,22 +488,18 @@ export const DrainaseForm = () => {
     updateCurrentKegiatan({ [field]: updatedPhotos });
   };
 
-  // New functions for print preview and download, compatible with new generateDrainaseReportPDF
+  // Functions for print preview and download, compatible with old generatePDF
   const handlePrintPreview = async () => {
     if (!formData.tanggal) {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
-    const laporanForPdf: LaporanDrainaseForPDF = { // Use LaporanDrainaseForPDF type
+    const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
       tanggal: formData.tanggal,
-      kegiatans: formData.kegiatans.map(k => ({
-        ...k,
-        laporanTanggal: formData.tanggal!, // Add laporanTanggal to each kegiatan
-        tanggalKegiatan: format(formData.tanggal!, "dd MMMM yyyy", { locale: idLocale }), // Add formatted tanggalKegiatan
-      })),
+      kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
     };
     try {
-      const blob = await generateDrainaseReportPDF(laporanForPdf, "harian", false); // Call new function, reportType="harian"
+      const blob = await generatePDF(laporanForPdf, false); // Call old generatePDF, downloadNow=false
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewDialog(true);
@@ -519,16 +515,12 @@ export const DrainaseForm = () => {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
-    const laporanForPdf: LaporanDrainaseForPDF = { // Use LaporanDrainaseForPDF type
+    const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
       tanggal: formData.tanggal,
-      kegiatans: formData.kegiatans.map(k => ({
-        ...k,
-        laporanTanggal: formData.tanggal!, // Add laporanTanggal to each kegiatan
-        tanggalKegiatan: format(formData.tanggal!, "dd MMMM yyyy", { locale: idLocale }), // Add formatted tanggalKegiatan
-      })),
+      kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
     };
     try {
-      await generateDrainaseReportPDF(laporanForPdf, "harian", true); // Call new function, reportType="harian"
+      await generatePDF(laporanForPdf, true); // Call old generatePDF, downloadNow=true
       toast.success("Laporan berhasil diunduh.");
     } catch (error) {
       console.error("Download error:", error);

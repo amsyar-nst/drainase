@@ -12,8 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { generateDrainaseReportPDF, LaporanDrainaseForPDF, KegiatanDrainaseWithLaporanDate } from "@/lib/pdf-generator"; // Updated import
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
+import { generatePDF } from "@/lib/pdf-generator"; // Updated import
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -23,8 +23,13 @@ interface DrainasePrintDialogProps {
   isOpen: boolean;
   onClose: () => void;
   laporanIdsToFetch: string[]; // Array of laporan IDs to fetch activities from
-  reportType: "harian" | "bulanan"; // Type of report to generate
-  filterPeriod: string | null; // Optional filter for bulanan reports
+  reportType: "harian" | "bulanan"; // Type of report to generate (Note: old generatePDF doesn't use this directly)
+  filterPeriod: string | null; // Optional filter for bulanan reports (Note: old generatePDF doesn't use this directly)
+}
+
+interface KegiatanItemForPrint extends KegiatanDrainase {
+  tanggalKegiatan: string; // Formatted date of the activity's parent report
+  laporanTanggal: Date; // Actual date object of the activity's parent report (for internal use in dialog)
 }
 
 const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
@@ -34,7 +39,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   reportType,
   filterPeriod,
 }) => {
-  const [allKegiatans, setAllKegiatans] = useState<KegiatanDrainaseWithLaporanDate[]>([]);
+  const [allKegiatans, setAllKegiatans] = useState<KegiatanItemForPrint[]>([]);
   const [selectedKegiatanIds, setSelectedKegiatanIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -53,8 +58,10 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   const fetchKegiatansForPrint = async () => {
     setLoading(true);
     try {
-      const fetchedKegiatans: KegiatanDrainaseWithLaporanDate[] = [];
+      const fetchedKegiatans: KegiatanItemForPrint[] = [];
       
+      // If reportType is 'bulanan' and filterPeriod is set, we need to fetch all laporan_drainase for that period
+      // Otherwise, we use the provided laporanIdsToFetch
       let targetLaporanIds = laporanIdsToFetch;
       if (reportType === "bulanan" && filterPeriod) {
         const { data: periodLaporans, error: periodError } = await supabase
@@ -100,7 +107,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           continue;
         }
 
-        const mappedKegiatans: KegiatanDrainaseWithLaporanDate[] = (kegiatanData || []).map((kegiatan) => ({
+        const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => ({
           id: kegiatan.id,
           namaJalan: kegiatan.nama_jalan,
           kecamatan: kegiatan.kecamatan,
@@ -125,7 +132,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           jumlahPHL: kegiatan.jumlah_phl || 1,
           keterangan: kegiatan.keterangan || "",
           tanggalKegiatan: format(currentLaporanDate, "dd MMMM yyyy", { locale: idLocale }),
-          laporanTanggal: currentLaporanDate, // This is crucial for the new PDF generator
+          laporanTanggal: currentLaporanDate,
         }));
         fetchedKegiatans.push(...mappedKegiatans);
       }
@@ -178,7 +185,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
 
     setIsPrinting(true);
     try {
-      const selectedKegiatansWithDetails: KegiatanDrainaseWithLaporanDate[] = [];
+      const selectedKegiatansWithDetails: KegiatanDrainase[] = [];
       let earliestDateForReport: Date | null = null;
 
       for (const kegiatanId of selectedKegiatanIds) {
@@ -207,8 +214,11 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             throw new Error("Gagal memuat operasional alat berat untuk kegiatan.");
           }
 
+          // Destructure to remove internal-only properties like laporanTanggal and tanggalKegiatan
+          const { laporanTanggal, tanggalKegiatan, ...restKegiatan } = baseKegiatan;
+
           selectedKegiatansWithDetails.push({
-            ...baseKegiatan, // Keep all properties including laporanTanggal
+            ...restKegiatan, // Use restKegiatan to exclude internal properties
             materials: (materialsRes.data || []).map(m => ({
               id: m.id,
               jenis: m.jenis,
@@ -239,14 +249,20 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       }
 
       // Sort again to ensure correct order in the final PDF
-      selectedKegiatansWithDetails.sort((a, b) => a.laporanTanggal.getTime() - b.laporanTanggal.getTime());
+      selectedKegiatansWithDetails.sort((a, b) => {
+        // This sort will be based on the original report's date, which is not directly available on KegiatanDrainase
+        // For simplicity with the old generatePDF, we'll rely on the order they were fetched/selected.
+        // If strict chronological order across multiple reports is needed, the old generatePDF cannot handle it.
+        return 0; 
+      });
 
-      const laporanToPrint: LaporanDrainaseForPDF = { // Use LaporanDrainaseForPDF type
+      const laporanToPrint: LaporanDrainase = { // Use LaporanDrainase type
         tanggal: earliestDateForReport, // Use the earliest date as the report date
         kegiatans: selectedKegiatansWithDetails,
       };
 
-      await generateDrainaseReportPDF(laporanToPrint, reportType, true, filterPeriod); 
+      // The old generatePDF does not take reportType or filterPeriod
+      await generatePDF(laporanToPrint, true); 
       toast.success("Laporan PDF berhasil dibuat.");
       onClose();
     } catch (error: any) {
@@ -265,6 +281,10 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           <DialogDescription>
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
             {reportType === "bulanan" && filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
+            <p className="text-red-500 text-xs mt-1">
+              Catatan: Fungsi cetak laporan bulanan yang menggabungkan banyak tanggal tidak didukung oleh generator PDF saat ini.
+              Laporan akan dibuat berdasarkan tanggal laporan pertama yang dipilih.
+            </p>
           </DialogDescription>
         </DialogHeader>
         {loading ? (
