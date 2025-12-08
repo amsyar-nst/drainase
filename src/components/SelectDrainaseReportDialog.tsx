@@ -156,7 +156,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
         ) : laporans.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">Tidak ada laporan drainase yang tersedia untuk periode ini.</p>
         ) : (
-          <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex flex-col flex-1"> {/* Removed overflow-hidden */}
             <div className="flex items-center space-x-2 my-4">
               <Checkbox
                 id="select-all-laporans"
@@ -168,7 +168,7 @@ const SelectDrainaseReportDialog: React.FC<SelectDrainaseReportDialogProps> = ({
                 Pilih Semua ({selectedLaporanIds.size}/{laporans.length})
               </Label>
             </div>
-            <ScrollArea className="flex-1 h-full pr-4"> {/* Menggunakan flex-1 h-full */}
+            <ScrollArea className="flex-1 h-full pr-4">
               <div className="space-y-3">
                 {laporans.map((laporan) => {
                   const isSelected = selectedLaporanIds.has(laporan.id);
