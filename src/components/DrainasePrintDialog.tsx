@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
@@ -18,23 +17,27 @@ import { generatePDF } from "@/lib/pdf-generator";
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { cn } from "@/lib/utils"; // Import cn for conditional classNames
+import { cn } from "@/lib/utils";
 
-interface PrintDrainaseDialogProps {
-  laporanIds: string[];
+interface DrainasePrintDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  laporanIdsToFetch: string[]; // Array of laporan IDs to fetch activities from
+  reportType: "harian" | "bulanan"; // Type of report to generate
+  filterPeriod: string | null; // Optional filter for bulanan reports
 }
 
 interface KegiatanItemForPrint extends KegiatanDrainase {
-  tanggalKegiatan: string;
-  laporanTanggal: Date;
+  tanggalKegiatan: string; // Formatted date of the activity's parent report
+  laporanTanggal: Date; // Actual date object of the activity's parent report
 }
 
-export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
-  laporanIds,
+const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   isOpen,
   onClose,
+  laporanIdsToFetch,
+  reportType,
+  filterPeriod,
 }) => {
   const [allKegiatans, setAllKegiatans] = useState<KegiatanItemForPrint[]>([]);
   const [selectedKegiatanIds, setSelectedKegiatanIds] = useState<Set<string>>(new Set());
@@ -42,32 +45,53 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
-    if (isOpen && laporanIds.length > 0) {
-      fetchKegiatansForLaporans(laporanIds);
+    if (isOpen) {
+      fetchKegiatansForPrint();
     } else {
       setAllKegiatans([]);
       setSelectedKegiatanIds(new Set());
       setLoading(true);
       setIsPrinting(false);
     }
-  }, [isOpen, laporanIds]);
+  }, [isOpen, laporanIdsToFetch, reportType, filterPeriod]);
 
-  const fetchKegiatansForLaporans = async (ids: string[]) => {
+  const fetchKegiatansForPrint = async () => {
     setLoading(true);
     try {
-      const allFetchedKegiatans: KegiatanItemForPrint[] = [];
+      const fetchedKegiatans: KegiatanItemForPrint[] = [];
       let earliestLaporanDate: Date | null = null;
 
-      for (const id of ids) {
+      // If reportType is 'bulanan' and filterPeriod is set, we need to fetch all laporan_drainase for that period
+      // Otherwise, we use the provided laporanIdsToFetch
+      let targetLaporanIds = laporanIdsToFetch;
+      if (reportType === "bulanan" && filterPeriod) {
+        const { data: periodLaporans, error: periodError } = await supabase
+          .from("laporan_drainase")
+          .select("id, tanggal")
+          .eq("periode", filterPeriod)
+          .order("tanggal", { ascending: true });
+
+        if (periodError) throw periodError;
+        targetLaporanIds = periodLaporans.map(l => l.id);
+      }
+
+      if (targetLaporanIds.length === 0) {
+        setAllKegiatans([]);
+        setSelectedKegiatanIds(new Set());
+        setLoading(false);
+        return;
+      }
+
+      for (const laporanId of targetLaporanIds) {
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
           .select('tanggal')
-          .eq('id', id)
+          .eq('id', laporanId)
           .single();
 
         if (laporanError) {
-          console.error(`Error fetching laporan tanggal for ID ${id}:`, laporanError);
-          toast.error(`Gagal memuat tanggal laporan untuk ID ${id}.`);
+          console.error(`Error fetching laporan tanggal for ID ${laporanId}:`, laporanError);
+          toast.error(`Gagal memuat tanggal laporan untuk ID ${laporanId}.`);
           continue;
         }
         const currentLaporanDate = new Date(laporanData.tanggal);
@@ -78,12 +102,12 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .select('*')
-          .eq('laporan_id', id)
+          .eq('laporan_id', laporanId)
           .order('created_at', { ascending: true });
 
         if (kegiatanError) {
-          console.error(`Error fetching kegiatan list for laporan ID ${id}:`, kegiatanError);
-          toast.error(`Gagal memuat daftar kegiatan untuk laporan ID ${id}.`);
+          console.error(`Error fetching kegiatan list for laporan ID ${laporanId}:`, kegiatanError);
+          toast.error(`Gagal memuat daftar kegiatan untuk laporan ID ${laporanId}.`);
           continue;
         }
 
@@ -105,27 +129,28 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
           lebarRataRata: kegiatan.lebar_rata_rata || "",
           rataRataSedimen: kegiatan.rata_rata_sedimen || "",
           volumeGalian: kegiatan.volume_galian || "",
-          materials: [],
-          peralatans: [],
-          operasionalAlatBerats: [],
+          materials: [], // Will be fetched later for selected items
+          peralatans: [], // Will be fetched later for selected items
+          operasionalAlatBerats: [], // Will be fetched later for selected items
           koordinator: kegiatan.koordinator || [],
           jumlahPHL: kegiatan.jumlah_phl || 1,
           keterangan: kegiatan.keterangan || "",
-          tanggalKegiatan: format(new Date(kegiatan.created_at), "dd MMMM yyyy", { locale: idLocale }),
+          tanggalKegiatan: format(currentLaporanDate, "dd MMMM yyyy", { locale: idLocale }),
           laporanTanggal: currentLaporanDate,
         }));
-        allFetchedKegiatans.push(...mappedKegiatans);
+        fetchedKegiatans.push(...mappedKegiatans);
       }
 
-      allFetchedKegiatans.sort((a, b) => {
+      // Sort activities by their parent report date, then by activity creation date
+      fetchedKegiatans.sort((a, b) => {
         if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
           return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
         }
         return new Date(a.tanggalKegiatan).getTime() - new Date(b.tanggalKegiatan).getTime();
       });
 
-      setAllKegiatans(allFetchedKegiatans);
-      setSelectedKegiatanIds(new Set(allFetchedKegiatans.map(k => k.id)));
+      setAllKegiatans(fetchedKegiatans);
+      setSelectedKegiatanIds(new Set(fetchedKegiatans.map(k => k.id))); // Select all by default
     } catch (error: any) {
       console.error("Error fetching activities for print:", error);
       toast.error("Gagal memuat daftar kegiatan: " + error.message);
@@ -162,14 +187,14 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
 
     setIsPrinting(true);
     try {
-      const selectedKegiatans: KegiatanItemForPrint[] = [];
-      let earliestDate: Date | null = null;
+      const selectedKegiatansWithDetails: KegiatanItemForPrint[] = [];
+      let earliestDateForReport: Date | null = null;
 
       for (const kegiatanId of selectedKegiatanIds) {
         const baseKegiatan = allKegiatans.find(k => k.id === kegiatanId);
         if (baseKegiatan) {
-          if (!earliestDate || baseKegiatan.laporanTanggal < earliestDate) {
-            earliestDate = baseKegiatan.laporanTanggal;
+          if (!earliestDateForReport || baseKegiatan.laporanTanggal < earliestDateForReport) {
+            earliestDateForReport = baseKegiatan.laporanTanggal;
           }
 
           const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
@@ -191,7 +216,7 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
             throw new Error("Gagal memuat operasional alat berat untuk kegiatan.");
           }
 
-          selectedKegiatans.push({
+          selectedKegiatansWithDetails.push({
             ...baseKegiatan,
             materials: (materialsRes.data || []).map(m => ({
               id: m.id,
@@ -222,7 +247,8 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
         }
       }
 
-      selectedKegiatans.sort((a, b) => {
+      // Sort again to ensure correct order in the final PDF
+      selectedKegiatansWithDetails.sort((a, b) => {
         if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
           return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
         }
@@ -230,8 +256,8 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
       });
 
       const laporanToPrint: LaporanDrainase = {
-        tanggal: earliestDate,
-        kegiatans: selectedKegiatans,
+        tanggal: earliestDateForReport, // Use the earliest date as the report date
+        kegiatans: selectedKegiatansWithDetails,
       };
 
       await generatePDF(laporanToPrint, true);
@@ -249,9 +275,10 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Cetak Laporan Drainase</DialogTitle>
+          <DialogTitle>Cetak Laporan Drainase ({reportType === "harian" ? "Harian" : "Bulanan"})</DialogTitle>
           <DialogDescription>
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
+            {reportType === "bulanan" && filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
           </DialogDescription>
         </DialogHeader>
         {loading ? (
@@ -259,9 +286,11 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2 text-muted-foreground">Memuat kegiatan...</span>
           </div>
+        ) : allKegiatans.length === 0 ? (
+          <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
         ) : (
-          <div className="flex flex-col flex-1 overflow-hidden"> {/* Added overflow-hidden */}
-            <div className="flex items-center space-x-2 mb-4 shrink-0"> {/* Added shrink-0 */}
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex items-center space-x-2 my-4 shrink-0">
               <Checkbox
                 id="select-all"
                 checked={selectedKegiatanIds.size === allKegiatans.length && allKegiatans.length > 0}
@@ -272,47 +301,43 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <ScrollArea className="h-full pr-4"> {/* Ensured h-full */}
+            <div className="flex-1 overflow-y-auto pr-4"> {/* Using div with overflow-y-auto */}
               <div className="space-y-3">
-                {allKegiatans.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Tidak ada kegiatan untuk laporan ini.</p>
-                ) : (
-                  allKegiatans.map((kegiatan) => {
-                    const isSelected = selectedKegiatanIds.has(kegiatan.id);
-                    return (
-                      <div
-                        key={kegiatan.id}
-                        className={cn(
-                          "flex items-start space-x-2 border-b pb-2 last:border-b-0 p-2 rounded-md cursor-pointer",
-                          "hover:bg-muted/50 transition-colors",
-                          isSelected && "bg-primary/10" // Highlight selected items
-                        )}
-                        onClick={() => handleCheckboxChange(kegiatan.id, !isSelected)}
-                      >
-                        <Checkbox
-                          id={`kegiatan-${kegiatan.id}`}
-                          checked={isSelected}
-                          onCheckedChange={(checked) =>
-                            handleCheckboxChange(kegiatan.id, checked as boolean)
-                          }
-                        />
-                        <div className="grid gap-1.5 leading-none">
-                          <Label htmlFor={`kegiatan-${kegiatan.id}`} className="font-medium text-base cursor-pointer">
-                            {kegiatan.namaJalan} - {kegiatan.kelurahan}, {kegiatan.kecamatan}
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            {kegiatan.aktifitasPenanganan} ({format(kegiatan.laporanTanggal, "dd MMMM yyyy", { locale: idLocale })})
-                          </p>
-                        </div>
+                {allKegiatans.map((kegiatan) => {
+                  const isSelected = selectedKegiatanIds.has(kegiatan.id);
+                  return (
+                    <div
+                      key={kegiatan.id}
+                      className={cn(
+                        "flex items-start space-x-2 border-b pb-2 last:border-b-0 p-2 rounded-md cursor-pointer",
+                        "hover:bg-muted/50 transition-colors",
+                        isSelected && "bg-primary/10"
+                      )}
+                      onClick={() => handleCheckboxChange(kegiatan.id, !isSelected)}
+                    >
+                      <Checkbox
+                        id={`kegiatan-${kegiatan.id}`}
+                        checked={isSelected}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxChange(kegiatan.id, checked as boolean)
+                        }
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <Label htmlFor={`kegiatan-${kegiatan.id}`} className="font-medium text-base cursor-pointer">
+                          {kegiatan.namaJalan} - {kegiatan.kelurahan}, {kegiatan.kecamatan}
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          {kegiatan.aktifitasPenanganan} ({kegiatan.tanggalKegiatan})
+                        </p>
                       </div>
-                    );
-                  })
-                )}
+                    </div>
+                  );
+                })}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         )}
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 shrink-0"> {/* Added shrink-0 */}
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 shrink-0">
           <Button variant="outline" onClick={onClose} disabled={isPrinting}>
             <X className="mr-2 h-4 w-4" />
             Batal
@@ -335,3 +360,5 @@ export const PrintDrainaseDialog: React.FC<PrintDrainaseDialogProps> = ({
     </Dialog>
   );
 };
+
+export default DrainasePrintDialog;

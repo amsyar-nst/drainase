@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
-import { PrintDrainaseDialog } from "@/components/PrintDrainaseDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import SelectDrainaseReportDialog from "@/components/SelectDrainaseReportDialog";
+import DrainasePrintDialog from "@/components/DrainasePrintDialog"; // Import the new dialog
 
 interface LaporanItem {
   id: string;
@@ -47,12 +46,11 @@ const LaporanList = () => {
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [selectedLaporanIdsForPrint, setSelectedLaporanIdsForPrint] = useState<string[]>([]); // Changed to array
   
-  // States for global print selection
-  const [isSelectDrainaseReportDialogOpen, setIsSelectDrainaseReportDialogOpen] = useState(false);
-  const [selectedGlobalReportType, setSelectedGlobalReportType] = useState<"harian" | "bulanan" | "tersier" | null>(null);
+  // States for the new DrainasePrintDialog
+  const [isDrainasePrintDialogOpen, setIsDrainasePrintDialogOpen] = useState(false);
+  const [laporanIdsToPrint, setLaporanIdsToPrint] = useState<string[]>([]);
+  const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan">("harian");
 
   // New states for period filtering
   const [uniquePeriods, setUniquePeriods] = useState<string[]>([]);
@@ -82,7 +80,6 @@ const LaporanList = () => {
         setUniquePeriods([]); // Reset periods on error
         return; // Exit early
       }
-      // console.log("Fetched Laporan Data:", laporanData); // Debug log: Periksa ini di console
 
       // 2. Fetch all periods and deduplicate client-side for the filter dropdown
       const { data: allPeriodsData, error: allPeriodsError } = await supabase
@@ -96,7 +93,6 @@ const LaporanList = () => {
         setUniquePeriods([]); // Reset periods on error
         return; // Exit early
       }
-      // console.log("Fetched All Periods Data (before deduplication):", allPeriodsData); // Debug log
 
       // Deduplicate periods client-side
       const uniquePeriodsSet = new Set((allPeriodsData || []).map((p: PeriodData) => p.periode));
@@ -123,7 +119,6 @@ const LaporanList = () => {
       );
 
       setLaporans(laporansWithCount);
-      // console.log("Final Laporans state:", laporansWithCount); // Debug log: Periksa ini di console
 
     } catch (error: any) {
       console.error("Error in fetchLaporans:", error);
@@ -168,24 +163,28 @@ const LaporanList = () => {
   };
 
   const handleIndividualPrintClick = (laporanId: string) => {
-    setSelectedLaporanIdsForPrint([laporanId]); // Pass as array
-    setIsPrintDialogOpen(true);
+    setLaporanIdsToPrint([laporanId]);
+    setCurrentPrintReportType("harian");
+    setIsDrainasePrintDialogOpen(true);
   };
 
   const handleGlobalPrintSelection = (reportType: "harian" | "bulanan" | "tersier") => {
-    setSelectedGlobalReportType(reportType);
-    if (reportType === "harian" || reportType === "bulanan") {
-      setIsSelectDrainaseReportDialogOpen(true);
-    } else if (reportType === "tersier") {
+    if (reportType === "tersier") {
       toast.info("Fitur cetak Laporan Tersier secara global belum tersedia.");
-      // Future implementation: Open a SelectTersierReportDialog
+      return;
     }
-  };
 
-  const handleSelectSpecificDrainaseReport = (laporanIds: string[]) => { // Changed to array
-    setSelectedLaporanIdsForPrint(laporanIds); // Set array of IDs // Fixed typo here
-    setIsPrintDialogOpen(true);
-    setIsSelectDrainaseReportDialogOpen(false);
+    setCurrentPrintReportType(reportType);
+    if (reportType === "harian") {
+      // For global harian, fetch all laporans matching the current filter period
+      const allFilteredLaporanIds = laporans.map(l => l.id);
+      setLaporanIdsToPrint(allFilteredLaporanIds);
+    } else if (reportType === "bulanan") {
+      // For bulanan, we will pass the filterPeriod to the dialog, and it will fetch all laporans for that period
+      // We don't need to pre-fetch all IDs here, just ensure filterPeriod is set
+      setLaporanIdsToPrint([]); // Empty array, dialog will fetch based on filterPeriod
+    }
+    setIsDrainasePrintDialogOpen(true);
   };
 
   if (loading) {
@@ -349,28 +348,14 @@ const LaporanList = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Print Drainase Dialog (for individual or selected global reports) */}
-        {selectedLaporanIdsForPrint.length > 0 && ( // Check for array length
-          <PrintDrainaseDialog
-            laporanIds={selectedLaporanIdsForPrint} // Pass array
-            isOpen={isPrintDialogOpen}
-            onClose={() => {
-              setIsPrintDialogOpen(false);
-              setSelectedLaporanIdsForPrint([]); // Reset array
-            }}
-          />
-        )}
-
-        {/* Select Drainase Report Dialog (for global Harian/Bulanan print) */}
-        {selectedGlobalReportType && (selectedGlobalReportType === "harian" || selectedGlobalReportType === "bulanan") && (
-          <SelectDrainaseReportDialog
-            isOpen={isSelectDrainaseReportDialogOpen}
-            onClose={() => setIsSelectDrainaseReportDialogOpen(false)}
-            onSelect={handleSelectSpecificDrainaseReport}
-            reportType={selectedGlobalReportType}
-            filterPeriod={selectedFilterPeriod} /* Pass the selected filter period here */
-          />
-        )}
+        {/* New DrainasePrintDialog */}
+        <DrainasePrintDialog
+          isOpen={isDrainasePrintDialogOpen}
+          onClose={() => setIsDrainasePrintDialogOpen(false)}
+          laporanIdsToFetch={laporanIdsToPrint}
+          reportType={currentPrintReportType}
+          filterPeriod={currentPrintReportType === "bulanan" ? selectedFilterPeriod : null}
+        />
       </div>
     </>
   );
