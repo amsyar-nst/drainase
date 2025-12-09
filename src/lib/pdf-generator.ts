@@ -211,7 +211,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="no-col">No</th>
             <th rowspan="2" class="date-col">Hari/ Tanggal</th>
             <th rowspan="2" class="location-col">Lokasi</th>
-            <th colspan="3">Foto Dokumentasi</th> <!-- Changed colspan to 3 -->
+            <th colspan="3">Foto Dokumentasi</th>
             <th rowspan="2" class="jenis-col">Jenis Saluran<br/>(Terbuka/ Tertutup)</th>
             <th rowspan="2" class="jenis-col">Jenis Sedimen<br/>(Batu/ Padat/Cair)</th>
             <th rowspan="2" style="width: 80px;">Aktifitas Penanganan</th>
@@ -221,7 +221,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
             <th colspan="4">Material / Bahan</th>
             <th colspan="3">Peralatan & Alat Berat</th>
-            <th colspan="3">Personil UPT</th>
+            <th colspan="2">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
           <tr>
@@ -236,8 +236,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
             <th style="width: 70px;">Koordinator</th>
-            <th class="number-col">Jml UPT</th>
-            <th class="number-col">Jml P3SU</th>
+            <th class="number-col">Jml PHL</th>
           </tr>
         </thead>
         <tbody>
@@ -318,8 +317,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                 </ul>
               </td>
               <td>${kegiatan.koordinator.join(', ')}</td>
-              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
-              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
+              <td class="center">${kegiatan.jumlahPHL || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}
