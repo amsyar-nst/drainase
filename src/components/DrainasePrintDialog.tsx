@@ -287,13 +287,11 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       // Sort activities by their report date for the PDF
       selectedKegiatansWithDetails.sort((a, b) => a.laporanTanggal.getTime() - b.laporanTanggal.getTime());
 
-      // Determine the overall report type and period from the selected activities
-      const firstSelectedKegiatan = selectedKegiatansWithDetails[0];
-      const overallReportType = firstSelectedKegiatan.reportType;
-      const overallPeriode = filterPeriod || format(firstSelectedKegiatan.laporanTanggal, 'MMMM yyyy', { locale: idLocale });
-      const overallTanggal = firstSelectedKegiatan.laporanTanggal; // For harian report
+      // Determine the overall report type and period from the dialog's props
+      const overallPeriode = filterPeriod || format(selectedKegiatansWithDetails[0].laporanTanggal, 'MMMM yyyy', { locale: idLocale });
+      const overallTanggal = selectedKegiatansWithDetails[0].laporanTanggal; // For harian report
 
-      if (overallReportType === "harian") {
+      if (reportType === "harian") {
         const laporanToPrint: LaporanDrainase = {
           tanggal: overallTanggal,
           periode: overallPeriode,
@@ -301,22 +299,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, reportType, ...rest }) => rest),
         };
         await generatePDF(laporanToPrint, true);
-      } else if (overallReportType === "bulanan") {
-        // For monthly, we need to group activities by their original report date
-        const groupedKegiatans: { [date: string]: KegiatanDrainase[] } = {};
-        selectedKegiatansWithDetails.forEach(kegiatan => {
-          const dateKey = format(kegiatan.laporanTanggal, 'yyyy-MM-dd');
-          if (!groupedKegiatans[dateKey]) {
-            groupedKegiatans[dateKey] = [];
-          }
-          const { laporanTanggal, tanggalKegiatan, reportType, ...rest } = kegiatan;
-          groupedKegiatans[dateKey].push(rest);
-        });
-
-        // Create a single LaporanDrainase object for the monthly report,
-        // where each 'kegiatan' in the PDF generator will represent a day's activities.
-        // This might require a slight adjustment in generatePDFBulanan if it expects a flat list.
-        // For now, we'll pass the full list and let generatePDFBulanan handle grouping if needed.
+      } else if (reportType === "bulanan") {
         const laporanBulananToPrint: LaporanDrainase = {
           tanggal: overallTanggal, // Use the earliest date for the overall report date
           periode: overallPeriode,
@@ -324,7 +307,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, reportType, ...rest }) => rest),
         };
         await generatePDFBulanan(laporanBulananToPrint, true);
-      } else if (overallReportType === "tersier") {
+      } else if (reportType === "tersier") {
         const laporanTersierToPrint: LaporanDrainase = {
           tanggal: overallTanggal,
           periode: overallPeriode,

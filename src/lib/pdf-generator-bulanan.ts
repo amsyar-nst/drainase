@@ -1,8 +1,8 @@
-import { LaporanBulananData, KegiatanDrainaseBulanan } from "@/types/laporan-bulanan";
+import { LaporanDrainase, KegiatanDrainase } from "@/types/laporan"; // Updated import
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: boolean = true): Promise<Blob> => {
+export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
   // Convert images to base64
   const getBase64 = async (file: File | string | null): Promise<string> => {
     return new Promise(async (resolve) => {
@@ -247,7 +247,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: 
           ${kegiatansWithImages.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
-              <td>${format(kegiatan.laporanTanggal, "EEEE", { locale: id })}<br/>${format(kegiatan.laporanTanggal, "dd/MM/yyyy", { locale: id })}</td>
+              <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 <div class="photo-container">

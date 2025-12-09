@@ -74,6 +74,6 @@ export interface KegiatanDrainase {
 export interface LaporanDrainase {
   tanggal: Date | null; // Changed to allow null
   periode: string; // Added periode for consistency and filtering
-  reportType: "harian" | "tersier"; // New field to distinguish report types
+  reportType: "harian" | "tersier" | "bulanan"; // New field to distinguish report types, added "bulanan"
   kegiatans: KegiatanDrainase[];
 }
