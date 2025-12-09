@@ -95,7 +95,7 @@ const LaporanList = () => {
       }
 
       // Deduplicate periods client-side
-      const uniquePeriodsSet = new Set((allPeriodsData || []).map((p: PeriodData) => p.periode));
+      const uniquePeriodsSet = new Set((allPeriodsData || []).map((p: PeriodData) => p.periode as string));
       setUniquePeriods(Array.from(uniquePeriodsSet));
 
       // 3. Fetch kegiatan count for each laporan
