@@ -34,7 +34,7 @@ export const Navigation = () => {
               activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Form Drainase</span>
+              <span className="hidden sm:inline">Form Laporan</span>
             </NavLink>
             <NavLink
               to="/"
@@ -42,7 +42,7 @@ export const Navigation = () => {
               activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <List className="h-4 w-4" />
-              <span className="hidden sm:inline">List Drainase</span>
+              <span className="hidden sm:inline">List Laporan</span>
             </NavLink>
             <Button
               variant="ghost"

@@ -3,14 +3,14 @@ export interface Material {
   jenis: string;
   jumlah: string;
   satuan: string;
-  keterangan?: string; // Added keterangan field
+  keterangan?: string;
 }
 
 export interface Peralatan {
   id: string;
   nama: string;
   jumlah: number;
-  satuan: string; // Added satuan field
+  satuan: string;
 }
 
 export interface OperasionalAlatBerat {
@@ -26,21 +26,27 @@ export interface OperasionalAlatBerat {
   keterangan: string;
 }
 
+export interface Alat {
+  id: string;
+  nama: string;
+  jumlah: number;
+}
+
 export interface KegiatanDrainase {
   id: string;
   namaJalan: string;
   kecamatan: string;
   kelurahan: string;
-  foto0: (File | string | null)[]; // Changed to array
-  foto50: (File | string | null)[]; // Changed to array
-  foto100: (File | string | null)[]; // Changed to array
-  foto0Url?: string[]; // Changed to array
-  foto50Url?: string[]; // Changed to array
-  foto100Url?: string[]; // Changed to array
-  fotoSket: (File | string | null)[]; // New field for sketch photos
-  fotoSketUrl?: string[]; // New field for sketch photo URLs
-  jenisSaluran: "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | ""; // Added "Terbuka & Tertutup"
-  jenisSedimen: string; // Changed to string to allow custom values
+  foto0: (File | string | null)[];
+  foto50: (File | string | null)[];
+  foto100: (File | string | null)[];
+  foto0Url?: string[];
+  foto50Url?: string[];
+  foto100Url?: string[];
+  fotoSket: (File | string | null)[];
+  fotoSketUrl?: string[];
+  jenisSaluran: "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "";
+  jenisSedimen: string;
   aktifitasPenanganan: string;
   panjangPenanganan: string;
   lebarRataRata: string;
@@ -49,15 +55,25 @@ export interface KegiatanDrainase {
   materials: Material[];
   peralatans: Peralatan[];
   operasionalAlatBerats: OperasionalAlatBerat[];
-  koordinator: string[]; // Changed to string array for multiple coordinators
+  koordinator: string[];
   jumlahPHL: number;
   keterangan: string;
-  hariTanggal?: Date | null; // Added hariTanggal field
+  hariTanggal?: Date | null;
+  
+  // Tersier-specific fields (now optional)
+  jumlahUPT?: number;
+  jumlahP3SU?: number;
+  alatYangDibutuhkan?: Alat[];
+  rencanaPanjang?: string;
+  rencanaVolume?: string;
+  realisasiPanjang?: string;
+  realisasiVolume?: string;
+  sisaTargetHari?: string;
 }
 
 export interface LaporanDrainase {
-  tanggal: Date | null; // Changed to allow null
-  periode: string; // Added periode for consistency and filtering
-  reportType: "harian" | "bulanan"; // New field to distinguish report types, added "bulanan"
+  tanggal: Date | null;
+  periode: string;
+  reportType: "harian" | "bulanan" | "tersier"; // Added "tersier"
   kegiatans: KegiatanDrainase[];
 }

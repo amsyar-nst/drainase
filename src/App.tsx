@@ -26,7 +26,7 @@ const App = () => {
               <Route path="/" element={<LaporanList />} />
               <Route path="/laporan" element={<LaporanList />} />
 
-              {/* Drainase Form (Harian) routes */}
+              {/* Drainase Form (Harian and Tersier) routes */}
               <Route path="/drainase/new" element={<Index />} />
               <Route path="/drainase/edit/:id" element={<Index />} />
               

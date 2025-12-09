@@ -35,6 +35,7 @@ interface LaporanItem {
   periode: string;
   created_at: string;
   kegiatan_count: number;
+  report_type: "harian" | "bulanan" | "tersier"; // Include report_type
 }
 
 // Define a type for the period data
@@ -50,7 +51,7 @@ const LaporanList = () => {
   // States for the new DrainasePrintDialog
   const [isDrainasePrintDialogOpen, setIsDrainasePrintDialogOpen] = useState(false);
   const [laporanIdsToPrint, setLaporanIdsToPrint] = useState<string[]>([]);
-  const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan">("harian");
+  const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan" | "tersier">("harian"); // Added "tersier"
 
   // New states for period filtering
   const [uniquePeriods, setUniquePeriods] = useState<string[]>([]);
@@ -114,6 +115,7 @@ const LaporanList = () => {
           return {
             ...laporan,
             kegiatan_count: count || 0,
+            report_type: laporan.report_type as "harian" | "bulanan" | "tersier",
           };
         })
       );
@@ -162,21 +164,22 @@ const LaporanList = () => {
     }
   };
 
-  const handleIndividualPrintClick = (laporanId: string) => {
+  const handleIndividualPrintClick = (laporanId: string, type: "harian" | "tersier") => {
     setLaporanIdsToPrint([laporanId]);
-    setCurrentPrintReportType("harian");
+    setCurrentPrintReportType(type);
     setIsDrainasePrintDialogOpen(true);
   };
 
-  const handleGlobalPrintSelection = (reportType: "harian" | "bulanan") => { // Removed "tersier"
+  const handleGlobalPrintSelection = (reportType: "harian" | "bulanan" | "tersier") => {
     setCurrentPrintReportType(reportType);
-    if (reportType === "harian") {
-      // For global harian, fetch all laporans matching the current filter period
-      const allFilteredLaporanIds = laporans.map(l => l.id);
+    if (reportType === "harian" || reportType === "tersier") {
+      // For global harian/tersier, fetch all laporans matching the current filter period AND report_type
+      const allFilteredLaporanIds = laporans
+        .filter(l => l.report_type === reportType)
+        .map(l => l.id);
       setLaporanIdsToPrint(allFilteredLaporanIds);
     } else if (reportType === "bulanan") {
-      // For bulanan, we will pass the filterPeriod to the dialog, and it will fetch all laporans for that period
-      // We don't need to pre-fetch all IDs here, just ensure filterPeriod is set
+      // For bulanan, we will pass the filterPeriod to the dialog, and it will fetch all harian laporans for that period
       setLaporanIdsToPrint([]); // Empty array, dialog will fetch based on filterPeriod
     }
     setIsDrainasePrintDialogOpen(true);
@@ -237,11 +240,15 @@ const LaporanList = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {/* Removed "Laporan Harian" option */}
+                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("harian")}>
+                    Laporan Harian
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleGlobalPrintSelection("bulanan")}>
                     Laporan Bulanan
                   </DropdownMenuItem>
-                  {/* Removed "Laporan Tersier" option */}
+                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("tersier")}>
+                    Laporan Tersier
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -261,6 +268,7 @@ const LaporanList = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[120px]">Tanggal</TableHead>
+                      <TableHead className="min-w-[100px]">Jenis Laporan</TableHead> {/* New column */}
                       <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
                       <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
                       <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
@@ -273,6 +281,7 @@ const LaporanList = () => {
                         <TableCell className="font-medium">
                           {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
                         </TableCell>
+                        <TableCell className="capitalize">{laporan.report_type}</TableCell> {/* Display report type */}
                         <TableCell className="hidden md:table-cell">{laporan.periode}</TableCell>
                         <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell>
                         <TableCell className="hidden md:table-cell">
@@ -283,7 +292,7 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="icon"
-                              onClick={() => handleIndividualPrintClick(laporan.id)}
+                              onClick={() => handleIndividualPrintClick(laporan.id, laporan.report_type === "tersier" ? "tersier" : "harian")}
                               className="md:size-sm md:w-auto"
                             >
                               <Printer className="h-4 w-4 md:mr-2" />

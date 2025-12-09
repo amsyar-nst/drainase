@@ -12,9 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan"; // Import LaporanDrainase
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, Alat } from "@/types/laporan"; // Import Alat
 import { generatePDF } from "@/lib/pdf-generator"; // For harian
 import { generatePDFBulanan } from "@/lib/pdf-generator-bulanan"; // For bulanan
+import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -23,16 +24,15 @@ import { cn } from "@/lib/utils";
 interface DrainasePrintDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  laporanIdsToFetch: string[]; // Array of laporan IDs to fetch activities from (used for harian)
-  reportType: "harian" | "bulanan"; // Type of report to generate
+  laporanIdsToFetch: string[]; // Array of laporan IDs to fetch activities from (used for harian/tersier)
+  reportType: "harian" | "bulanan" | "tersier"; // Type of report to generate
   filterPeriod: string | null; // Optional filter for bulanan reports
 }
 
-// Use KegiatanDrainase directly as it now contains all necessary fields
 interface KegiatanItemForPrint extends KegiatanDrainase {
   tanggalKegiatan: string; // Added this property for display in the dialog
   laporanTanggal: Date; // The specific date of the parent report for this activity
-  reportType: "harian"; // Add reportType for filtering
+  reportType: "harian" | "tersier"; // Store report type for each activity
 }
 
 const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
@@ -81,11 +81,11 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           periodLaporanDates[l.id] = new Date(l.tanggal);
           periodLaporanPeriode[l.id] = l.periode;
         });
-      } else if (reportType === "harian" && laporanIdsToFetch.length > 0) {
-        // For harian, we need the date, periode, and report_type of the single report being printed
+      } else if ((reportType === "harian" || reportType === "tersier") && laporanIdsToFetch.length > 0) {
+        // For harian/tersier, we need the date, periode, and report_type of the single report being printed
         const { data: singleLaporan, error: singleLaporanError } = await supabase
           .from("laporan_drainase")
-          .select("tanggal, periode")
+          .select("tanggal, periode, report_type")
           .eq("id", laporanIdsToFetch[0])
           .single();
         if (singleLaporanError) throw singleLaporanError;
@@ -122,38 +122,59 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           continue;
         }
 
-        const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => ({
-          id: kegiatan.id,
-          namaJalan: kegiatan.nama_jalan,
-          kecamatan: kegiatan.kecamatan,
-          kelurahan: kegiatan.kelurahan,
-          foto0: kegiatan.foto_0_url || [],
-          foto50: kegiatan.foto_50_url || [],
-          foto100: kegiatan.foto_100_url || [],
-          fotoSket: kegiatan.foto_sket_url || [],
-          foto0Url: kegiatan.foto_0_url || undefined,
-          foto50Url: kegiatan.foto_50_url || undefined,
-          foto100Url: kegiatan.foto_100_url || undefined,
-          fotoSketUrl: kegiatan.foto_sket_url || undefined,
-          jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup" | "Terbuka & Tertutup",
-          jenisSedimen: (kegiatan.jenis_sedimen || "") as string,
-          aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
-          panjangPenanganan: kegiatan.panjang_penanganan || "",
-          lebarRataRata: kegiatan.lebar_rata_rata || "",
-          rataRataSedimen: kegiatan.rata_rata_sedimen || "",
-          volumeGalian: kegiatan.volume_galian || "",
-          materials: [], // Will be fetched later for selected items
-          peralatans: [], // Will be fetched later for selected items
-          operasionalAlatBerats: [], // Will be fetched later for selected items
-          koordinator: kegiatan.koordinator || [],
-          jumlahPHL: kegiatan.jumlah_phl || 1,
-          keterangan: kegiatan.keterangan || "",
+        const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => {
+          let alatYangDibutuhkan: Alat[] = [];
+          if (kegiatan.alat_yang_dibutuhkan && Array.isArray(kegiatan.alat_yang_dibutuhkan)) {
+            alatYangDibutuhkan = kegiatan.alat_yang_dibutuhkan.map((nama: string) => ({
+              id: crypto.randomUUID(),
+              nama: nama,
+              jumlah: 1, // Default jumlah to 1 if not stored
+            }));
+          }
 
-          tanggalKegiatan: format(currentLaporanDate, "dd MMMM yyyy", { locale: idLocale }),
-          laporanTanggal: currentLaporanDate, // Crucial for monthly report sorting and display
-          reportType: "harian", // Store report type for each activity
-          hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : null, // Map from DB
-        }));
+          return {
+            id: kegiatan.id,
+            namaJalan: kegiatan.nama_jalan,
+            kecamatan: kegiatan.kecamatan,
+            kelurahan: kegiatan.kelurahan,
+            foto0: kegiatan.foto_0_url || [],
+            foto50: kegiatan.foto_50_url || [],
+            foto100: kegiatan.foto_100_url || [],
+            fotoSket: kegiatan.foto_sket_url || [],
+            foto0Url: kegiatan.foto_0_url || undefined,
+            foto50Url: kegiatan.foto_50_url || undefined,
+            foto100Url: kegiatan.foto_100_url || undefined,
+            fotoSketUrl: kegiatan.foto_sket_url || undefined,
+            jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup" | "Terbuka & Tertutup",
+            jenisSedimen: (kegiatan.jenis_sedimen || "") as string,
+            aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
+            panjangPenanganan: kegiatan.panjang_penanganan || "",
+            lebarRataRata: kegiatan.lebar_rata_rata || "",
+            rataRataSedimen: kegiatan.rata_rata_sedimen || "",
+            volumeGalian: kegiatan.volume_galian || "",
+            materials: [], // Will be fetched later for selected items
+            peralatans: [], // Will be fetched later for selected items
+            operasionalAlatBerats: [], // Will be fetched later for selected items
+            koordinator: kegiatan.koordinator || [],
+            jumlahPHL: kegiatan.jumlah_phl || 1,
+            keterangan: kegiatan.keterangan || "",
+
+            tanggalKegiatan: format(currentLaporanDate, "dd MMMM yyyy", { locale: idLocale }),
+            laporanTanggal: currentLaporanDate, // Crucial for monthly report sorting and display
+            reportType: reportType === "tersier" ? "tersier" : "harian", // Store report type for each activity
+            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : null, // Map from DB
+
+            // Tersier-specific fields
+            jumlahUPT: kegiatan.jumlah_upt || 0,
+            jumlahP3SU: kegiatan.jumlah_p3su || 0,
+            alatYangDibutuhkan: alatYangDibutuhkan,
+            rencanaPanjang: kegiatan.rencana_panjang || "",
+            rencanaVolume: kegiatan.rencana_volume || "",
+            realisasiPanjang: kegiatan.realisasi_panjang || "",
+            realisasiVolume: kegiatan.realisasi_volume || "",
+            sisaTargetHari: kegiatan.sisa_target || "",
+          };
+        });
         fetchedKegiatans.push(...mappedKegiatans);
       }
 
@@ -266,28 +287,22 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       const overallPeriode = filterPeriod || format(selectedKegiatansWithDetails[0].laporanTanggal, 'MMMM yyyy', { locale: idLocale });
       const overallTanggal = selectedKegiatansWithDetails[0].laporanTanggal; // For harian report
 
+      const laporanToPrint: LaporanDrainase = {
+        tanggal: overallTanggal,
+        periode: overallPeriode,
+        reportType: reportType, // Use the reportType from dialog props
+        kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, reportType: activityReportType, ...rest }) => ({
+          ...rest,
+          hariTanggal: laporanTanggal, // Use the parent report's date as hariTanggal for the activity
+        })),
+      };
+
       if (reportType === "harian") {
-        const laporanToPrint: LaporanDrainase = {
-          tanggal: overallTanggal,
-          periode: overallPeriode,
-          reportType: "harian",
-          kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, reportType, ...rest }) => ({
-            ...rest,
-            hariTanggal: laporanTanggal, // Use the parent report's date as hariTanggal for the activity
-          })),
-        };
         await generatePDF(laporanToPrint, true);
       } else if (reportType === "bulanan") {
-        const laporanBulananToPrint: LaporanDrainase = {
-          tanggal: overallTanggal, // Use the earliest date for the overall report date
-          periode: overallPeriode,
-          reportType: "bulanan", // Explicitly set to bulanan for the PDF generator
-          kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, reportType, ...rest }) => ({
-            ...rest,
-            hariTanggal: laporanTanggal, // Use the parent report's date as hariTanggal for the activity
-          })),
-        };
-        await generatePDFBulanan(laporanBulananToPrint, true);
+        await generatePDFBulanan(laporanToPrint, true);
+      } else if (reportType === "tersier") {
+        await generatePDFTersier(laporanToPrint, true);
       }
       
       toast.success("Laporan PDF berhasil dibuat.");
@@ -304,13 +319,13 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Cetak Laporan Drainase ({reportType === "harian" ? "Harian" : "Bulanan"})</DialogTitle>
+          <DialogTitle>Cetak Laporan Drainase ({reportType === "harian" ? "Harian" : reportType === "bulanan" ? "Bulanan" : "Tersier"})</DialogTitle>
           <DialogDescription>
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
             {reportType === "bulanan" && filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
-            {reportType === "bulanan" && ( // Hanya tampilkan catatan ini jika reportType adalah "bulanan"
+            {(reportType === "bulanan" || reportType === "tersier") && (
               <p className="text-red-500 text-xs mt-1">
-                Catatan: Laporan bulanan akan menggabungkan semua kegiatan yang dipilih dalam satu dokumen.
+                Catatan: Laporan {reportType} akan menggabungkan semua kegiatan yang dipilih dalam satu dokumen.
               </p>
             )}
           </DialogDescription>
