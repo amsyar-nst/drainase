@@ -55,10 +55,8 @@ const Login = () => {
           localization={{
             variables: {
               sign_in: {
-                link_text: { // Perbaikan: Properti ini harus berada di dalam objek link_text
-                  forgot_password: '', // Menyembunyikan tautan "Forgot your password?"
-                  no_account: '',      // Menyembunyikan tautan "Don't have an account? Sign up"
-                },
+                forgotten_password_link_text: '', // Menyembunyikan tautan "Forgot your password?"
+                link_text: '',      // Menyembunyikan tautan "Don't have an account? Sign up"
               },
               sign_up: {
                 link_text: '', // Menyembunyikan tautan "Sign in" jika pengguna beralih ke tampilan daftar
