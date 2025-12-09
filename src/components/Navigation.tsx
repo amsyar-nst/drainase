@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
-import { FileText, List, Home, LogOut } from "lucide-react"; // Import LogOut icon
-import { supabase } from "@/integrations/supabase/client"; // Import supabase client
-import { toast } from "sonner"; // Import toast for notifications
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { FileText, List, Home, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export const Navigation = () => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export const Navigation = () => {
       toast.error("Gagal keluar: " + error.message);
     } else {
       toast.success("Anda telah berhasil keluar.");
-      navigate("/login"); // Redirect to login page after successful logout
+      navigate("/login");
     }
   };
 
@@ -44,8 +44,9 @@ export const Navigation = () => {
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">List Drainase</span>
             </NavLink>
+            {/* Updated to /tersier/new */}
             <NavLink
-              to="/tersier"
+              to="/tersier/new" 
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
               activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
             >

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react"; // Import useRef
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,47 +25,53 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { format, parse, isValid } from "date-fns"; // Import parse and isValid
+import { format, parse, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react"; // Added XCircle for removing photos
+import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, Alat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, alatOptions } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
-import { generatePDF } from "@/lib/pdf-generator"; // Updated import
+import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Checkbox } from "@/components/ui/checkbox"; // Imported Checkbox
-import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection"; // Import AlatYangDibutuhkanSection
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection";
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
   "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
   "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
-  "Batu/ Padat & Cair" // Add this new option
+  "Batu/ Padat & Cair"
 ];
 
 export const DrainaseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation(); // Use useLocation to get current path
+
+  // Determine initial reportType based on route
+  const isTersierRoute = location.pathname.startsWith("/tersier/");
+  const initialReportType: "harian" | "tersier" = isTersierRoute ? "tersier" : "harian";
+
   const [formData, setFormData] = useState<LaporanDrainase>({
     tanggal: new Date(),
-    periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }), // Initialize periode
-    reportType: "harian", // Initialize reportType
+    periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
+    reportType: initialReportType, // Set initial reportType dynamically
     kegiatans: [{
       id: "1",
       namaJalan: "",
       kecamatan: "",
       kelurahan: "",
-      foto0: [], // Changed to array
-      foto50: [], // Changed to array
-      foto100: [], // Changed to array
-      foto0Url: [], // Changed to array
-      foto50Url: [], // Changed to array
-      foto100Url: [], // Changed to array
-      fotoSket: [], // New field
-      fotoSketUrl: [], // New field
+      foto0: [],
+      foto50: [],
+      foto100: [],
+      foto0Url: [],
+      foto50Url: [],
+      foto100Url: [],
+      fotoSket: [],
+      fotoSketUrl: [],
       jenisSaluran: "",
       jenisSedimen: "",
       aktifitasPenanganan: "",
@@ -78,7 +84,7 @@ export const DrainaseForm = () => {
       operasionalAlatBerats: [{
         id: "1",
         jenis: "",
-        jumlah: 0, // Default to 0 for empty display
+        jumlah: 0,
         dexliteJumlah: "",
         dexliteSatuan: "Liter",
         pertaliteJumlah: "",
@@ -88,11 +94,10 @@ export const DrainaseForm = () => {
         keterangan: "",
       }],
       koordinator: [],
-      jumlahPHL: 0, // Default to 0 for empty display
-      jumlahUPT: 0, // New field
-      jumlahP3SU: 0, // New field
+      jumlahPHL: 0,
+      jumlahUPT: 0,
+      jumlahP3SU: 0,
       keterangan: "",
-      // Tersier specific fields (initialized as empty/default)
       hariTanggal: new Date(),
       alatYangDibutuhkan: [],
       rencanaPanjang: "",
@@ -113,27 +118,26 @@ export const DrainaseForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
   
-  // New state to manage the selected value in the dropdown, including "custom"
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
-  const [customSedimen, setCustomSedimen] = useState(""); // State for custom sedimen input
+  const [customSedimen, setCustomSedimen] = useState("");
 
-  // State for manual date input string
   const [dateInputString, setDateInputString] = useState<string>(
     formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
   );
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
-  // Ref to store the last auto-calculated volume, to prevent overwriting manual input
   const lastCalculatedVolumeRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (id) {
       loadLaporan(id);
+    } else {
+      // For new reports, ensure reportType is set based on route
+      setFormData(prev => ({ ...prev, reportType: initialReportType }));
     }
-  }, [id]);
+  }, [id, initialReportType]); // Depend on initialReportType
 
-  // Effect to synchronize selectedKecamatan and kelurahanOptions when formData.kegiatans or currentKegiatanIndex changes
   useEffect(() => {
     if (formData.kegiatans.length > 0) {
       const currentKecamatan = formData.kegiatans[currentKegiatanIndex].kecamatan;
@@ -146,8 +150,6 @@ export const DrainaseForm = () => {
     }
   }, [formData.kegiatans, currentKegiatanIndex]);
 
-
-  // Effect to synchronize dateInputString with formData.tanggal
   useEffect(() => {
     if (formData.tanggal) {
       setDateInputString(format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }));
@@ -156,7 +158,6 @@ export const DrainaseForm = () => {
     }
   }, [formData.tanggal]);
 
-  // Effect to initialize selectedSedimenOption and customSedimen when currentKegiatan changes (e.e.g., on load or activity switch)
   useEffect(() => {
     if (currentKegiatan.jenisSedimen) {
       if (predefinedSedimenOptions.includes(currentKegiatan.jenisSedimen)) {
@@ -170,9 +171,8 @@ export const DrainaseForm = () => {
       setSelectedSedimenOption("");
       setCustomSedimen("");
     }
-  }, [currentKegiatan.jenisSedimen, currentKegiatanIndex]); // Depend on currentKegiatan.jenisSedimen and currentKegiatanIndex
+  }, [currentKegiatan.jenisSedimen, currentKegiatanIndex]);
 
-  // Effect for Volume Galian calculation
   useEffect(() => {
     const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
     const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
@@ -180,30 +180,26 @@ export const DrainaseForm = () => {
 
     const calculatedVolume = (panjang * lebar * tinggi).toFixed(2);
 
-    // Check if the current volumeGalian value is empty or matches the last auto-calculated value
     const isVolumeGalianEmpty = currentKegiatan.volumeGalian === "";
     const isVolumeGalianSameAsLastCalculated = currentKegiatan.volumeGalian === lastCalculatedVolumeRef.current;
 
-    // If volumeGalian is empty, or if it was previously auto-calculated and the new calculated value is different
     if (isVolumeGalianEmpty || (isVolumeGalianSameAsLastCalculated && currentKegiatan.volumeGalian !== calculatedVolume)) {
       updateCurrentKegiatan({ volumeGalian: calculatedVolume });
     }
 
-    // Always update the ref with the latest calculated value for the next comparison
     lastCalculatedVolumeRef.current = calculatedVolume;
 
   }, [
     currentKegiatan.panjangPenanganan,
     currentKegiatan.lebarRataRata,
     currentKegiatan.rataRataSedimen,
-    currentKegiatanIndex, // Re-run if the active kegiatan changes
+    currentKegiatanIndex,
   ]);
 
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
     try {
-      // Fetch laporan
       const { data: laporanData, error: laporanError } = await supabase
         .from('laporan_drainase')
         .select('*')
@@ -219,7 +215,6 @@ export const DrainaseForm = () => {
 
       setLaporanId(laporanId);
 
-      // Fetch kegiatan
       const { data: kegiatanData, error: kegiatanError } = await supabase
         .from('kegiatan_drainase')
         .select('*')
@@ -227,7 +222,6 @@ export const DrainaseForm = () => {
 
       if (kegiatanError) throw kegiatanError;
 
-      // Load kegiatan with materials, peralatan, and operasional alat berat
       const kegiatansWithDetails = await Promise.all(
         (kegiatanData || []).map(async (kegiatan) => {
           const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
@@ -243,7 +237,6 @@ export const DrainaseForm = () => {
             satuan: m.satuan,
             keterangan: m.keterangan || "",
           }));
-          // Ensure at least one empty material row if none exist
           if (materials.length === 0) {
             materials.push({ id: Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "" });
           }
@@ -254,7 +247,6 @@ export const DrainaseForm = () => {
             jumlah: p.jumlah,
             satuan: p.satuan || "Unit",
           }));
-          // Ensure at least one empty peralatan row if none exist
           if (peralatans.length === 0) {
             peralatans.push({ id: Date.now().toString() + '-per', nama: "", jumlah: 1, satuan: "Unit" });
           }
@@ -271,12 +263,11 @@ export const DrainaseForm = () => {
             bioSolarSatuan: o.bio_solar_satuan || "Liter",
             keterangan: o.keterangan || "",
           }));
-          // Ensure at least one empty operasional alat berat row if none exist
           if (operasionalAlatBerats.length === 0) {
             operasionalAlatBerats.push({
               id: Date.now().toString() + '-op',
               jenis: "",
-              jumlah: 0, // Default to 0
+              jumlah: 0,
               dexliteJumlah: "",
               dexliteSatuan: "Liter",
               pertaliteJumlah: "",
@@ -287,7 +278,6 @@ export const DrainaseForm = () => {
             });
           }
 
-          // Helper function to ensure photo URLs are always arrays
           const ensureArray = (value: string | string[] | null | undefined): string[] => {
             if (Array.isArray(value)) {
               return value;
@@ -298,13 +288,12 @@ export const DrainaseForm = () => {
             return [];
           };
 
-          // Map Alat[] from DB (string[]) to Alat[] for frontend, assigning unique IDs and default quantity
           let alatYangDibutuhkan: Alat[] = [];
           if (kegiatan.alat_yang_dibutuhkan && Array.isArray(kegiatan.alat_yang_dibutuhkan)) {
             alatYangDibutuhkan = kegiatan.alat_yang_dibutuhkan.map((nama: string) => ({
               id: crypto.randomUUID(),
               nama: nama,
-              jumlah: 1, // Default to 1, as DB only stores names
+              jumlah: 1,
             }));
           }
 
@@ -316,11 +305,11 @@ export const DrainaseForm = () => {
             foto0: ensureArray(kegiatan.foto_0_url),
             foto50: ensureArray(kegiatan.foto_50_url),
             foto100: ensureArray(kegiatan.foto_100_url),
-            fotoSket: ensureArray(kegiatan.foto_sket_url), // New field
+            fotoSket: ensureArray(kegiatan.foto_sket_url),
             foto0Url: ensureArray(kegiatan.foto_0_url),
             foto50Url: ensureArray(kegiatan.foto_50_url),
             foto100Url: ensureArray(kegiatan.foto_100_url),
-            fotoSketUrl: ensureArray(kegiatan.foto_sket_url), // New field
+            fotoSketUrl: ensureArray(kegiatan.foto_sket_url),
             jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
             jenisSedimen: (kegiatan.jenis_sedimen || "") as string,
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
@@ -332,11 +321,10 @@ export const DrainaseForm = () => {
             peralatans: peralatans,
             operasionalAlatBerats: operasionalAlatBerats,
             koordinator: kegiatan.koordinator || [],
-            jumlahPHL: kegiatan.jumlah_phl || 0, // Default to 0
-            jumlahUPT: kegiatan.jumlah_upt || 0, // New field
-            jumlahP3SU: kegiatan.jumlah_p3su || 0, // New field
+            jumlahPHL: kegiatan.jumlah_phl || 0,
+            jumlahUPT: kegiatan.jumlah_upt || 0,
+            jumlahP3SU: kegiatan.jumlah_p3su || 0,
             keterangan: kegiatan.keterangan || "",
-            // Tersier specific fields
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
             alatYangDibutuhkan: alatYangDibutuhkan,
             rencanaPanjang: kegiatan.rencana_panjang || "",
@@ -355,11 +343,10 @@ export const DrainaseForm = () => {
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
       });
 
-      // Explicitly set to the first activity after loading
       if (kegiatansWithDetails.length > 0) {
         setCurrentKegiatanIndex(0); 
       } else {
-        setCurrentKegiatanIndex(0); // If no activities, still show the first (empty) one
+        setCurrentKegiatanIndex(0);
       }
 
       toast.success('Laporan berhasil dimuat');
@@ -383,14 +370,14 @@ export const DrainaseForm = () => {
       namaJalan: "",
       kecamatan: "",
       kelurahan: "",
-      foto0: [], // Changed to array
-      foto50: [], // Changed to array
-      foto100: [], // Changed to array
-      foto0Url: [], // Changed to array
-      foto50Url: [], // Changed to array
-      foto100Url: [], // Changed to array
-      fotoSket: [], // New field
-      fotoSketUrl: [], // New field
+      foto0: [],
+      foto50: [],
+      foto100: [],
+      foto0Url: [],
+      foto50Url: [],
+      foto100Url: [],
+      fotoSket: [],
+      fotoSketUrl: [],
       jenisSaluran: "",
       jenisSedimen: "",
       aktifitasPenanganan: "",
@@ -403,7 +390,7 @@ export const DrainaseForm = () => {
       operasionalAlatBerats: [{
         id: "1",
         jenis: "",
-        jumlah: 0, // Default to 0
+        jumlah: 0,
         dexliteJumlah: "",
         dexliteSatuan: "Liter",
         pertaliteJumlah: "",
@@ -413,11 +400,10 @@ export const DrainaseForm = () => {
         keterangan: "",
       }],
       koordinator: [],
-      jumlahPHL: 0, // Default to 0
-      jumlahUPT: 0, // New field
-      jumlahP3SU: 0, // New field
+      jumlahPHL: 0,
+      jumlahUPT: 0,
+      jumlahP3SU: 0,
       keterangan: "",
-      // Tersier specific fields
       hariTanggal: new Date(),
       alatYangDibutuhkan: [],
       rencanaPanjang: "",
@@ -476,7 +462,6 @@ export const DrainaseForm = () => {
         if (m.id === id) {
           const updatedMaterial = { ...m, [field]: value };
           
-          // Auto-fill satuan when jenis changes
           if (field === "jenis" && value) {
             const normalizedJenis = value.toLowerCase().trim();
             const defaultUnit = materialDefaultUnits[normalizedJenis];
@@ -533,12 +518,10 @@ export const DrainaseForm = () => {
     }
   };
 
-  // New function to upload multiple files
   const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
     const uploadedUrls: string[] = [];
     for (const fileOrUrl of files) {
       if (fileOrUrl instanceof File) {
-        // New file, upload it
         const fileName = `${basePath}/${fileOrUrl.name}`;
         const { data, error } = await supabase.storage
           .from('laporan-photos')
@@ -551,7 +534,6 @@ export const DrainaseForm = () => {
           .getPublicUrl(data.path);
         uploadedUrls.push(publicUrl);
       } else if (typeof fileOrUrl === 'string' && fileOrUrl) {
-        // Existing URL, just add it
         uploadedUrls.push(fileOrUrl);
       }
     }
@@ -570,20 +552,19 @@ export const DrainaseForm = () => {
     updateCurrentKegiatan({ [field]: updatedPhotos });
   };
 
-  // Functions for print preview and download, compatible with old generatePDF
   const handlePrintPreview = async () => {
     if (!formData.tanggal) {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
-    const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
+    const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
-      periode: formData.periode, // Include periode
-      reportType: formData.reportType, // Include reportType
-      kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
+      periode: formData.periode,
+      reportType: formData.reportType,
+      kegiatans: formData.kegiatans,
     };
     try {
-      const blob = await generatePDF(laporanForPdf, false); // Call old generatePDF, downloadNow=false
+      const blob = await generatePDF(laporanForPdf, false);
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewDialog(true);
@@ -599,14 +580,14 @@ export const DrainaseForm = () => {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
-    const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
+    const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
-      periode: formData.periode, // Include periode
-      reportType: formData.reportType, // Include reportType
-      kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
+      periode: formData.periode,
+      reportType: formData.reportType,
+      kegiatans: formData.kegiatans,
     };
     try {
-      await generatePDF(laporanForPdf, true); // Call old generatePDF, downloadNow=true
+      await generatePDF(laporanForPdf, true);
       toast.success("Laporan berhasil diunduh.");
     } catch (error) {
       console.error("Download error:", error);
@@ -628,7 +609,6 @@ export const DrainaseForm = () => {
       const periodeFormatted = format(formData.tanggal, 'MMMM yyyy', { locale: idLocale });
 
       if (currentLaporanId) {
-        // Update existing laporan
         const { error: updateError } = await supabase
           .from('laporan_drainase')
           .update({
@@ -640,8 +620,6 @@ export const DrainaseForm = () => {
 
         if (updateError) throw updateError;
 
-        // Delete existing related data to re-insert
-        // Fetch all kegiatan IDs associated with this laporan
         const { data: existingKegiatanIds, error: fetchKegiatanIdsError } = await supabase
           .from('kegiatan_drainase')
           .select('id')
@@ -659,7 +637,6 @@ export const DrainaseForm = () => {
         }
 
       } else {
-        // Create new laporan
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
           .insert({
@@ -675,18 +652,14 @@ export const DrainaseForm = () => {
         setLaporanId(currentLaporanId);
       }
 
-      // Save kegiatan
       for (const kegiatan of formData.kegiatans) {
-        // Upload photos
         const foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
         const foto50Urls = await uploadFiles(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/50`);
         const foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
-        const fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`); // New field
+        const fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`);
 
-        // Map Alat[] to string[] for Supabase, only saving the 'nama'
         const alatYangDibutuhkanNames = kegiatan.alatYangDibutuhkan?.map(a => a.nama) || [];
 
-        // Insert kegiatan
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .insert({
@@ -694,10 +667,10 @@ export const DrainaseForm = () => {
             nama_jalan: kegiatan.namaJalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto_0_url: foto0Urls, // Now an array
-            foto_50_url: foto50Urls, // Now an array
-            foto_100_url: foto100Urls, // Now an array
-            foto_sket_url: fotoSketUrls, // New field
+            foto_0_url: foto0Urls,
+            foto_50_url: foto50Urls,
+            foto_100_url: foto100Urls,
+            foto_sket_url: fotoSketUrls,
             jenis_saluran: kegiatan.jenisSaluran,
             jenis_sedimen: kegiatan.jenisSedimen,
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
@@ -707,10 +680,9 @@ export const DrainaseForm = () => {
             volume_galian: kegiatan.volumeGalian,
             koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
-            jumlah_upt: kegiatan.jumlahUPT, // New field
-            jumlah_p3su: kegiatan.jumlahP3SU, // New field
+            jumlah_upt: kegiatan.jumlahUPT,
+            jumlah_p3su: kegiatan.jumlahP3SU,
             keterangan: kegiatan.keterangan,
-            // Tersier specific fields
             hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
             alat_yang_dibutuhkan: alatYangDibutuhkanNames,
             rencana_panjang: kegiatan.rencanaPanjang,
@@ -724,8 +696,7 @@ export const DrainaseForm = () => {
 
         if (kegiatanError) throw kegiatanError;
 
-        // Insert materials
-        const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({ // Filter out empty rows
+        const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({
           kegiatan_id: kegiatanData!.id,
           jenis: m.jenis,
           jumlah: m.jumlah,
@@ -741,8 +712,7 @@ export const DrainaseForm = () => {
           if (materialsError) throw materialsError;
         }
 
-        // Insert peralatan
-        const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({ // Filter out empty rows
+        const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
           kegiatan_id: kegiatanData!.id,
           nama: p.nama,
           jumlah: p.jumlah,
@@ -757,8 +727,7 @@ export const DrainaseForm = () => {
           if (peralatanError) throw peralatanError;
         }
 
-        // Insert operasional alat berat
-        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({ // Filter out empty rows
+        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
           kegiatan_id: kegiatanData!.id,
           jenis: o.jenis,
           jumlah: o.jumlah,
@@ -781,7 +750,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/');
+      navigate(formData.reportType === "tersier" ? '/tersier/list' : '/'); // Redirect based on report type
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan: ' + error.message);
@@ -790,7 +759,6 @@ export const DrainaseForm = () => {
     }
   };
 
-  // Handler for manual date input change
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setDateInputString(value);
@@ -805,7 +773,6 @@ export const DrainaseForm = () => {
     }
   };
 
-  // Handler for date selection from calendar
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setFormData((prev) => ({ ...prev, tanggal: date, periode: format(date, 'MMMM yyyy', { locale: idLocale }) }));
@@ -830,13 +797,13 @@ export const DrainaseForm = () => {
         <div className="flex justify-between items-center">
           <div className="text-center space-y-2 flex-1">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Form Laporan Drainase
+              Form Laporan Drainase {formData.reportType === "tersier" ? "Tersier" : "Harian"}
             </h1>
             <p className="text-muted-foreground">
               {id ? 'Edit laporan kegiatan drainase' : 'Isi formulir dengan lengkap untuk menghasilkan laporan'}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate(formData.reportType === "tersier" ? '/tersier/list' : '/')} className="gap-2">
             <List className="h-4 w-4" />
             Lihat Laporan
           </Button>
@@ -874,23 +841,6 @@ export const DrainaseForm = () => {
         </Card>
 
         <Card className="p-6 space-y-6">
-          {/* Report Type Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="report-type">Jenis Laporan</Label>
-            <Select
-              value={formData.reportType}
-              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "tersier" })}
-            >
-              <SelectTrigger id="report-type">
-                <SelectValue placeholder="Pilih jenis laporan" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="harian">Laporan Harian</SelectItem>
-                <SelectItem value="tersier">Laporan Tersier</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Tanggal */}
           <div className="space-y-2">
             <Label htmlFor="tanggal">Tanggal</Label>
@@ -901,7 +851,7 @@ export const DrainaseForm = () => {
                 onChange={handleDateInputChange}
                 placeholder="dd/MM/yyyy"
                 className={cn(
-                  "w-full justify-start text-left font-normal pr-10", // Add padding-right for icon
+                  "w-full justify-start text-left font-normal pr-10",
                   !formData.tanggal && "text-muted-foreground"
                 )}
               />
@@ -975,7 +925,7 @@ export const DrainaseForm = () => {
           </div>
 
           {/* Photos */}
-          <div className="grid gap-4 md:grid-cols-4"> {/* Changed to 4 columns for photos */}
+          <div className="grid gap-4 md:grid-cols-4">
             {/* Foto 0% */}
             <div className="space-y-2">
               <Label htmlFor="foto-0">Foto 0%</Label>
@@ -983,7 +933,7 @@ export const DrainaseForm = () => {
                 id="foto-0"
                 type="file"
                 accept="image/*"
-                multiple // Allow multiple files
+                multiple
                 onChange={(e) => handleFileChange(e, 'foto0')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1025,7 +975,7 @@ export const DrainaseForm = () => {
                 id="foto-50"
                 type="file"
                 accept="image/*"
-                multiple // Allow multiple files
+                multiple
                 onChange={(e) => handleFileChange(e, 'foto50')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1067,7 +1017,7 @@ export const DrainaseForm = () => {
                 id="foto-100"
                 type="file"
                 accept="image/*"
-                multiple // Allow multiple files
+                multiple
                 onChange={(e) => handleFileChange(e, 'foto100')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1108,7 +1058,7 @@ export const DrainaseForm = () => {
               <Input
                 id="foto-sket"
                 type="file"
-                accept="image/*,application/pdf" // Diperbarui untuk menerima gambar dan PDF
+                accept="image/*,application/pdf"
                 multiple
                 onChange={(e) => handleFileChange(e, 'fotoSket')}
               />
@@ -1178,14 +1128,14 @@ export const DrainaseForm = () => {
             <div className="space-y-2">
               <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
               <Select
-                value={selectedSedimenOption} // Use selectedSedimenOption here
+                value={selectedSedimenOption}
                 onValueChange={(value) => {
                   setSelectedSedimenOption(value);
                   if (value === "custom") {
-                    updateCurrentKegiatan({ jenisSedimen: customSedimen }); // Set to current custom input value
+                    updateCurrentKegiatan({ jenisSedimen: customSedimen });
                   } else {
                     updateCurrentKegiatan({ jenisSedimen: value });
-                    setCustomSedimen(""); // Clear custom input if a predefined option is selected
+                    setCustomSedimen("");
                   }
                 }}
               >
@@ -1201,14 +1151,14 @@ export const DrainaseForm = () => {
                   <SelectItem value="custom">Lainnya</SelectItem>
                 </SelectContent>
               </Select>
-              {selectedSedimenOption === "custom" && ( // Conditional rendering based on selectedSedimenOption
+              {selectedSedimenOption === "custom" && (
                 <Input
                   type="text"
                   placeholder="Masukkan jenis sedimen manual"
                   value={customSedimen}
                   onChange={(e) => {
                     setCustomSedimen(e.target.value);
-                    updateCurrentKegiatan({ jenisSedimen: e.target.value }); // Update actual data with manual input
+                    updateCurrentKegiatan({ jenisSedimen: e.target.value });
                   }}
                   className="mt-2"
                 />
@@ -1325,7 +1275,7 @@ export const DrainaseForm = () => {
                 </Button>
               </div>
             ))}
-            <div className="flex justify-end"> {/* Moved button here */}
+            <div className="flex justify-end">
               <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
                 <Plus className="h-4 w-4 mr-1" />
                 Tambah Material
@@ -1384,7 +1334,7 @@ export const DrainaseForm = () => {
                 </Button>
               </div>
             ))}
-            <div className="flex justify-end"> {/* Moved button here */}
+            <div className="flex justify-end">
               <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
                 <Plus className="h-4 w-4 mr-1" />
                 Tambah Peralatan
@@ -1445,18 +1395,18 @@ export const DrainaseForm = () => {
               <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
               <Input
                 id="jumlah-phl"
-                type="text" // Changed to text
+                type="text"
                 placeholder="0"
-                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()} // Display empty if 0
+                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
                 onChange={(e) => {
                   const value = e.target.value;
                   if (value === "") {
-                    updateCurrentKegiatan({ jumlahPHL: 0 }); // Save as 0 if empty
-                  } else if (/^\d{0,2}$/.test(value)) { // Allow 0 to 2 digits
+                    updateCurrentKegiatan({ jumlahPHL: 0 });
+                  } else if (/^\d{0,2}$/.test(value)) {
                     updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
                   }
                 }}
-                maxLength={2} // Add maxLength attribute
+                maxLength={2}
               />
             </div>
           </div>
@@ -1569,7 +1519,7 @@ export const DrainaseForm = () => {
                   value={currentKegiatan.sisaTargetHari || ""}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) { // Allow empty or 0-2 digits
+                    if (value === "" || /^\d{0,2}$/.test(value)) {
                       updateCurrentKegiatan({ sisaTargetHari: value });
                     }
                   }}

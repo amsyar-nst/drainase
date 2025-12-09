@@ -28,7 +28,7 @@ import { id as idLocale } from "date-fns/locale";
 
 interface LaporanItem {
   id: string;
-  periode: string; // Changed from bulan to periode
+  periode: string;
   created_at: string;
   kegiatan_count: number;
 }
@@ -46,9 +46,9 @@ const TersierList = () => {
   const loadLaporans = async () => {
     try {
       const { data, error } = await supabase
-        .from("laporan_drainase") // Changed to laporan_drainase
+        .from("laporan_drainase")
         .select("*")
-        .eq("report_type", "tersier") // Filter by report_type
+        .eq("report_type", "tersier")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -56,13 +56,13 @@ const TersierList = () => {
       const laporansWithCount = await Promise.all(
         (data || []).map(async (laporan) => {
           const { count } = await supabase
-            .from("kegiatan_drainase") // Changed to kegiatan_drainase
+            .from("kegiatan_drainase")
             .select("*", { count: "exact", head: true })
             .eq("laporan_id", laporan.id);
 
           return {
             id: laporan.id,
-            periode: laporan.periode, // Use periode
+            periode: laporan.periode,
             created_at: laporan.created_at,
             kegiatan_count: count || 0,
           };
@@ -82,7 +82,7 @@ const TersierList = () => {
     try {
       // Delete related kegiatans first
       const { error: kegiatanError } = await supabase
-        .from("kegiatan_drainase") // Changed to kegiatan_drainase
+        .from("kegiatan_drainase")
         .delete()
         .eq("laporan_id", id);
 
@@ -90,7 +90,7 @@ const TersierList = () => {
 
       // Delete laporan
       const { error: laporanError } = await supabase
-        .from("laporan_drainase") // Changed to laporan_drainase
+        .from("laporan_drainase")
         .delete()
         .eq("id", id);
 
@@ -120,7 +120,7 @@ const TersierList = () => {
               Kelola semua laporan pemeliharaan drainase tersier
             </p>
           </div>
-          <Button onClick={() => navigate("/tersier")}>
+          <Button onClick={() => navigate("/tersier/new")}> {/* Updated to /tersier/new */}
             <Plus className="mr-2 h-4 w-4" />
             Buat Laporan Baru
           </Button>
@@ -139,7 +139,7 @@ const TersierList = () => {
               <p className="text-muted-foreground mb-4">
                 Belum ada laporan tersier yang dibuat
               </p>
-              <Button onClick={() => navigate("/tersier")}>
+              <Button onClick={() => navigate("/tersier/new")}> {/* Updated to /tersier/new */}
                 <Plus className="mr-2 h-4 w-4" />
                 Buat Laporan Pertama
               </Button>
@@ -161,11 +161,12 @@ const TersierList = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
+                    {/* Updated to /tersier/edit */}
                     <Button
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => navigate(`/drainase/edit/${laporan.id}`)} /* Changed to /drainase/edit */
+                      onClick={() => navigate(`/tersier/edit/${laporan.id}`)} 
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       Lihat

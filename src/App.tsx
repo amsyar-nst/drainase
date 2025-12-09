@@ -5,11 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index"; // This is DrainaseForm
 import LaporanList from "./pages/LaporanList";
-import TersierIndex from "./pages/TersierIndex";
 import TersierList from "./pages/TersierList";
 import NotFound from "./pages/NotFound";
-import Login from "./pages/Login"; // Import the new Login page
-import { SessionContextProvider } from "./components/SessionContextProvider"; // Import the new context provider
+import Login from "./pages/Login";
+import { SessionContextProvider } from "./components/SessionContextProvider";
 
 const queryClient = new QueryClient();
 
@@ -19,21 +18,21 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}> {/* Enabled future flags */}
-          <SessionContextProvider> {/* Wrap the entire app with SessionContextProvider */}
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <SessionContextProvider>
             <Routes>
-              <Route path="/login" element={<Login />} /> {/* Add the login route */}
+              <Route path="/login" element={<Login />} />
 
-              {/* New main display: LaporanList */}
+              {/* Main Drainase List */}
               <Route path="/" element={<LaporanList />} />
-              <Route path="/laporan" element={<LaporanList />} /> {/* Keep for explicit access */}
+              <Route path="/laporan" element={<LaporanList />} />
 
-              {/* Drainase Form routes */}
-              <Route path="/drainase/new" element={<Index />} /> {/* New form */}
-              <Route path="/drainase/edit/:id" element={<Index />} /> {/* Edit form */}
+              {/* Drainase Form (Harian) routes */}
+              <Route path="/drainase/new" element={<Index />} />
+              <Route path="/drainase/edit/:id" element={<Index />} />
               
-              {/* Tersier routes now redirect to main drainase form */}
-              <Route path="/tersier" element={<TersierIndex />} /> {/* Redirects to /drainase/new */}
+              {/* Tersier Form routes */}
+              <Route path="/tersier/new" element={<Index />} /> {/* New route for creating tersier reports */}
               <Route path="/tersier/edit/:id" element={<Index />} /> {/* Edit tersier report using main form */}
               <Route path="/tersier/list" element={<TersierList />} />
               
