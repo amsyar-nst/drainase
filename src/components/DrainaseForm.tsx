@@ -1033,29 +1033,40 @@ export const DrainaseForm = () => {
               <Input
                 id="foto-sket"
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf" // Diperbarui untuk menerima gambar dan PDF
                 multiple
                 onChange={(e) => handleFileChange(e, 'fotoSket')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
                   <div key={index} className="relative group">
-                    <img 
-                      src={
-                        photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || ''
-                      } 
-                      alt={`Gambar Sket ${index + 1}`} 
-                      className="w-full h-24 object-cover rounded border cursor-pointer"
-                      onClick={() => {
-                        const url = photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || '';
-                        setPreviewUrl(url);
-                        setShowPreviewDialog(true);
-                      }}
-                    />
+                    {typeof photo === 'string' && photo.endsWith('.pdf') ? (
+                      <a 
+                        href={photo} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
+                      >
+                        <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
+                      </a>
+                    ) : (
+                      <img 
+                        src={
+                          photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || ''
+                        } 
+                        alt={`Gambar Sket ${index + 1}`} 
+                        className="w-full h-24 object-cover rounded border cursor-pointer"
+                        onClick={() => {
+                          const url = photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || '';
+                          setPreviewUrl(url);
+                          setShowPreviewDialog(true);
+                        }}
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="destructive"
