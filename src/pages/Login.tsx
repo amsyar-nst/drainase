@@ -1,7 +1,7 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom'; // Perbaikan: Menggunakan 'from'
+import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -56,7 +56,7 @@ const Login = () => {
             variables: {
               sign_in: {
                 forgotten_password_link_text: '', // Menyembunyikan tautan "Forgot your password?"
-                no_account_link_text: '',      // Menyembunyikan tautan "Don't have an account? Sign up"
+                link_text: '',      // Menyembunyikan tautan "Don't have an account? Sign up"
               },
               sign_up: {
                 link_text: '', // Menyembunyikan tautan "Sign in" jika pengguna beralih ke tampilan daftar

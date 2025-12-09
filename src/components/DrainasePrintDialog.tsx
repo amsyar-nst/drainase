@@ -139,6 +139,10 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           operasionalAlatBerats: [], // Will be fetched later for selected items
           koordinator: kegiatan.koordinator || [],
           jumlahPHL: kegiatan.jumlah_phl || 1,
+          // For bulanan report, these fields are not displayed, but for harian they are.
+          // So we keep them in the type, but the PDF generator for bulanan will ignore them.
+          jumlahUPT: kegiatan.jumlah_upt || 0, 
+          jumlahP3SU: kegiatan.jumlah_p3su || 0,
           keterangan: kegiatan.keterangan || "",
           tanggalKegiatan: format(currentLaporanDate, "dd MMMM yyyy", { locale: idLocale }),
           laporanTanggal: currentLaporanDate, // Crucial for monthly report sorting and display
