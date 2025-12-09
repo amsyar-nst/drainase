@@ -242,9 +242,7 @@ const LaporanList = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("harian")}>
-                    Laporan Harian
-                  </DropdownMenuItem>
+                  {/* Removed "Laporan Harian" option */}
                   <DropdownMenuItem onClick={() => handleGlobalPrintSelection("bulanan")}>
                     Laporan Bulanan
                   </DropdownMenuItem>
