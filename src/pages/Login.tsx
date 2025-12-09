@@ -52,6 +52,20 @@ const Login = () => {
           }}
           theme="light"
           redirectTo={window.location.origin} // Redirect back to the app's origin
+          localization={{
+            variables: {
+              sign_in: {
+                forgotten_password_link_text: '', // Menyembunyikan tautan "Forgot your password?"
+                no_account_link_text: '',      // Menyembunyikan tautan "Don't have an account? Sign up"
+              },
+              sign_up: {
+                link_text: '', // Menyembunyikan tautan "Sign in" jika pengguna beralih ke tampilan daftar
+              },
+              forgotten_password: {
+                link_text: '', // Menyembunyikan tautan "Sign in" jika pengguna beralih ke tampilan lupa kata sandi
+              },
+            },
+          }}
         />
       </div>
     </div>
