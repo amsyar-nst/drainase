@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Import useRef
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,6 +109,9 @@ export const DrainaseForm = () => {
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
+  // Ref to store the last auto-calculated volume, to prevent overwriting manual input
+  const lastCalculatedVolumeRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (id) {
       loadLaporan(id);
@@ -153,6 +156,34 @@ export const DrainaseForm = () => {
       setCustomSedimen("");
     }
   }, [currentKegiatan.jenisSedimen, currentKegiatanIndex]); // Depend on currentKegiatan.jenisSedimen and currentKegiatanIndex
+
+  // Effect for Volume Galian calculation
+  useEffect(() => {
+    const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
+    const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
+    const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
+
+    const calculatedVolume = (panjang * lebar * tinggi).toFixed(2);
+
+    // Check if the current volumeGalian value is empty or matches the last auto-calculated value
+    const isVolumeGalianEmpty = currentKegiatan.volumeGalian === "";
+    const isVolumeGalianSameAsLastCalculated = currentKegiatan.volumeGalian === lastCalculatedVolumeRef.current;
+
+    // If volumeGalian is empty, or if it was previously auto-calculated and the new calculated value is different
+    if (isVolumeGalianEmpty || (isVolumeGalianSameAsLastCalculated && currentKegiatan.volumeGalian !== calculatedVolume)) {
+      updateCurrentKegiatan({ volumeGalian: calculatedVolume });
+    }
+
+    // Always update the ref with the latest calculated value for the next comparison
+    lastCalculatedVolumeRef.current = calculatedVolume;
+
+  }, [
+    currentKegiatan.panjangPenanganan,
+    currentKegiatan.lebarRataRata,
+    currentKegiatan.rataRataSedimen,
+    currentKegiatanIndex, // Re-run if the active kegiatan changes
+  ]);
+
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
