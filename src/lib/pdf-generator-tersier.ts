@@ -218,7 +218,6 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
             <th colspan="2">RENCANA DIMENSI</th>
             <th colspan="2">REALISASI DIMENSI</th>
             <th rowspan="3" class="tersier-target-col">SISA TARGET<br/>PENYELESAIAN<br/>PEKERJAAN<br/>(HARI)</th>
-            <th rowspan="3" class="tersier-alat-col">ALAT YANG<br/>DIBUTUHKAN</th>
             <th rowspan="3" class="keterangan-akhir-col">KETERANGAN</th>
           </tr>
           <tr>
@@ -405,13 +404,6 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
               <td class="center">${kegiatan.realisasiPanjang || '-'}</td>
               <td class="center">${kegiatan.realisasiVolume || '-'}</td>
               <td class="center">${kegiatan.sisaTargetHari || '-'}</td>
-              <td>
-                <ul class="equipment-list">
-                  ${(kegiatan.alatYangDibutuhkan || []).filter(a => a.nama).map(alat => `
-                    <li>${alat.nama} (${alat.jumlah})</li>
-                  `).join('')}
-                </ul>
-              </td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}

@@ -26,12 +26,6 @@ export interface OperasionalAlatBerat {
   keterangan: string;
 }
 
-export interface Alat {
-  id: string;
-  nama: string;
-  jumlah: number;
-}
-
 export interface KegiatanDrainase {
   id: string;
   namaJalan: string;
@@ -63,7 +57,6 @@ export interface KegiatanDrainase {
   // Tersier-specific fields (now optional)
   jumlahUPT?: number;
   jumlahP3SU?: number;
-  alatYangDibutuhkan?: Alat[];
   rencanaPanjang?: string;
   rencanaVolume?: string;
   realisasiPanjang?: string;
@@ -74,6 +67,6 @@ export interface KegiatanDrainase {
 export interface LaporanDrainase {
   tanggal: Date | null;
   periode: string;
-  reportType: "harian" | "bulanan" | "tersier"; // Added "tersier"
+  reportType: "harian" | "bulanan" | "tersier";
   kegiatans: KegiatanDrainase[];
 }

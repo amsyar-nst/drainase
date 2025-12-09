@@ -29,7 +29,7 @@ import { format, parse, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, Alat } from "@/types/laporan";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
@@ -37,7 +37,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection";
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 
 // Define predefined sedimen options for easier comparison
@@ -97,7 +96,6 @@ export const DrainaseForm = () => {
       // Tersier-specific fields, initialized as empty/default
       jumlahUPT: 0,
       jumlahP3SU: 0,
-      alatYangDibutuhkan: [],
       rencanaPanjang: "",
       rencanaVolume: "",
       realisasiPanjang: "",
@@ -283,15 +281,6 @@ export const DrainaseForm = () => {
             return [];
           };
 
-          let alatYangDibutuhkan: Alat[] = [];
-          if (kegiatan.alat_yang_dibutuhkan && Array.isArray(kegiatan.alat_yang_dibutuhkan)) {
-            alatYangDibutuhkan = kegiatan.alat_yang_dibutuhkan.map((nama: string) => ({
-              id: crypto.randomUUID(),
-              nama: nama,
-              jumlah: 1, // Default jumlah to 1 if not stored
-            }));
-          }
-
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
@@ -321,7 +310,6 @@ export const DrainaseForm = () => {
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
             keterangan: kegiatan.keterangan || "",
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
-            alatYangDibutuhkan: alatYangDibutuhkan,
             rencanaPanjang: kegiatan.rencana_panjang || "",
             rencanaVolume: kegiatan.rencana_volume || "",
             realisasiPanjang: kegiatan.realisasi_panjang || "",
@@ -399,10 +387,9 @@ export const DrainaseForm = () => {
       keterangan: "",
       hariTanggal: new Date(),
 
-      // Initialize tersier-specific fields for new activity
+      // Tersier-specific fields, initialized as empty/default
       jumlahUPT: 0,
       jumlahP3SU: 0,
-      alatYangDibutuhkan: [],
       rencanaPanjang: "",
       rencanaVolume: "",
       realisasiPanjang: "",
@@ -664,8 +651,6 @@ export const DrainaseForm = () => {
         const foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
         const fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`);
 
-        const alatYangDibutuhkanNames = kegiatan.alatYangDibutuhkan?.map(a => a.nama) || [];
-
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .insert({
@@ -690,7 +675,6 @@ export const DrainaseForm = () => {
             jumlah_p3su: kegiatan.jumlahP3SU,
             keterangan: kegiatan.keterangan,
             hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
-            alat_yang_dibutuhkan: alatYangDibutuhkanNames,
             rencana_panjang: kegiatan.rencanaPanjang,
             rencana_volume: kegiatan.rencanaVolume,
             realisasi_panjang: kegiatan.realisasiPanjang,
@@ -1406,9 +1390,7 @@ export const DrainaseForm = () => {
                 value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
                 onChange={(e) => {
                   const value = e.target.value;
-                  if (value === "") {
-                    updateCurrentKegiatan({ jumlahPHL: 0 });
-                  } else if (/^\d{0,2}$/.test(value)) {
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
                     updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
                   }
                 }}
@@ -1525,12 +1507,6 @@ export const DrainaseForm = () => {
               maxLength={2}
             />
           </div>
-
-          {/* Alat yang Dibutuhkan - Using the new component - Always visible */}
-          <AlatYangDibutuhkanSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
 
           {/* Keterangan */}
           <div className="space-y-2">

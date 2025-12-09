@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, Alat } from "@/types/laporan"; // Import Alat
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan"; // Removed Alat
 import { generatePDF } from "@/lib/pdf-generator"; // For harian
 import { generatePDFBulanan } from "@/lib/pdf-generator-bulanan"; // For bulanan
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
@@ -123,15 +123,6 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         }
 
         const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => {
-          let alatYangDibutuhkan: Alat[] = [];
-          if (kegiatan.alat_yang_dibutuhkan && Array.isArray(kegiatan.alat_yang_dibutuhkan)) {
-            alatYangDibutuhkan = kegiatan.alat_yang_dibutuhkan.map((nama: string) => ({
-              id: crypto.randomUUID(),
-              nama: nama,
-              jumlah: 1, // Default jumlah to 1 if not stored
-            }));
-          }
-
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
@@ -167,7 +158,6 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             // Tersier-specific fields
             jumlahUPT: kegiatan.jumlah_upt || 0,
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
-            alatYangDibutuhkan: alatYangDibutuhkan,
             rencanaPanjang: kegiatan.rencana_panjang || "",
             rencanaVolume: kegiatan.rencana_volume || "",
             realisasiPanjang: kegiatan.realisasi_panjang || "",

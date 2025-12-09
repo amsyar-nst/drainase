@@ -141,33 +141,6 @@ export const alatBeratOptions = [
   "Trado Mini"  
 ];
 
-export const alatOptions = [
-  "Cangkul",
-  "Sekop",
-  "Linggis",
-  "Gerobak Dorong",
-  "Karung",
-  "Ganco",
-  "Palu",
-  "Kunci Inggris",
-  "Tang",
-  "Obeng",
-  "Meteran",
-  "Alat Pelindung Diri (APD)",
-  "Excavator",
-  "Backhoe Loader",
-  "Bulldozer",
-  "Grader",
-  "Vibro Roller",
-  "Dump Truck",
-  "Crane",
-  "Wheel Loader",
-  "Skid Steer Loader",
-  "Asphalt Finisher",
-  "Exc. Mini", 
-  "Trado Mini"  
-];
-
 // Mapping material types to default units (case-insensitive)
 export const materialDefaultUnits: Record<string, string> = {
   "pasir": "M³",
