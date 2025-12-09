@@ -758,28 +758,6 @@ export const DrainaseForm = () => {
     }
   };
 
-  const isImage = (fileOrUrl: File | string | null): boolean => {
-    if (!fileOrUrl) return false;
-    if (typeof fileOrUrl === 'string') {
-      return /\.(jpeg|jpg|gif|png|webp|svg)$/i.test(fileOrUrl);
-    }
-    return fileOrUrl.type.startsWith('image/');
-  };
-
-  const getFileName = (fileOrUrl: File | string | null): string => {
-    if (!fileOrUrl) return "Unknown File";
-    if (typeof fileOrUrl === 'string') {
-      try {
-        const url = new URL(fileOrUrl);
-        const pathSegments = url.pathname.split('/');
-        return pathSegments[pathSegments.length - 1];
-      } catch {
-        return fileOrUrl; // Fallback if not a valid URL
-      }
-    }
-    return fileOrUrl.name;
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1055,43 +1033,29 @@ export const DrainaseForm = () => {
               <Input
                 id="foto-sket"
                 type="file"
-                accept="image/*, application/pdf" // Updated accept attribute
+                accept="image/*"
                 multiple
                 onChange={(e) => handleFileChange(e, 'fotoSket')}
               />
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((fileOrUrl, index) => (
+                {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
                   <div key={index} className="relative group">
-                    {isImage(fileOrUrl) ? (
-                      <img 
-                        src={
-                          fileOrUrl instanceof File 
-                            ? URL.createObjectURL(fileOrUrl)
-                            : fileOrUrl || ''
-                        } 
-                        alt={`Gambar Sket ${index + 1}`} 
-                        className="w-full h-24 object-cover rounded border cursor-pointer"
-                        onClick={() => {
-                          const url = fileOrUrl instanceof File 
-                            ? URL.createObjectURL(fileOrUrl)
-                            : fileOrUrl || '';
-                          setPreviewUrl(url);
-                          setShowPreviewDialog(true);
-                        }}
-                      />
-                    ) : (
-                      <div 
-                        className="w-full h-24 flex items-center justify-center bg-muted text-muted-foreground rounded border cursor-pointer p-2 text-center text-xs break-all"
-                        onClick={() => {
-                          const url = fileOrUrl instanceof File 
-                            ? URL.createObjectURL(fileOrUrl)
-                            : fileOrUrl || '';
-                          window.open(url, '_blank'); // Open PDF in new tab
-                        }}
-                      >
-                        <FileText className="h-6 w-6 mr-1" /> {getFileName(fileOrUrl)}
-                      </div>
-                    )}
+                    <img 
+                      src={
+                        photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || ''
+                      } 
+                      alt={`Gambar Sket ${index + 1}`} 
+                      className="w-full h-24 object-cover rounded border cursor-pointer"
+                      onClick={() => {
+                        const url = photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || '';
+                        setPreviewUrl(url);
+                        setShowPreviewDialog(true);
+                      }}
+                    />
                     <Button
                       type="button"
                       variant="destructive"
