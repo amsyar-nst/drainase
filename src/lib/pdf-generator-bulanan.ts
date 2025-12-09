@@ -160,14 +160,14 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
         .uraian-kegiatan-col { width: 80px; }
         .panjang-col { width: 40px; }
         .volume-col { width: 40px; }
-        .material-jenis-col { width: 80px; } /* Widened */
+        .material-jenis-col { width: 100px; } /* Widened from 80px */
         .material-jumlah-col { width: 30px; }
         .material-satuan-col { width: 30px; }
         .material-keterangan-col { width: 50px; }
-        .peralatan-jenis-col { width: 80px; } /* Widened */
+        .peralatan-jenis-col { width: 100px; } /* Widened from 80px */
         .peralatan-jumlah-col { width: 30px; }
         .peralatan-satuan-col { width: 30px; }
-        .op-jenis-col { width: 60px; }
+        .op-jenis-col { width: 80px; } /* Widened from 60px */
         .op-jumlah-col { width: 30px; }
         .op-fuel-col { width: 30px; } /* For dexlite, pertalite, bio solar jumlah */
         .op-fuel-satuan-col { width: 30px; } /* For dexlite, pertalite, bio solar satuan */
