@@ -281,10 +281,12 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           <DialogDescription>
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
             {reportType === "bulanan" && filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
-            <p className="text-red-500 text-xs mt-1">
-              Catatan: Fungsi cetak laporan bulanan yang menggabungkan banyak tanggal tidak didukung oleh generator PDF saat ini.
-              Laporan akan dibuat berdasarkan tanggal laporan pertama yang dipilih.
-            </p>
+            {reportType === "bulanan" && ( // Hanya tampilkan catatan ini jika reportType adalah "bulanan"
+              <p className="text-red-500 text-xs mt-1">
+                Catatan: Fungsi cetak laporan bulanan yang menggabungkan banyak tanggal tidak didukung oleh generator PDF saat ini.
+                Laporan akan dibuat berdasarkan tanggal laporan pertama yang dipilih.
+              </p>
+            )}
           </DialogDescription>
         </DialogHeader>
         {loading ? (
