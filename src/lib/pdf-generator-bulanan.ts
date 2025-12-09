@@ -137,7 +137,6 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
           border: 1px solid #ccc;
         }
 
-        /* Removed bullet points and padding for lists */
         ul {
           margin: 0;
           padding: 0; /* Removed padding-left */
@@ -172,7 +171,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
         .op-jumlah-col { width: 30px; }
         .op-fuel-col { width: 30px; } /* For dexlite, pertalite, bio solar jumlah */
         .op-fuel-satuan-col { width: 30px; } /* For dexlite, pertalite, bio solar satuan */
-        .op-keterangan-col { width: 50px; }
+        .op-keterangan-col { width: 60px; } /* New column width */
         .koordinator-col { width: 70px; }
         .phl-col { width: 30px; }
         .keterangan-akhir-col { width: 60px; }
@@ -211,7 +210,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
             <th colspan="2">VOLUME</th>
             <th colspan="4">BAHAN MATERIAL</th>
             <th colspan="3">PERALATAN</th>
-            <th colspan="8">OPERASIONAL ALAT BERAT</th>
+            <th colspan="9">OPERASIONAL ALAT BERAT</th> <!-- Colspan changed from 8 to 9 -->
             <th colspan="2">JUMLAH PERSONIL</th>
             <th rowspan="3" class="keterangan-akhir-col">KETERANGAN</th>
           </tr>
@@ -231,6 +230,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
             <th rowspan="2" class="op-jenis-col">JENIS</th>
             <th rowspan="2" class="op-jumlah-col">JUMLAH</th>
             <th colspan="6">JENIS BAHAN BAKAR</th>
+            <th rowspan="2" class="op-keterangan-col">KETERANGAN</th> <!-- New TH for Keterangan -->
             <th rowspan="2" class="koordinator-col">KOORDINATOR</th>
             <th rowspan="2" class="phl-col">PHL</th>
           </tr>
@@ -371,6 +371,13 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
                 <ul class="equipment-list">
                   ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
                     <li>${op.bioSolarSatuan || '-'}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td> <!-- New TD for Operasional Alat Berat Keterangan -->
+                <ul class="equipment-list">
+                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
+                    <li>${op.keterangan || '-'}</li>
                   `).join('')}
                 </ul>
               </td>
