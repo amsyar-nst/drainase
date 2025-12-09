@@ -35,7 +35,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-6 text-foreground">Masuk Ke Laporan UPT Kota</h1>
+        <h1 className="text-3xl font-bold text-center mb-6 text-foreground">Masuk ke Aplikasi</h1>
         <Auth
           supabaseClient={supabase}
           providers={[]} // No third-party providers unless specified
@@ -55,8 +55,10 @@ const Login = () => {
           localization={{
             variables: {
               sign_in: {
-                forgotten_password_link_text: '', // Menyembunyikan tautan "Forgot your password?"
-                no_account_link_text: '',      // Menyembunyikan tautan "Don't have an account? Sign up"
+                link_text: { // Perbaikan di sini: tambahkan objek link_text
+                  forgot_password: '', // Menyembunyikan tautan "Forgot your password?"
+                  no_account: '',      // Menyembunyikan tautan "Don't have an account? Sign up"
+                },
               },
               sign_up: {
                 link_text: '', // Menyembunyikan tautan "Sign in" jika pengguna beralih ke tampilan daftar
