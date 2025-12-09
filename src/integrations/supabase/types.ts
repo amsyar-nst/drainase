@@ -25,6 +25,8 @@ export type Database = {
           jenis_saluran: string | null
           jenis_sedimen: string | null
           jumlah_phl: number | null
+          jumlah_upt: number | null // New field
+          jumlah_p3su: number | null // New field
           kecamatan: string
           kelurahan: string
           keterangan: string | null
@@ -47,6 +49,8 @@ export type Database = {
           jenis_saluran?: string | null
           jenis_sedimen?: string | null
           jumlah_phl?: number | null
+          jumlah_upt?: number | null // New field
+          jumlah_p3su?: number | null // New field
           kecamatan: string
           kelurahan: string
           keterangan?: string | null
@@ -69,6 +73,8 @@ export type Database = {
           jenis_saluran?: string | null
           jenis_sedimen?: string | null
           jumlah_phl?: number | null
+          jumlah_upt?: number | null // New field
+          jumlah_p3su?: number | null // New field
           kecamatan?: string
           kelurahan?: string
           keterangan?: string | null

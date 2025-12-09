@@ -84,6 +84,8 @@ export const DrainaseForm = () => {
       }],
       koordinator: [],
       jumlahPHL: 0, // Default to 0 for empty display
+      jumlahUPT: 0, // New field
+      jumlahP3SU: 0, // New field
       keterangan: "",
     }]
   });
@@ -306,6 +308,8 @@ export const DrainaseForm = () => {
             operasionalAlatBerats: operasionalAlatBerats,
             koordinator: kegiatan.koordinator || [],
             jumlahPHL: kegiatan.jumlah_phl || 0, // Default to 0
+            jumlahUPT: kegiatan.jumlah_upt || 0, // New field
+            jumlahP3SU: kegiatan.jumlah_p3su || 0, // New field
             keterangan: kegiatan.keterangan || "",
           };
         })
@@ -373,6 +377,8 @@ export const DrainaseForm = () => {
       }],
       koordinator: [],
       jumlahPHL: 0, // Default to 0
+      jumlahUPT: 0, // New field
+      jumlahP3SU: 0, // New field
       keterangan: "",
     };
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
@@ -643,6 +649,8 @@ export const DrainaseForm = () => {
             volume_galian: kegiatan.volumeGalian,
             koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
+            jumlah_upt: kegiatan.jumlahUPT, // New field
+            jumlah_p3su: kegiatan.jumlahP3SU, // New field
             keterangan: kegiatan.keterangan,
           })
           .select()
@@ -1313,6 +1321,46 @@ export const DrainaseForm = () => {
                   }
                 }}
                 maxLength={2} // Add maxLength attribute
+              />
+            </div>
+          </div>
+
+          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="jumlah-upt">Jumlah UPT (Orang)</Label>
+              <Input
+                id="jumlah-upt"
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "") {
+                    updateCurrentKegiatan({ jumlahUPT: 0 });
+                  } else if (/^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) });
+                  }
+                }}
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jumlah-p3su">Jumlah P3SU (Orang)</Label>
+              <Input
+                id="jumlah-p3su"
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "") {
+                    updateCurrentKegiatan({ jumlahP3SU: 0 });
+                  } else if (/^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) });
+                  }
+                }}
+                maxLength={2}
               />
             </div>
           </div>

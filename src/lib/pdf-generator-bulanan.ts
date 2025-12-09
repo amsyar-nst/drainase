@@ -211,7 +211,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
             <th colspan="4">BAHAN MATERIAL</th>
             <th colspan="3">PERALATAN</th>
             <th colspan="9">OPERASIONAL ALAT BERAT</th> <!-- Colspan changed from 8 to 9 -->
-            <th colspan="2">JUMLAH PERSONIL</th>
+            <th colspan="3">JUMLAH PERSONIL</th> <!-- Changed colspan to 3 -->
             <th rowspan="3" class="keterangan-akhir-col">KETERANGAN</th>
           </tr>
           <tr>
@@ -232,7 +232,8 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
             <th colspan="6">JENIS BAHAN BAKAR</th>
             <th rowspan="2" class="op-keterangan-col">KETERANGAN</th> <!-- New TH for Keterangan -->
             <th rowspan="2" class="koordinator-col">KOORDINATOR</th>
-            <th rowspan="2" class="phl-col">PHL</th>
+            <th rowspan="2" class="phl-col">UPT</th> <!-- Changed to UPT -->
+            <th rowspan="2" class="phl-col">P3SU</th> <!-- Changed to P3SU -->
           </tr>
           <tr>
             <th class="op-fuel-col">DEXLITE</th>
@@ -382,7 +383,8 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
                 </ul>
               </td>
               <td>${kegiatan.koordinator.join(', ')}</td>
-              <td class="center">${kegiatan.jumlahPHL}</td>
+              <td class="center">${kegiatan.jumlahUPT || '-'}</td> <!-- Display UPT count -->
+              <td class="center">${kegiatan.jumlahP3SU || '-'}</td> <!-- Display P3SU count -->
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}

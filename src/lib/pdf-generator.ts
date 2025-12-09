@@ -221,7 +221,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
             <th colspan="4">Material / Bahan</th>
             <th colspan="3">Peralatan & Alat Berat</th>
-            <th colspan="2">Personil UPT</th>
+            <th colspan="3">Personil UPT</th> <!-- Changed colspan to 3 -->
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
           <tr>
@@ -236,7 +236,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
             <th style="width: 70px;">Koordinator</th>
-            <th class="number-col">Jml PHL</th>
+            <th class="number-col">Jml UPT</th> <!-- New column -->
+            <th class="number-col">Jml P3SU</th> <!-- New column -->
           </tr>
         </thead>
         <tbody>
@@ -317,7 +318,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                 </ul>
               </td>
               <td>${kegiatan.koordinator.join(', ')}</td>
-              <td class="center">${kegiatan.jumlahPHL}</td>
+              <td class="center">${kegiatan.jumlahUPT || '-'}</td> <!-- Display UPT count -->
+              <td class="center">${kegiatan.jumlahP3SU || '-'}</td> <!-- Display P3SU count -->
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}

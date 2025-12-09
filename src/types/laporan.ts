@@ -49,6 +49,8 @@ export interface KegiatanDrainase {
   operasionalAlatBerats: OperasionalAlatBerat[];
   koordinator: string[]; // Changed to string array for multiple coordinators
   jumlahPHL: number;
+  jumlahUPT?: number; // New field for UPT count
+  jumlahP3SU?: number; // New field for P3SU count
   keterangan: string;
 }
 
