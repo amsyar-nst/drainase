@@ -54,7 +54,7 @@ export const DrainaseForm = () => {
   const [formData, setFormData] = useState<LaporanDrainase>({
     tanggal: new Date(),
     periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
-    reportType: "harian", // Default to harian, now selectable
+    reportType: "harian", // Default to harian, will be loaded from DB if editing
     kegiatans: [{
       id: "1",
       namaJalan: "",
@@ -557,12 +557,12 @@ export const DrainaseForm = () => {
     const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
       periode: formData.periode,
-      reportType: formData.reportType,
+      reportType: formData.reportType, // Use the reportType from formData
       kegiatans: formData.kegiatans,
     };
     try {
       let blob: Blob;
-      if (formData.reportType === "tersier") {
+      if (laporanForPdf.reportType === "tersier") { // Check reportType from formData
         blob = await generatePDFTersier(laporanForPdf, false);
       } else {
         blob = await generatePDF(laporanForPdf, false);
@@ -585,11 +585,11 @@ export const DrainaseForm = () => {
     const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
       periode: formData.periode,
-      reportType: formData.reportType,
+      reportType: formData.reportType, // Use the reportType from formData
       kegiatans: formData.kegiatans,
     };
     try {
-      if (formData.reportType === "tersier") {
+      if (laporanForPdf.reportType === "tersier") { // Check reportType from formData
         await generatePDFTersier(laporanForPdf, true);
       } else {
         await generatePDF(laporanForPdf, true);
@@ -847,23 +847,6 @@ export const DrainaseForm = () => {
         </Card>
 
         <Card className="p-6 space-y-6">
-          {/* Jenis Laporan */}
-          <div className="space-y-2">
-            <Label htmlFor="report-type">Jenis Laporan</Label>
-            <Select
-              value={formData.reportType}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, reportType: value as "harian" | "bulanan" | "tersier" }))}
-            >
-              <SelectTrigger id="report-type">
-                <SelectValue placeholder="Pilih jenis laporan" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="harian">Harian</SelectItem>
-                <SelectItem value="tersier">Tersier</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Tanggal */}
           <div className="space-y-2">
             <Label htmlFor="tanggal">Tanggal</Label>
@@ -1434,122 +1417,120 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Tersier Specific Fields - Conditionally rendered */}
-          {formData.reportType === "tersier" && (
-            <>
-              <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
-                <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Opsional)</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="jumlah-upt">UPT (Orang)</Label>
-                  <Input
-                    id="jumlah-upt"
-                    type="text"
-                    placeholder="0"
-                    value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || /^\d{0,2}$/.test(value)) {
-                        updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
-                      }
-                    }}
-                    maxLength={2}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="jumlah-p3su">P3SU (Orang)</Label>
-                  <Input
-                    id="jumlah-p3su"
-                    type="text"
-                    placeholder="0"
-                    value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || /^\d{0,2}$/.test(value)) {
-                        updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
-                      }
-                    }}
-                    maxLength={2}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4 border rounded-lg p-4">
-                <h3 className="font-semibold text-lg">Rencana Dimensi (Opsional)</h3>
-                <div>
-                  <Label htmlFor="rencanaPanjang">Panjang (m)</Label>
-                  <Input
-                    id="rencanaPanjang"
-                    placeholder="Masukkan panjang"
-                    value={currentKegiatan.rencanaPanjang || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ rencanaPanjang: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="rencanaVolume">Volume (m³)</Label>
-                  <Input
-                    id="rencanaVolume"
-                    placeholder="Masukkan volume"
-                    value={currentKegiatan.rencanaVolume || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ rencanaVolume: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4 border rounded-lg p-4">
-                <h3 className="font-semibold text-lg">Realisasi Dimensi (Opsional)</h3>
-                <div>
-                  <Label htmlFor="realisasiPanjang">Panjang (m)</Label>
-                  <Input
-                    id="realisasiPanjang"
-                    placeholder="Masukkan panjang"
-                    value={currentKegiatan.realisasiPanjang || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ realisasiPanjang: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="realisasiVolume">Volume (m³)</Label>
-                  <Input
-                    id="realisasiVolume"
-                    placeholder="Masukkan volume"
-                    value={currentKegiatan.realisasiVolume || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ realisasiVolume: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Sisa Target Penyelesaian Pekerjaan (Hari) */}
-              <div className="space-y-2">
-                <Label htmlFor="sisaTargetHari">Sisa Target Penyelesaian Pekerjaan (Hari) (Opsional)</Label>
-                <Input
-                  id="sisaTargetHari"
-                  type="text"
-                  placeholder="00"
-                  value={currentKegiatan.sisaTargetHari || ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ sisaTargetHari: value });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-
-              {/* Alat yang Dibutuhkan - Using the new component */}
-              <AlatYangDibutuhkanSection
-                currentKegiatan={currentKegiatan}
-                updateCurrentKegiatan={updateCurrentKegiatan}
+          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Always visible */}
+          <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
+            <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Opsional)</h3>
+            <div className="space-y-2">
+              <Label htmlFor="jumlah-upt">UPT (Orang)</Label>
+              <Input
+                id="jumlah-upt"
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
+                  }
+                }}
+                maxLength={2}
               />
-            </>
-          )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jumlah-p3su">P3SU (Orang)</Label>
+              <Input
+                id="jumlah-p3su"
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
+                  }
+                }}
+                maxLength={2}
+              />
+            </div>
+          </div>
+
+          {/* Rencana Dimensi (Opsional) - Always visible */}
+          <div className="space-y-4 border rounded-lg p-4">
+            <h3 className="font-semibold text-lg">Rencana Dimensi (Opsional)</h3>
+            <div>
+              <Label htmlFor="rencanaPanjang">Panjang (m)</Label>
+              <Input
+                id="rencanaPanjang"
+                placeholder="Masukkan panjang"
+                value={currentKegiatan.rencanaPanjang || ""}
+                onChange={(e) =>
+                  updateCurrentKegiatan({ rencanaPanjang: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="rencanaVolume">Volume (m³)</Label>
+              <Input
+                id="rencanaVolume"
+                placeholder="Masukkan volume"
+                value={currentKegiatan.rencanaVolume || ""}
+                onChange={(e) =>
+                  updateCurrentKegiatan({ rencanaVolume: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          {/* Realisasi Dimensi (Opsional) - Always visible */}
+          <div className="space-y-4 border rounded-lg p-4">
+            <h3 className="font-semibold text-lg">Realisasi Dimensi (Opsional)</h3>
+            <div>
+              <Label htmlFor="realisasiPanjang">Panjang (m)</Label>
+              <Input
+                id="realisasiPanjang"
+                placeholder="Masukkan panjang"
+                value={currentKegiatan.realisasiPanjang || ""}
+                onChange={(e) =>
+                  updateCurrentKegiatan({ realisasiPanjang: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="realisasiVolume">Volume (m³)</Label>
+              <Input
+                id="realisasiVolume"
+                placeholder="Masukkan volume"
+                value={currentKegiatan.realisasiVolume || ""}
+                onChange={(e) =>
+                  updateCurrentKegiatan({ realisasiVolume: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          {/* Sisa Target Penyelesaian Pekerjaan (Hari) (Opsional) - Always visible */}
+          <div className="space-y-2">
+            <Label htmlFor="sisaTargetHari">Sisa Target Penyelesaian Pekerjaan (Hari) (Opsional)</Label>
+            <Input
+              id="sisaTargetHari"
+              type="text"
+              placeholder="00"
+              value={currentKegiatan.sisaTargetHari || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "" || /^\d{0,2}$/.test(value)) {
+                  updateCurrentKegiatan({ sisaTargetHari: value });
+                }
+              }}
+              maxLength={2}
+            />
+          </div>
+
+          {/* Alat yang Dibutuhkan - Using the new component - Always visible */}
+          <AlatYangDibutuhkanSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+          />
 
           {/* Keterangan */}
           <div className="space-y-2">
