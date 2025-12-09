@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index"; // This is DrainaseForm
 import LaporanList from "./pages/LaporanList";
-import TersierList from "./pages/TersierList";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { SessionContextProvider } from "./components/SessionContextProvider";
@@ -30,11 +29,6 @@ const App = () => {
               {/* Drainase Form (Harian) routes */}
               <Route path="/drainase/new" element={<Index />} />
               <Route path="/drainase/edit/:id" element={<Index />} />
-              
-              {/* Tersier Form routes */}
-              <Route path="/tersier/new" element={<Index />} /> {/* New route for creating tersier reports */}
-              <Route path="/tersier/edit/:id" element={<Index />} /> {/* Edit tersier report using main form */}
-              <Route path="/tersier/list" element={<TersierList />} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

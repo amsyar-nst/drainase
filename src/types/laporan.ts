@@ -26,12 +26,6 @@ export interface OperasionalAlatBerat {
   keterangan: string;
 }
 
-export interface Alat { // New interface for Alat, similar to the one in laporan-tersier.ts
-  id: string;
-  nama: string;
-  jumlah: number;
-}
-
 export interface KegiatanDrainase {
   id: string;
   namaJalan: string;
@@ -57,23 +51,13 @@ export interface KegiatanDrainase {
   operasionalAlatBerats: OperasionalAlatBerat[];
   koordinator: string[]; // Changed to string array for multiple coordinators
   jumlahPHL: number;
-  jumlahUPT?: number; // New field for UPT count
-  jumlahP3SU?: number; // New field for P3SU count
   keterangan: string;
-
-  // --- New fields for Tersier reports (now consolidated into KegiatanDrainase) ---
-  hariTanggal?: Date; // Specific date for tersier activity
-  alatYangDibutuhkan?: Alat[]; // Array of tools needed for tersier
-  rencanaPanjang?: string;
-  rencanaVolume?: string;
-  realisasiPanjang?: string;
-  realisasiVolume?: string;
-  sisaTargetHari?: string;
+  hariTanggal?: Date | null; // Added hariTanggal field
 }
 
 export interface LaporanDrainase {
   tanggal: Date | null; // Changed to allow null
   periode: string; // Added periode for consistency and filtering
-  reportType: "harian" | "tersier" | "bulanan"; // New field to distinguish report types, added "bulanan"
+  reportType: "harian" | "bulanan"; // New field to distinguish report types, added "bulanan"
   kegiatans: KegiatanDrainase[];
 }

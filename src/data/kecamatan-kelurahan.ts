@@ -137,31 +137,8 @@ export const alatBeratOptions = [
   "Wheel Loader",
   "Skid Steer Loader",
   "Asphalt Finisher",
-  "Exc. Mini", // Added
-  "Trado Mini"  // Added
-];
-
-export const alatOptions = [
-  "Cangkul",
-  "Sekop",
-  "Linggis",
-  "Gerobak Dorong",
-  "Karung",
-  "Ember",
-  "Palu",
-  "Kunci Pas",
-  "Tang",
-  "Meteran",
-  "Gergaji",
-  "Alat Pelindung Diri (APD)",
-  "Senter",
-  "Peralatan Kebersihan",
-  "Pompa Air",
-  "Selang Air",
-  "Jaring Sampah",
-  "Perahu Karet",
-  "Alat Komunikasi",
-  "Peralatan P3K"
+  "Exc. Mini", 
+  "Trado Mini"  
 ];
 
 // Mapping material types to default units (case-insensitive)

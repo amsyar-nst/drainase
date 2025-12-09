@@ -168,12 +168,7 @@ const LaporanList = () => {
     setIsDrainasePrintDialogOpen(true);
   };
 
-  const handleGlobalPrintSelection = (reportType: "harian" | "bulanan" | "tersier") => {
-    if (reportType === "tersier") {
-      toast.info("Fitur cetak Laporan Tersier secara global belum tersedia.");
-      return;
-    }
-
+  const handleGlobalPrintSelection = (reportType: "harian" | "bulanan") => { // Removed "tersier"
     setCurrentPrintReportType(reportType);
     if (reportType === "harian") {
       // For global harian, fetch all laporans matching the current filter period
@@ -246,9 +241,7 @@ const LaporanList = () => {
                   <DropdownMenuItem onClick={() => handleGlobalPrintSelection("bulanan")}>
                     Laporan Bulanan
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("tersier")}>
-                    Laporan Tersier
-                  </DropdownMenuItem>
+                  {/* Removed "Laporan Tersier" option */}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

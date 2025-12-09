@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom"; // Import useLocation
+import { useParams, useNavigate } from "react-router-dom"; 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,15 +29,14 @@ import { format, parse, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, Alat } from "@/types/laporan";
-import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, alatOptions } from "@/data/kecamatan-kelurahan";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
+import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection";
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
@@ -49,16 +48,11 @@ const predefinedSedimenOptions = [
 export const DrainaseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // Use useLocation to get current path
-
-  // Determine initial reportType based on route
-  const isTersierRoute = location.pathname.startsWith("/tersier/");
-  const initialReportType: "harian" | "tersier" = isTersierRoute ? "tersier" : "harian";
 
   const [formData, setFormData] = useState<LaporanDrainase>({
     tanggal: new Date(),
     periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
-    reportType: initialReportType, // Set initial reportType dynamically
+    reportType: "harian", 
     kegiatans: [{
       id: "1",
       namaJalan: "",
@@ -95,16 +89,8 @@ export const DrainaseForm = () => {
       }],
       koordinator: [],
       jumlahPHL: 0,
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
       keterangan: "",
-      hariTanggal: new Date(),
-      alatYangDibutuhkan: [],
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-      sisaTargetHari: "",
+      hariTanggal: new Date(), // Initialize hariTanggal
     }]
   });
 
@@ -132,11 +118,8 @@ export const DrainaseForm = () => {
   useEffect(() => {
     if (id) {
       loadLaporan(id);
-    } else {
-      // For new reports, ensure reportType is set based on route
-      setFormData(prev => ({ ...prev, reportType: initialReportType }));
     }
-  }, [id, initialReportType]); // Depend on initialReportType
+  }, [id]);
 
   useEffect(() => {
     if (formData.kegiatans.length > 0) {
@@ -288,15 +271,6 @@ export const DrainaseForm = () => {
             return [];
           };
 
-          let alatYangDibutuhkan: Alat[] = [];
-          if (kegiatan.alat_yang_dibutuhkan && Array.isArray(kegiatan.alat_yang_dibutuhkan)) {
-            alatYangDibutuhkan = kegiatan.alat_yang_dibutuhkan.map((nama: string) => ({
-              id: crypto.randomUUID(),
-              nama: nama,
-              jumlah: 1,
-            }));
-          }
-
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
@@ -322,16 +296,8 @@ export const DrainaseForm = () => {
             operasionalAlatBerats: operasionalAlatBerats,
             koordinator: kegiatan.koordinator || [],
             jumlahPHL: kegiatan.jumlah_phl || 0,
-            jumlahUPT: kegiatan.jumlah_upt || 0,
-            jumlahP3SU: kegiatan.jumlah_p3su || 0,
             keterangan: kegiatan.keterangan || "",
-            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
-            alatYangDibutuhkan: alatYangDibutuhkan,
-            rencanaPanjang: kegiatan.rencana_panjang || "",
-            rencanaVolume: kegiatan.rencana_volume || "",
-            realisasiPanjang: kegiatan.realisasi_panjang || "",
-            realisasiVolume: kegiatan.realisasi_volume || "",
-            sisaTargetHari: kegiatan.sisa_target || "",
+            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : null, // Map from DB
           };
         })
       );
@@ -339,7 +305,7 @@ export const DrainaseForm = () => {
       setFormData({
         tanggal: new Date(laporanData.tanggal),
         periode: laporanData.periode,
-        reportType: (laporanData.report_type || "harian") as "harian" | "tersier",
+        reportType: "harian",
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
       });
 
@@ -401,16 +367,8 @@ export const DrainaseForm = () => {
       }],
       koordinator: [],
       jumlahPHL: 0,
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
       keterangan: "",
-      hariTanggal: new Date(),
-      alatYangDibutuhkan: [],
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-      sisaTargetHari: "",
+      hariTanggal: formData.tanggal, // Default to report date
     };
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
@@ -658,12 +616,10 @@ export const DrainaseForm = () => {
         const foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
         const fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`);
 
-        const alatYangDibutuhkanNames = kegiatan.alatYangDibutuhkan?.map(a => a.nama) || [];
-
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .insert({
-            laporan_id: currentLaporanId,
+            laporan_id: currentLaporanId, // Corrected typo from kapan_id
             nama_jalan: kegiatan.namaJalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
@@ -680,16 +636,8 @@ export const DrainaseForm = () => {
             volume_galian: kegiatan.volumeGalian,
             koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
-            jumlah_upt: kegiatan.jumlahUPT,
-            jumlah_p3su: kegiatan.jumlahP3SU,
             keterangan: kegiatan.keterangan,
-            hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
-            alat_yang_dibutuhkan: alatYangDibutuhkanNames,
-            rencana_panjang: kegiatan.rencanaPanjang,
-            rencana_volume: kegiatan.rencanaVolume,
-            realisasi_panjang: kegiatan.realisasiPanjang,
-            realisasi_volume: kegiatan.realisasiVolume,
-            sisa_target: kegiatan.sisaTargetHari,
+            hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null, // Save hariTanggal
           })
           .select()
           .single();
@@ -750,7 +698,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate(formData.reportType === "tersier" ? '/tersier/list' : '/'); // Redirect based on report type
+      navigate('/'); 
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan: ' + error.message);
@@ -797,13 +745,13 @@ export const DrainaseForm = () => {
         <div className="flex justify-between items-center">
           <div className="text-center space-y-2 flex-1">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Form Laporan Drainase {formData.reportType === "tersier" ? "Tersier" : "Harian"}
+              Form Laporan Drainase Harian
             </h1>
             <p className="text-muted-foreground">
               {id ? 'Edit laporan kegiatan drainase' : 'Isi formulir dengan lengkap untuk menghasilkan laporan'}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate(formData.reportType === "tersier" ? '/tersier/list' : '/')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
             <List className="h-4 w-4" />
             Lihat Laporan
           </Button>
@@ -1410,130 +1358,6 @@ export const DrainaseForm = () => {
               />
             </div>
           </div>
-
-          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Only for Tersier Report Type */}
-          {formData.reportType === "tersier" && (
-            <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
-              <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Tersier)</h3>
-              <div className="space-y-2">
-                <Label htmlFor="jumlah-upt">Jumlah UPT (Orang)</Label>
-                <Input
-                  id="jumlah-upt"
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      updateCurrentKegiatan({ jumlahUPT: 0 });
-                    } else if (/^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="jumlah-p3su">Jumlah P3SU (Orang)</Label>
-                <Input
-                  id="jumlah-p3su"
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      updateCurrentKegiatan({ jumlahP3SU: 0 });
-                    } else if (/^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Tersier Specific Fields - Only for Tersier Report Type */}
-          {formData.reportType === "tersier" && (
-            <>
-              <div className="space-y-4 border rounded-lg p-4">
-                <h3 className="font-semibold text-lg">Rencana Dimensi (Tersier)</h3>
-                <div>
-                  <Label htmlFor="rencanaPanjang">Panjang</Label>
-                  <Input
-                    id="rencanaPanjang"
-                    placeholder="Masukkan panjang"
-                    value={currentKegiatan.rencanaPanjang || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ rencanaPanjang: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="rencanaVolume">Volume</Label>
-                  <Input
-                    id="rencanaVolume"
-                    placeholder="Masukkan volume"
-                    value={currentKegiatan.rencanaVolume || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ rencanaVolume: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4 border rounded-lg p-4">
-                <h3 className="font-semibold text-lg">Realisasi Dimensi (Tersier)</h3>
-                <div>
-                  <Label htmlFor="realisasiPanjang">Panjang</Label>
-                  <Input
-                    id="realisasiPanjang"
-                    placeholder="Masukkan panjang"
-                    value={currentKegiatan.realisasiPanjang || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ realisasiPanjang: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="realisasiVolume">Volume</Label>
-                  <Input
-                    id="realisasiVolume"
-                    placeholder="Masukkan volume"
-                    value={currentKegiatan.realisasiVolume || ""}
-                    onChange={(e) =>
-                      updateCurrentKegiatan({ realisasiVolume: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Sisa Target Penyelesaian Pekerjaan (Hari) */}
-              <div className="space-y-2">
-                <Label htmlFor="sisaTargetHari">Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
-                <Input
-                  id="sisaTargetHari"
-                  type="text"
-                  placeholder="00"
-                  value={currentKegiatan.sisaTargetHari || ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ sisaTargetHari: value });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-
-              {/* Alat yang Dibutuhkan - Using the new component */}
-              <AlatYangDibutuhkanSection
-                currentKegiatan={currentKegiatan}
-                updateCurrentKegiatan={updateCurrentKegiatan}
-              />
-            </>
-          )}
 
           {/* Keterangan */}
           <div className="space-y-2">
