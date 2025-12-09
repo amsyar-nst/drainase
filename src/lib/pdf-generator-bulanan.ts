@@ -2,7 +2,7 @@ import { LaporanBulananData, KegiatanDrainaseBulanan } from "@/types/laporan-bul
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob> => {
+export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: boolean = true): Promise<Blob> => {
   // Convert images to base64
   const getBase64 = async (file: File | string | null): Promise<string> => {
     return new Promise(async (resolve) => {
@@ -39,6 +39,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
       foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))),
       foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))),
       foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))),
+      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))), // New field
     }))
   );
 
@@ -203,7 +204,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
             <th rowspan="3" class="no-col">NO</th>
             <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
             <th rowspan="3" class="location-col">LOKASI</th>
-            <th colspan="3">FOTO DOKUMENTASI</th>
+            <th colspan="4">FOTO DOKUMENTASI</th> <!-- Changed colspan to 4 -->
             <th rowspan="3" class="jenis-saluran-col">JENIS SALURAN<br/>(TERBUKA/<br/>TERTUTUP)</th>
             <th rowspan="3" class="jenis-sedimen-col">JENIS SEDIMEN<br/>(BATU/PADAT/<br/>CAIR)</th>
             <th rowspan="3" class="uraian-kegiatan-col">URAIAN KEGIATAN</th>
@@ -211,13 +212,14 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
             <th colspan="4">BAHAN MATERIAL</th>
             <th colspan="3">PERALATAN</th>
             <th colspan="9">OPERASIONAL ALAT BERAT</th>
-            <th colspan="2">JUMLAH PERSONIL</th> <!-- Changed colspan back to 2 -->
+            <th colspan="2">JUMLAH PERSONIL</th>
             <th rowspan="3" class="keterangan-akhir-col">KETERANGAN</th>
           </tr>
           <tr>
             <th rowspan="2" class="photo-cell">0%</th>
             <th rowspan="2" class="photo-cell">50%</th>
             <th rowspan="2" class="photo-cell">100%</th>
+            <th rowspan="2" class="photo-cell">Sket</th> <!-- New column -->
             <th rowspan="2" class="panjang-col">PANJANG<br/>(M)</th>
             <th rowspan="2" class="volume-col">(M³)</th>
             <th rowspan="2" class="material-jenis-col">JENIS</th>
@@ -232,7 +234,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
             <th colspan="6">JENIS BAHAN BAKAR</th>
             <th rowspan="2" class="op-keterangan-col">KETERANGAN</th>
             <th rowspan="2" class="koordinator-col">KOORDINATOR</th>
-            <th rowspan="2" class="phl-col">PHL</th> <!-- Changed back to PHL -->
+            <th rowspan="2" class="phl-col">PHL</th>
           </tr>
           <tr>
             <th class="op-fuel-col">DEXLITE</th>
@@ -262,6 +264,11 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
               <td class="photo-cell">
                 <div class="photo-container">
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
+                </div>
+              </td>
+              <td class="photo-cell"> <!-- New cell for Foto Sket -->
+                <div class="photo-container">
+                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
                 </div>
               </td>
               <td class="center">${kegiatan.jenisSaluran || '-'}</td>
@@ -382,7 +389,8 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
                 </ul>
               </td>
               <td>${kegiatan.koordinator.join(', ')}</td>
-              <td class="center">${kegiatan.jumlahPHL || '-'}</td> <!-- Display PHL count -->
+              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
+              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}
@@ -400,15 +408,18 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
     </html>
   `;
 
+  // Create blob for preview or download
   const blob = new Blob([htmlContent], { type: 'text/html' });
   
-  // Open in new window for printing/downloading
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    throw new Error("Popup blocked. Please allow popups for this site.");
+  if (downloadNow) {
+    // Open in new window for printing/downloading
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      throw new Error("Popup blocked. Please allow popups for this site.");
+    }
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   }
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
   
   return blob;
 };

@@ -124,9 +124,11 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           foto0: kegiatan.foto_0_url || [],
           foto50: kegiatan.foto_50_url || [],
           foto100: kegiatan.foto_100_url || [],
+          fotoSket: kegiatan.foto_sket_url || [], // FIX: Added fotoSket
           foto0Url: kegiatan.foto_0_url || undefined,
           foto50Url: kegiatan.foto_50_url || undefined,
           foto100Url: kegiatan.foto_100_url || undefined,
+          fotoSketUrl: kegiatan.foto_sket_url || undefined, // FIX: Added fotoSketUrl
           jenisSaluran: (kegiatan.jenis_saluran || "") as "" | "Terbuka" | "Tertutup" | "Terbuka & Tertutup",
           jenisSedimen: (kegiatan.jenis_sedimen || "") as "" | "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" | "Batu/ Padat & Cair",
           aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
@@ -277,7 +279,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           periode: filterPeriod,
           kegiatans: selectedKegiatansWithDetails,
         };
-        await generatePDFBulanan(laporanBulananToPrint);
+        await generatePDFBulanan(laporanBulananToPrint, true); // FIX: Pass downloadNow parameter
       }
       
       toast.success("Laporan PDF berhasil dibuat.");

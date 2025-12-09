@@ -40,6 +40,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
       foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))), // Map over array
       foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))), // Map over array
       foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))), // Map over array
+      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))), // New field
     }))
   );
 
@@ -211,7 +212,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="no-col">No</th>
             <th rowspan="2" class="date-col">Hari/ Tanggal</th>
             <th rowspan="2" class="location-col">Lokasi</th>
-            <th colspan="3">Foto Dokumentasi</th>
+            <th colspan="4">Foto Dokumentasi</th> <!-- Changed colspan to 4 -->
             <th rowspan="2" class="jenis-col">Jenis Saluran<br/>(Terbuka/ Tertutup)</th>
             <th rowspan="2" class="jenis-col">Jenis Sedimen<br/>(Batu/ Padat/Cair)</th>
             <th rowspan="2" style="width: 80px;">Aktifitas Penanganan</th>
@@ -221,13 +222,14 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
             <th colspan="4">Material / Bahan</th>
             <th colspan="3">Peralatan & Alat Berat</th>
-            <th colspan="3">Personil UPT</th> <!-- Changed colspan to 3 -->
+            <th colspan="3">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
           <tr>
             <th class="photo-cell">0%</th>
             <th class="photo-cell">50%</th>
             <th class="photo-cell">100%</th>
+            <th class="photo-cell">Sket</th> <!-- New column -->
             <th style="width: 80px;">Jenis</th>
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
@@ -236,8 +238,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
             <th style="width: 70px;">Koordinator</th>
-            <th class="number-col">Jml UPT</th> <!-- New column -->
-            <th class="number-col">Jml P3SU</th> <!-- New column -->
+            <th class="number-col">Jml UPT</th>
+            <th class="number-col">Jml P3SU</th>
           </tr>
         </thead>
         <tbody>
@@ -259,6 +261,11 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
               <td class="photo-cell">
                 <div class="photo-container">
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
+                </div>
+              </td>
+              <td class="photo-cell"> <!-- New cell for Foto Sket -->
+                <div class="photo-container">
+                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
                 </div>
               </td>
               <td class="center">${kegiatan.jenisSaluran || '-'}</td>
@@ -318,8 +325,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                 </ul>
               </td>
               <td>${kegiatan.koordinator.join(', ')}</td>
-              <td class="center">${kegiatan.jumlahUPT || '-'}</td> <!-- Display UPT count -->
-              <td class="center">${kegiatan.jumlahP3SU || '-'}</td> <!-- Display P3SU count -->
+              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
+              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}

@@ -61,6 +61,8 @@ export const DrainaseForm = () => {
       foto0Url: [], // Changed to array
       foto50Url: [], // Changed to array
       foto100Url: [], // Changed to array
+      fotoSket: [], // New field
+      fotoSketUrl: [], // New field
       jenisSaluran: "",
       jenisSedimen: "",
       aktifitasPenanganan: "",
@@ -293,9 +295,11 @@ export const DrainaseForm = () => {
             foto0: ensureArray(kegiatan.foto_0_url),
             foto50: ensureArray(kegiatan.foto_50_url),
             foto100: ensureArray(kegiatan.foto_100_url),
+            fotoSket: ensureArray(kegiatan.foto_sket_url), // New field
             foto0Url: ensureArray(kegiatan.foto_0_url),
             foto50Url: ensureArray(kegiatan.foto_50_url),
             foto100Url: ensureArray(kegiatan.foto_100_url),
+            fotoSketUrl: ensureArray(kegiatan.foto_sket_url), // New field
             jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
             jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" | "Batu/ Padat & Cair",
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
@@ -354,6 +358,8 @@ export const DrainaseForm = () => {
       foto0Url: [], // Changed to array
       foto50Url: [], // Changed to array
       foto100Url: [], // Changed to array
+      fotoSket: [], // New field
+      fotoSketUrl: [], // New field
       jenisSaluran: "",
       jenisSedimen: "",
       aktifitasPenanganan: "",
@@ -513,14 +519,14 @@ export const DrainaseForm = () => {
     return uploadedUrls;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'foto0' | 'foto50' | 'foto100') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket') => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       updateCurrentKegiatan({ [field]: [...currentKegiatan[field], ...newFiles] });
     }
   };
 
-  const removePhoto = (field: 'foto0' | 'foto50' | 'foto100', indexToRemove: number) => {
+  const removePhoto = (field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket', indexToRemove: number) => {
     const updatedPhotos = currentKegiatan[field].filter((_, index) => index !== indexToRemove);
     updateCurrentKegiatan({ [field]: updatedPhotos });
   };
@@ -628,6 +634,7 @@ export const DrainaseForm = () => {
         const foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
         const foto50Urls = await uploadFiles(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/50`);
         const foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
+        const fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`); // New field
 
         // Insert kegiatan
         const { data: kegiatanData, error: kegiatanError } = await supabase
@@ -640,6 +647,7 @@ export const DrainaseForm = () => {
             foto_0_url: foto0Urls, // Now an array
             foto_50_url: foto50Urls, // Now an array
             foto_100_url: foto100Urls, // Now an array
+            foto_sket_url: fotoSketUrls, // New field
             jenis_saluran: kegiatan.jenisSaluran,
             jenis_sedimen: kegiatan.jenisSedimen,
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
@@ -892,7 +900,7 @@ export const DrainaseForm = () => {
           </div>
 
           {/* Photos */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4"> {/* Changed to 4 columns for photos */}
             {/* Foto 0% */}
             <div className="space-y-2">
               <Label htmlFor="foto-0">Foto 0%</Label>
@@ -1012,6 +1020,48 @@ export const DrainaseForm = () => {
                       size="icon"
                       className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => removePhoto('foto100', index)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Foto Sket (New Field) */}
+            <div className="space-y-2">
+              <Label htmlFor="foto-sket">Gambar Sket</Label>
+              <Input
+                id="foto-sket"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleFileChange(e, 'fotoSket')}
+              />
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={
+                        photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || ''
+                      } 
+                      alt={`Gambar Sket ${index + 1}`} 
+                      className="w-full h-24 object-cover rounded border cursor-pointer"
+                      onClick={() => {
+                        const url = photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || '';
+                        setPreviewUrl(url);
+                        setShowPreviewDialog(true);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto('fotoSket', index)}
                     >
                       <XCircle className="h-4 w-4" />
                     </Button>

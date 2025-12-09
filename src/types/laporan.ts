@@ -37,6 +37,8 @@ export interface KegiatanDrainase {
   foto0Url?: string[]; // Changed to array
   foto50Url?: string[]; // Changed to array
   foto100Url?: string[]; // Changed to array
+  fotoSket: (File | string | null)[]; // New field for sketch photos
+  fotoSketUrl?: string[]; // New field for sketch photo URLs
   jenisSaluran: "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | ""; // Added "Terbuka & Tertutup"
   jenisSedimen: string; // Changed to string to allow custom values
   aktifitasPenanganan: string;

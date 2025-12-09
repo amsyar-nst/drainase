@@ -21,6 +21,7 @@ export type Database = {
           foto_0_url: string[] | null // Changed to string[] | null
           foto_100_url: string[] | null // Changed to string[] | null
           foto_50_url: string[] | null // Changed to string[] | null
+          foto_sket_url: string[] | null // New field
           id: string
           jenis_saluran: string | null
           jenis_sedimen: string | null
@@ -45,6 +46,7 @@ export type Database = {
           foto_0_url?: string[] | null // Changed to string[] | null
           foto_100_url?: string[] | null // Changed to string[] | null
           foto_50_url?: string[] | null // Changed to string[] | null
+          foto_sket_url?: string[] | null // New field
           id?: string
           jenis_saluran?: string | null
           jenis_sedimen?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           foto_0_url?: string[] | null // Changed to string[] | null
           foto_100_url?: string[] | null // Changed to string[] | null
           foto_50_url?: string[] | null // Changed to string[] | null
+          foto_sket_url?: string[] | null // New field
           id?: string
           jenis_saluran?: string | null
           jenis_sedimen?: string | null
