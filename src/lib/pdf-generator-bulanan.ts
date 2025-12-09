@@ -137,10 +137,11 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
           border: 1px solid #ccc;
         }
 
+        /* Removed bullet points and padding for lists */
         ul {
           margin: 0;
-          padding-left: 10px;
-          list-style-type: disc;
+          padding: 0; /* Removed padding-left */
+          list-style: none; /* Changed to none */
         }
         li {
           margin: 0;
@@ -154,17 +155,17 @@ export const generatePDFBulanan = async (data: LaporanBulananData): Promise<Blob
 
         .no-col { width: 20px; }
         .date-col { width: 70px; }
-        .location-col { width: 100px; }
+        .location-col { width: 120px; } /* Widened */
         .jenis-saluran-col { width: 50px; }
         .jenis-sedimen-col { width: 50px; }
         .uraian-kegiatan-col { width: 80px; }
         .panjang-col { width: 40px; }
         .volume-col { width: 40px; }
-        .material-jenis-col { width: 60px; }
+        .material-jenis-col { width: 80px; } /* Widened */
         .material-jumlah-col { width: 30px; }
         .material-satuan-col { width: 30px; }
         .material-keterangan-col { width: 50px; }
-        .peralatan-jenis-col { width: 60px; }
+        .peralatan-jenis-col { width: 80px; } /* Widened */
         .peralatan-jumlah-col { width: 30px; }
         .peralatan-satuan-col { width: 30px; }
         .op-jenis-col { width: 60px; }
