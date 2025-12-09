@@ -39,7 +39,6 @@ export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: 
       foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))),
       foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))),
       foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))),
-      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))), // New field
     }))
   );
 
@@ -204,7 +203,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: 
             <th rowspan="3" class="no-col">NO</th>
             <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
             <th rowspan="3" class="location-col">LOKASI</th>
-            <th colspan="4">FOTO DOKUMENTASI</th> <!-- Changed colspan to 4 -->
+            <th colspan="3">FOTO DOKUMENTASI</th> <!-- Changed colspan to 3 -->
             <th rowspan="3" class="jenis-saluran-col">JENIS SALURAN<br/>(TERBUKA/<br/>TERTUTUP)</th>
             <th rowspan="3" class="jenis-sedimen-col">JENIS SEDIMEN<br/>(BATU/PADAT/<br/>CAIR)</th>
             <th rowspan="3" class="uraian-kegiatan-col">URAIAN KEGIATAN</th>
@@ -219,7 +218,6 @@ export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: 
             <th rowspan="2" class="photo-cell">0%</th>
             <th rowspan="2" class="photo-cell">50%</th>
             <th rowspan="2" class="photo-cell">100%</th>
-            <th rowspan="2" class="photo-cell">Sket</th> <!-- New column -->
             <th rowspan="2" class="panjang-col">PANJANG<br/>(M)</th>
             <th rowspan="2" class="volume-col">(M³)</th>
             <th rowspan="2" class="material-jenis-col">JENIS</th>
@@ -264,11 +262,6 @@ export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: 
               <td class="photo-cell">
                 <div class="photo-container">
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
-                </div>
-              </td>
-              <td class="photo-cell"> <!-- New cell for Foto Sket -->
-                <div class="photo-container">
-                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
                 </div>
               </td>
               <td class="center">${kegiatan.jenisSaluran || '-'}</td>
@@ -389,8 +382,7 @@ export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: 
                 </ul>
               </td>
               <td>${kegiatan.koordinator.join(', ')}</td>
-              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
-              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
+              <td class="center">${kegiatan.jumlahPHL || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}
@@ -408,7 +400,6 @@ export const generatePDFBulanan = async (data: LaporanBulananData, downloadNow: 
     </html>
   `;
 
-  // Create blob for preview or download
   const blob = new Blob([htmlContent], { type: 'text/html' });
   
   if (downloadNow) {
