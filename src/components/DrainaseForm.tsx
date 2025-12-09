@@ -29,14 +29,15 @@ import { format, parse, isValid } from "date-fns"; // Import parse and isValid
 import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react"; // Added XCircle for removing photos
 import { cn } from "@/lib/utils";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, Alat } from "@/types/laporan";
+import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, alatOptions } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator"; // Updated import
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-// import { PrintSelectionDialog } from "./PrintSelectionDialog"; // Removed import
+import { Checkbox } from "@/components/ui/checkbox"; // Imported Checkbox
+import { AlatYangDibutuhkanSection } from "./drainase-form/AlatYangDibutuhkanSection"; // Import AlatYangDibutuhkanSection
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
@@ -50,6 +51,8 @@ export const DrainaseForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<LaporanDrainase>({
     tanggal: new Date(),
+    periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }), // Initialize periode
+    reportType: "harian", // Initialize reportType
     kegiatans: [{
       id: "1",
       namaJalan: "",
@@ -89,6 +92,14 @@ export const DrainaseForm = () => {
       jumlahUPT: 0, // New field
       jumlahP3SU: 0, // New field
       keterangan: "",
+      // Tersier specific fields (initialized as empty/default)
+      hariTanggal: new Date(),
+      alatYangDibutuhkan: [],
+      rencanaPanjang: "",
+      rencanaVolume: "",
+      realisasiPanjang: "",
+      realisasiVolume: "",
+      sisaTargetHari: "",
     }]
   });
 
@@ -145,7 +156,7 @@ export const DrainaseForm = () => {
     }
   }, [formData.tanggal]);
 
-  // Effect to initialize selectedSedimenOption and customSedimen when currentKegiatan changes (e.g., on load or activity switch)
+  // Effect to initialize selectedSedimenOption and customSedimen when currentKegiatan changes (e.e.g., on load or activity switch)
   useEffect(() => {
     if (currentKegiatan.jenisSedimen) {
       if (predefinedSedimenOptions.includes(currentKegiatan.jenisSedimen)) {
@@ -287,6 +298,16 @@ export const DrainaseForm = () => {
             return [];
           };
 
+          // Map Alat[] from DB (string[]) to Alat[] for frontend, assigning unique IDs and default quantity
+          let alatYangDibutuhkan: Alat[] = [];
+          if (kegiatan.alat_yang_dibutuhkan && Array.isArray(kegiatan.alat_yang_dibutuhkan)) {
+            alatYangDibutuhkan = kegiatan.alat_yang_dibutuhkan.map((nama: string) => ({
+              id: crypto.randomUUID(),
+              nama: nama,
+              jumlah: 1, // Default to 1, as DB only stores names
+            }));
+          }
+
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
@@ -301,7 +322,7 @@ export const DrainaseForm = () => {
             foto100Url: ensureArray(kegiatan.foto_100_url),
             fotoSketUrl: ensureArray(kegiatan.foto_sket_url), // New field
             jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
-            jenisSedimen: (kegiatan.jenis_sedimen || "") as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" | "Batu/ Padat & Cair",
+            jenisSedimen: (kegiatan.jenis_sedimen || "") as string,
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
             panjangPenanganan: kegiatan.panjang_penanganan || "",
             lebarRataRata: kegiatan.lebar_rata_rata || "",
@@ -315,12 +336,22 @@ export const DrainaseForm = () => {
             jumlahUPT: kegiatan.jumlah_upt || 0, // New field
             jumlahP3SU: kegiatan.jumlah_p3su || 0, // New field
             keterangan: kegiatan.keterangan || "",
+            // Tersier specific fields
+            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
+            alatYangDibutuhkan: alatYangDibutuhkan,
+            rencanaPanjang: kegiatan.rencana_panjang || "",
+            rencanaVolume: kegiatan.rencana_volume || "",
+            realisasiPanjang: kegiatan.realisasi_panjang || "",
+            realisasiVolume: kegiatan.realisasi_volume || "",
+            sisaTargetHari: kegiatan.sisa_target || "",
           };
         })
       );
 
       setFormData({
         tanggal: new Date(laporanData.tanggal),
+        periode: laporanData.periode,
+        reportType: (laporanData.report_type || "harian") as "harian" | "tersier",
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
       });
 
@@ -332,7 +363,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success('Laporan berhasil dimuat');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading laporan:', error);
       toast.error('Gagal memuat laporan');
     } finally {
@@ -386,6 +417,14 @@ export const DrainaseForm = () => {
       jumlahUPT: 0, // New field
       jumlahP3SU: 0, // New field
       keterangan: "",
+      // Tersier specific fields
+      hariTanggal: new Date(),
+      alatYangDibutuhkan: [],
+      rencanaPanjang: "",
+      rencanaVolume: "",
+      realisasiPanjang: "",
+      realisasiVolume: "",
+      sisaTargetHari: "",
     };
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
@@ -539,6 +578,8 @@ export const DrainaseForm = () => {
     }
     const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
       tanggal: formData.tanggal,
+      periode: formData.periode, // Include periode
+      reportType: formData.reportType, // Include reportType
       kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
     };
     try {
@@ -560,6 +601,8 @@ export const DrainaseForm = () => {
     }
     const laporanForPdf: LaporanDrainase = { // Use LaporanDrainase type
       tanggal: formData.tanggal,
+      periode: formData.periode, // Include periode
+      reportType: formData.reportType, // Include reportType
       kegiatans: formData.kegiatans, // No need for laporanTanggal on individual kegiatans
     };
     try {
@@ -582,13 +625,16 @@ export const DrainaseForm = () => {
         return;
       }
 
+      const periodeFormatted = format(formData.tanggal, 'MMMM yyyy', { locale: idLocale });
+
       if (currentLaporanId) {
         // Update existing laporan
         const { error: updateError } = await supabase
           .from('laporan_drainase')
           .update({
             tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
-            periode: format(formData.tanggal, 'MMMM yyyy', { locale: idLocale }),
+            periode: periodeFormatted,
+            report_type: formData.reportType,
           })
           .eq('id', currentLaporanId);
 
@@ -618,7 +664,8 @@ export const DrainaseForm = () => {
           .from('laporan_drainase')
           .insert({
             tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
-            periode: format(formData.tanggal, 'MMMM yyyy', { locale: idLocale }),
+            periode: periodeFormatted,
+            report_type: formData.reportType,
           })
           .select()
           .single();
@@ -635,6 +682,9 @@ export const DrainaseForm = () => {
         const foto50Urls = await uploadFiles(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/50`);
         const foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
         const fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`); // New field
+
+        // Map Alat[] to string[] for Supabase, only saving the 'nama'
+        const alatYangDibutuhkanNames = kegiatan.alatYangDibutuhkan?.map(a => a.nama) || [];
 
         // Insert kegiatan
         const { data: kegiatanData, error: kegiatanError } = await supabase
@@ -660,6 +710,14 @@ export const DrainaseForm = () => {
             jumlah_upt: kegiatan.jumlahUPT, // New field
             jumlah_p3su: kegiatan.jumlahP3SU, // New field
             keterangan: kegiatan.keterangan,
+            // Tersier specific fields
+            hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
+            alat_yang_dibutuhkan: alatYangDibutuhkanNames,
+            rencana_panjang: kegiatan.rencanaPanjang,
+            rencana_volume: kegiatan.rencanaVolume,
+            realisasi_panjang: kegiatan.realisasiPanjang,
+            realisasi_volume: kegiatan.realisasiVolume,
+            sisa_target: kegiatan.sisaTargetHari,
           })
           .select()
           .single();
@@ -668,7 +726,7 @@ export const DrainaseForm = () => {
 
         // Insert materials
         const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({ // Filter out empty rows
-          kegiatan_id: kegiatanData.id,
+          kegiatan_id: kegiatanData!.id,
           jenis: m.jenis,
           jumlah: m.jumlah,
           satuan: m.satuan,
@@ -685,7 +743,7 @@ export const DrainaseForm = () => {
 
         // Insert peralatan
         const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({ // Filter out empty rows
-          kegiatan_id: kegiatanData.id,
+          kegiatan_id: kegiatanData!.id,
           nama: p.nama,
           jumlah: p.jumlah,
           satuan: p.satuan,
@@ -701,7 +759,7 @@ export const DrainaseForm = () => {
 
         // Insert operasional alat berat
         const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({ // Filter out empty rows
-          kegiatan_id: kegiatanData.id,
+          kegiatan_id: kegiatanData!.id,
           jenis: o.jenis,
           jumlah: o.jumlah,
           dexlite_jumlah: o.dexliteJumlah,
@@ -742,7 +800,7 @@ export const DrainaseForm = () => {
     } else {
       const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
       if (isValid(parsedDate)) {
-        setFormData((prev) => ({ ...prev, tanggal: parsedDate }));
+        setFormData((prev) => ({ ...prev, tanggal: parsedDate, periode: format(parsedDate, 'MMMM yyyy', { locale: idLocale }) }));
       }
     }
   };
@@ -750,10 +808,10 @@ export const DrainaseForm = () => {
   // Handler for date selection from calendar
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      setFormData((prev) => ({ ...prev, tanggal: date }));
+      setFormData((prev) => ({ ...prev, tanggal: date, periode: format(date, 'MMMM yyyy', { locale: idLocale }) }));
       setDateInputString(format(date, "dd/MM/yyyy", { locale: idLocale }));
     } else {
-      setFormData((prev) => ({ ...prev, tanggal: null }));
+      setFormData((prev) => ({ ...prev, tanggal: null, periode: "" }));
       setDateInputString("");
     }
   };
@@ -816,6 +874,23 @@ export const DrainaseForm = () => {
         </Card>
 
         <Card className="p-6 space-y-6">
+          {/* Report Type Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="report-type">Jenis Laporan</Label>
+            <Select
+              value={formData.reportType}
+              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "tersier" })}
+            >
+              <SelectTrigger id="report-type">
+                <SelectValue placeholder="Pilih jenis laporan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="harian">Laporan Harian</SelectItem>
+                <SelectItem value="tersier">Laporan Tersier</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Tanggal */}
           <div className="space-y-2">
             <Label htmlFor="tanggal">Tanggal</Label>
@@ -1109,7 +1184,7 @@ export const DrainaseForm = () => {
                   if (value === "custom") {
                     updateCurrentKegiatan({ jenisSedimen: customSedimen }); // Set to current custom input value
                   } else {
-                    updateCurrentKegiatan({ jenisSedimen: value as "Padat" | "Cair" | "Padat & Cair" | "Batu" | "Batu/Padat" | "Batu/Cair" | "Padat & Batu" | "Padat & Sampah" | "Padat/ Gulma & Sampah" | "Padat/ Cair/Sampah" | "Gulma/Rumput" | "" | "Batu/ Padat & Cair" });
+                    updateCurrentKegiatan({ jenisSedimen: value });
                     setCustomSedimen(""); // Clear custom input if a predefined option is selected
                   }
                 }}
@@ -1386,45 +1461,129 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="jumlah-upt">Jumlah UPT (Orang)</Label>
-              <Input
-                id="jumlah-upt"
-                type="text"
-                placeholder="0"
-                value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "") {
-                    updateCurrentKegiatan({ jumlahUPT: 0 });
-                  } else if (/^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) });
-                  }
-                }}
-                maxLength={2}
-              />
+          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Only for Tersier Report Type */}
+          {formData.reportType === "tersier" && (
+            <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
+              <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Tersier)</h3>
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-upt">Jumlah UPT (Orang)</Label>
+                <Input
+                  id="jumlah-upt"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      updateCurrentKegiatan({ jumlahUPT: 0 });
+                    } else if (/^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-p3su">Jumlah P3SU (Orang)</Label>
+                <Input
+                  id="jumlah-p3su"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      updateCurrentKegiatan({ jumlahP3SU: 0 });
+                    } else if (/^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="jumlah-p3su">Jumlah P3SU (Orang)</Label>
-              <Input
-                id="jumlah-p3su"
-                type="text"
-                placeholder="0"
-                value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "") {
-                    updateCurrentKegiatan({ jumlahP3SU: 0 });
-                  } else if (/^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) });
-                  }
-                }}
-                maxLength={2}
+          )}
+
+          {/* Tersier Specific Fields - Only for Tersier Report Type */}
+          {formData.reportType === "tersier" && (
+            <>
+              <div className="space-y-4 border rounded-lg p-4">
+                <h3 className="font-semibold text-lg">Rencana Dimensi (Tersier)</h3>
+                <div>
+                  <Label htmlFor="rencanaPanjang">Panjang</Label>
+                  <Input
+                    id="rencanaPanjang"
+                    placeholder="Masukkan panjang"
+                    value={currentKegiatan.rencanaPanjang || ""}
+                    onChange={(e) =>
+                      updateCurrentKegiatan({ rencanaPanjang: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rencanaVolume">Volume</Label>
+                  <Input
+                    id="rencanaVolume"
+                    placeholder="Masukkan volume"
+                    value={currentKegiatan.rencanaVolume || ""}
+                    onChange={(e) =>
+                      updateCurrentKegiatan({ rencanaVolume: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4 border rounded-lg p-4">
+                <h3 className="font-semibold text-lg">Realisasi Dimensi (Tersier)</h3>
+                <div>
+                  <Label htmlFor="realisasiPanjang">Panjang</Label>
+                  <Input
+                    id="realisasiPanjang"
+                    placeholder="Masukkan panjang"
+                    value={currentKegiatan.realisasiPanjang || ""}
+                    onChange={(e) =>
+                      updateCurrentKegiatan({ realisasiPanjang: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="realisasiVolume">Volume</Label>
+                  <Input
+                    id="realisasiVolume"
+                    placeholder="Masukkan volume"
+                    value={currentKegiatan.realisasiVolume || ""}
+                    onChange={(e) =>
+                      updateCurrentKegiatan({ realisasiVolume: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Sisa Target Penyelesaian Pekerjaan (Hari) */}
+              <div className="space-y-2">
+                <Label htmlFor="sisaTargetHari">Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
+                <Input
+                  id="sisaTargetHari"
+                  type="text"
+                  placeholder="00"
+                  value={currentKegiatan.sisaTargetHari || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d{0,2}$/.test(value)) { // Allow empty or 0-2 digits
+                      updateCurrentKegiatan({ sisaTargetHari: value });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+
+              {/* Alat yang Dibutuhkan - Using the new component */}
+              <AlatYangDibutuhkanSection
+                currentKegiatan={currentKegiatan}
+                updateCurrentKegiatan={updateCurrentKegiatan}
               />
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Keterangan */}
           <div className="space-y-2">

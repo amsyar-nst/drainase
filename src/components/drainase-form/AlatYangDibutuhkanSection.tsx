@@ -3,14 +3,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
-import { KegiatanDrainaseTersier, Alat } from "@/types/laporan-tersier";
+import { KegiatanDrainase, Alat } from "@/types/laporan"; // Changed import to KegiatanDrainase
 import { alatOptions } from "@/data/kecamatan-kelurahan";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 
 interface AlatYangDibutuhkanSectionProps {
-  currentKegiatan: KegiatanDrainaseTersier;
-  updateCurrentKegiatan: (updates: Partial<KegiatanDrainaseTersier>) => void;
+  currentKegiatan: KegiatanDrainase; // Changed type to KegiatanDrainase
+  updateCurrentKegiatan: (updates: Partial<KegiatanDrainase>) => void;
 }
 
 export const AlatYangDibutuhkanSection: React.FC<AlatYangDibutuhkanSectionProps> = ({
@@ -23,7 +23,10 @@ export const AlatYangDibutuhkanSection: React.FC<AlatYangDibutuhkanSectionProps>
   const addAlat = (name: string) => {
     if (name.trim() === "") return;
 
-    const existingAlat = currentKegiatan.alatYangDibutuhkan.find(
+    // Ensure alatYangDibutuhkan is initialized as an array
+    const currentAlatYangDibutuhkan = currentKegiatan.alatYangDibutuhkan || [];
+
+    const existingAlat = currentAlatYangDibutuhkan.find(
       (alat) => alat.nama.toLowerCase() === name.toLowerCase()
     );
 
@@ -40,21 +43,23 @@ export const AlatYangDibutuhkanSection: React.FC<AlatYangDibutuhkanSectionProps>
       jumlah: 1,
     };
     updateCurrentKegiatan({
-      alatYangDibutuhkan: [...currentKegiatan.alatYangDibutuhkan, newAlat],
+      alatYangDibutuhkan: [...currentAlatYangDibutuhkan, newAlat],
     });
     setNewAlatName("");
     setOpenPopover(false);
   };
 
   const removeAlat = (id: string) => {
+    const currentAlatYangDibutuhkan = currentKegiatan.alatYangDibutuhkan || [];
     updateCurrentKegiatan({
-      alatYangDibutuhkan: currentKegiatan.alatYangDibutuhkan.filter((alat) => alat.id !== id),
+      alatYangDibutuhkan: currentAlatYangDibutuhkan.filter((alat) => alat.id !== id),
     });
   };
 
   const updateAlat = (id: string, field: keyof Alat, value: string | number) => {
+    const currentAlatYangDibutuhkan = currentKegiatan.alatYangDibutuhkan || [];
     updateCurrentKegiatan({
-      alatYangDibutuhkan: currentKegiatan.alatYangDibutuhkan.map((alat) =>
+      alatYangDibutuhkan: currentAlatYangDibutuhkan.map((alat) =>
         alat.id === id ? { ...alat, [field]: value } : alat
       ),
     });
@@ -112,11 +117,11 @@ export const AlatYangDibutuhkanSection: React.FC<AlatYangDibutuhkanSectionProps>
         </Popover>
       </div>
 
-      {currentKegiatan.alatYangDibutuhkan.length === 0 ? (
+      {(currentKegiatan.alatYangDibutuhkan || []).length === 0 ? (
         <p className="text-muted-foreground text-sm">Belum ada alat yang ditambahkan.</p>
       ) : (
         <div className="space-y-3">
-          {currentKegiatan.alatYangDibutuhkan.map((alat) => (
+          {(currentKegiatan.alatYangDibutuhkan || []).map((alat) => (
             <div key={alat.id} className="flex items-center gap-2">
               <Input
                 value={alat.nama}

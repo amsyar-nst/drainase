@@ -23,10 +23,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Navigation } from "@/components/Navigation";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 interface LaporanItem {
   id: string;
-  bulan: string;
+  periode: string; // Changed from bulan to periode
   created_at: string;
   kegiatan_count: number;
 }
@@ -35,6 +37,7 @@ const TersierList = () => {
   const navigate = useNavigate();
   const [laporans, setLaporans] = useState<LaporanItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     loadLaporans();
@@ -43,22 +46,23 @@ const TersierList = () => {
   const loadLaporans = async () => {
     try {
       const { data, error } = await supabase
-        .from("laporan_drainase_tersier")
+        .from("laporan_drainase") // Changed to laporan_drainase
         .select("*")
+        .eq("report_type", "tersier") // Filter by report_type
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       const laporansWithCount = await Promise.all(
-        data.map(async (laporan) => {
+        (data || []).map(async (laporan) => {
           const { count } = await supabase
-            .from("kegiatan_drainase_tersier")
+            .from("kegiatan_drainase") // Changed to kegiatan_drainase
             .select("*", { count: "exact", head: true })
             .eq("laporan_id", laporan.id);
 
           return {
             id: laporan.id,
-            bulan: laporan.bulan,
+            periode: laporan.periode, // Use periode
             created_at: laporan.created_at,
             kegiatan_count: count || 0,
           };
@@ -66,9 +70,9 @@ const TersierList = () => {
       );
 
       setLaporans(laporansWithCount);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading laporans:", error);
-      toast.error("Gagal memuat daftar laporan");
+      toast.error("Gagal memuat daftar laporan: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -78,7 +82,7 @@ const TersierList = () => {
     try {
       // Delete related kegiatans first
       const { error: kegiatanError } = await supabase
-        .from("kegiatan_drainase_tersier")
+        .from("kegiatan_drainase") // Changed to kegiatan_drainase
         .delete()
         .eq("laporan_id", id);
 
@@ -86,7 +90,7 @@ const TersierList = () => {
 
       // Delete laporan
       const { error: laporanError } = await supabase
-        .from("laporan_drainase_tersier")
+        .from("laporan_drainase") // Changed to laporan_drainase
         .delete()
         .eq("id", id);
 
@@ -94,9 +98,11 @@ const TersierList = () => {
 
       toast.success("Laporan berhasil dihapus");
       loadLaporans();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting laporan:", error);
-      toast.error("Gagal menghapus laporan");
+      toast.error("Gagal menghapus laporan: " + error.message);
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -146,11 +152,11 @@ const TersierList = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    {laporan.bulan}
+                    {laporan.periode}
                   </CardTitle>
                   <CardDescription>
                     {laporan.kegiatan_count} kegiatan •{" "}
-                    {new Date(laporan.created_at).toLocaleDateString("id-ID")}
+                    {format(new Date(laporan.created_at), "dd/MM/yyyy", { locale: idLocale })}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -159,7 +165,7 @@ const TersierList = () => {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => navigate(`/tersier/edit/${laporan.id}`)}
+                      onClick={() => navigate(`/drainase/edit/${laporan.id}`)} /* Changed to /drainase/edit */
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       Lihat

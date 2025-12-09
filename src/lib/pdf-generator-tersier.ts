@@ -1,14 +1,17 @@
-import { LaporanDrainaseTersier } from "@/types/laporan-tersier";
+import { LaporanDrainase, KegiatanDrainase } from "@/types/laporan"; // Use LaporanDrainase and KegiatanDrainase
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-export const generatePDFTersier = async (data: LaporanDrainaseTersier): Promise<Blob> => {
+export const generatePDFTersier = async (data: LaporanDrainase): Promise<Blob> => {
+  // Filter only tersier activities
+  const tersierKegiatans = data.kegiatans.filter(kegiatan => data.reportType === "tersier");
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Laporan Drainase Tersier - ${data.bulan}</title>
+      <title>Laporan Drainase Tersier - ${data.periode}</title>
       <style>
         @page {
           size: A3 landscape;
@@ -138,7 +141,7 @@ export const generatePDFTersier = async (data: LaporanDrainaseTersier): Promise<
         <div class="subtitle">(Drainase Lingkungan) oleh P3SU dibantu oleh UPT Dinas SDABMBK Kota Medan</div>
       </div>
 
-      <div class="period">Bulan: ${data.bulan}</div>
+      <div class="period">Bulan: ${data.periode}</div>
 
       <table>
         <thead>
@@ -171,29 +174,29 @@ export const generatePDFTersier = async (data: LaporanDrainaseTersier): Promise<
           </tr>
         </thead>
         <tbody>
-          ${data.kegiatans.map((kegiatan, index) => `
+          ${tersierKegiatans.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
-              <td>${format(kegiatan.hariTanggal, "EEEE, dd/MM/yyyy", { locale: id })}</td>
+              <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE, dd/MM/yyyy", { locale: id }) : '-'}</td>
               <td>${kegiatan.namaJalan}</td>
               <td>${kegiatan.kecamatan}</td>
               <td>${kegiatan.kelurahan}</td>
-              <td class="center">${kegiatan.kota}</td>
+              <td class="center">Kota Medan</td>
               <td>${kegiatan.jenisSedimen || '-'}</td>
               <td>
-                ${kegiatan.alatYangDibutuhkan.length > 0
+                ${kegiatan.alatYangDibutuhkan && kegiatan.alatYangDibutuhkan.length > 0
                   ? `<ul>${kegiatan.alatYangDibutuhkan.map(alat => `<li>${alat.nama} (${alat.jumlah})</li>`).join('')}</ul>`
                   : '-'
                 }
               </td>
-              <td class="center">${kegiatan.uptCount || '-'}</td>
-              <td class="center">${kegiatan.p3suCount || '-'}</td>
+              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
+              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
               <td class="center">${kegiatan.rencanaPanjang || '-'}</td>
               <td class="center">${kegiatan.rencanaVolume || '-'}</td>
               <td class="center">${kegiatan.realisasiPanjang || '-'}</td>
               <td class="center">${kegiatan.realisasiVolume || '-'}</td>
               <td class="center">${kegiatan.sisaTargetHari || '-'}</td>
-              <td>${kegiatan.penanggungjawab.join(', ') || '-'}</td>
+              <td>${kegiatan.koordinator.join(', ') || '-'}</td>
               <td>${kegiatan.keterangan || '-'}</td>
             </tr>
           `).join('')}

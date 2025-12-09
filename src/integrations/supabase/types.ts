@@ -18,16 +18,16 @@ export type Database = {
         Row: {
           aktifitas_penanganan: string | null
           created_at: string
-          foto_0_url: string[] | null // Changed to string[] | null
-          foto_100_url: string[] | null // Changed to string[] | null
-          foto_50_url: string[] | null // Changed to string[] | null
-          foto_sket_url: string[] | null // New field
+          foto_0_url: string[] | null
+          foto_100_url: string[] | null
+          foto_50_url: string[] | null
+          foto_sket_url: string[] | null
           id: string
           jenis_saluran: string | null
           jenis_sedimen: string | null
           jumlah_phl: number | null
-          jumlah_upt: number | null // New field
-          jumlah_p3su: number | null // New field
+          jumlah_upt: number | null
+          jumlah_p3su: number | null
           kecamatan: string
           kelurahan: string
           keterangan: string | null
@@ -39,20 +39,27 @@ export type Database = {
           rata_rata_sedimen: string | null
           updated_at: string
           volume_galian: string | null
+          hari_tanggal: string | null
+          alat_yang_dibutuhkan: string[] | null
+          rencana_panjang: string | null
+          rencana_volume: string | null
+          realisasi_panjang: string | null
+          realisasi_volume: string | null
+          sisa_target: string | null
         }
         Insert: {
           aktifitas_penanganan?: string | null
           created_at?: string
-          foto_0_url?: string[] | null // Changed to string[] | null
-          foto_100_url?: string[] | null // Changed to string[] | null
-          foto_50_url?: string[] | null // Changed to string[] | null
-          foto_sket_url?: string[] | null // New field
+          foto_0_url?: string[] | null
+          foto_100_url?: string[] | null
+          foto_50_url?: string[] | null
+          foto_sket_url?: string[] | null
           id?: string
           jenis_saluran?: string | null
           jenis_sedimen?: string | null
           jumlah_phl?: number | null
-          jumlah_upt?: number | null // New field
-          jumlah_p3su?: number | null // New field
+          jumlah_upt?: number | null
+          jumlah_p3su?: number | null
           kecamatan: string
           kelurahan: string
           keterangan?: string | null
@@ -64,20 +71,27 @@ export type Database = {
           rata_rata_sedimen?: string | null
           updated_at?: string
           volume_galian?: string | null
+          hari_tanggal?: string | null
+          alat_yang_dibutuhkan?: string[] | null
+          rencana_panjang?: string | null
+          rencana_volume?: string | null
+          realisasi_panjang?: string | null
+          realisasi_volume?: string | null
+          sisa_target?: string | null
         }
         Update: {
           aktifitas_penanganan?: string | null
           created_at?: string
-          foto_0_url?: string[] | null // Changed to string[] | null
-          foto_100_url?: string[] | null // Changed to string[] | null
-          foto_50_url?: string[] | null // Changed to string[] | null
-          foto_sket_url?: string[] | null // New field
+          foto_0_url?: string[] | null
+          foto_100_url?: string[] | null
+          foto_50_url?: string[] | null
+          foto_sket_url?: string[] | null
           id?: string
           jenis_saluran?: string | null
           jenis_sedimen?: string | null
           jumlah_phl?: number | null
-          jumlah_upt?: number | null // New field
-          jumlah_p3su?: number | null // New field
+          jumlah_upt?: number | null
+          jumlah_p3su?: number | null
           kecamatan?: string
           kelurahan?: string
           keterangan?: string | null
@@ -89,14 +103,21 @@ export type Database = {
           rata_rata_sedimen?: string | null
           updated_at?: string
           volume_galian?: string | null
+          hari_tanggal?: string | null
+          alat_yang_dibutuhkan?: string[] | null
+          rencana_panjang?: string | null
+          rencana_volume?: string | null
+          realisasi_panjang?: string | null
+          realisasi_volume?: string | null
+          sisa_target?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "kegiatan_drainase_laporan_id_fkey"
-            columns: ["laporan_id"]
-            isOneToOne: false
-            referencedRelation: "laporan_drainase"
-            referencedColumns: ["id"]
+            foreignKeyName: "kegiatan_drainase_laporan_id_fkey",
+            columns: ["laporan_id"],
+            isOneToOne: false,
+            referencedRelation: "laporan_drainase",
+            referencedColumns: ["id"],
           },
         ]
       }
@@ -163,11 +184,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "kegiatan_drainase_tersier_laporan_id_fkey"
-            columns: ["laporan_id"]
-            isOneToOne: false
-            referencedRelation: "laporan_drainase_tersier"
-            referencedColumns: ["id"]
+            foreignKeyName: "kegiatan_drainase_tersier_laporan_id_fkey",
+            columns: ["laporan_id"],
+            isOneToOne: false,
+            referencedRelation: "laporan_drainase_tersier",
+            referencedColumns: ["id"],
           },
         ]
       }
@@ -178,6 +199,7 @@ export type Database = {
           periode: string
           tanggal: string
           updated_at: string
+          report_type: string | null
         }
         Insert: {
           created_at?: string
@@ -185,6 +207,7 @@ export type Database = {
           periode: string
           tanggal: string
           updated_at?: string
+          report_type?: string | null
         }
         Update: {
           created_at?: string
@@ -192,6 +215,7 @@ export type Database = {
           periode?: string
           tanggal?: string
           updated_at?: string
+          report_type?: string | null
         }
         Relationships: []
       }
@@ -224,7 +248,7 @@ export type Database = {
           jumlah: string
           kegiatan_id: string
           satuan: string
-          keterangan: string | null // Added this line
+          keterangan: string | null
         }
         Insert: {
           created_at?: string
@@ -233,7 +257,7 @@ export type Database = {
           jumlah: string
           kegiatan_id: string
           satuan: string
-          keterangan?: string | null // Added this line
+          keterangan?: string | null
         }
         Update: {
           created_at?: string
@@ -242,15 +266,15 @@ export type Database = {
           jumlah?: string
           kegiatan_id?: string
           satuan?: string
-          keterangan?: string | null // Added this line
+          keterangan?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "material_kegiatan_kegiatan_id_fkey"
-            columns: ["kegiatan_id"]
-            isOneToOne: false
-            referencedRelation: "kegiatan_drainase"
-            referencedColumns: ["id"]
+            foreignKeyName: "material_kegiatan_kegiatan_id_fkey",
+            columns: ["kegiatan_id"],
+            isOneToOne: false,
+            referencedRelation: "kegiatan_drainase",
+            referencedColumns: ["id"],
           },
         ]
       }
@@ -299,11 +323,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "operasional_alat_berat_kegiatan_kegiatan_id_fkey"
-            columns: ["kegiatan_id"]
-            isOneToOne: false
-            referencedRelation: "kegiatan_drainase"
-            referencedColumns: ["id"]
+            foreignKeyName: "operasional_alat_berat_kegiatan_kegiatan_id_fkey",
+            columns: ["kegiatan_id"],
+            isOneToOne: false,
+            referencedRelation: "kegiatan_drainase",
+            referencedColumns: ["id"],
           },
         ]
       }
@@ -334,11 +358,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "peralatan_kegiatan_kegiatan_id_fkey"
-            columns: ["kegiatan_id"]
-            isOneToOne: false
-            referencedRelation: "kegiatan_drainase"
-            referencedColumns: ["id"]
+            foreignKeyName: "peralatan_kegiatan_kegiatan_id_fkey",
+            columns: ["kegiatan_id"],
+            isOneToOne: false,
+            referencedRelation: "kegiatan_drainase",
+            referencedColumns: ["id"],
           },
         ]
       }
@@ -366,11 +390,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            foreignKeyName: "profiles_id_fkey",
+            columns: ["id"],
+            isOneToOne: true,
+            referencedRelation: "users",
+            referencedColumns: ["id"],
           },
         ]
       }
@@ -459,19 +483,19 @@ export type TablesUpdate<
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  }
+    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
         Update: infer U
       }
       ? U
       : never
-    : never
+    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+      ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+          Update: infer U
+        }
+        ? U
+        : never
+      : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
