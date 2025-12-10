@@ -186,37 +186,29 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       <table>
         <thead>
           <tr>
-            <th rowspan="3" class="no-col">No</th>
-            <th rowspan="3" class="hari-tanggal-col">Hari/Tanggal</th>
-            <th rowspan="3" class="lokasi-col">Lokasi</th>
-            <th colspan="2">Sebelum (Photo 0%)</th>
-            <th colspan="2">Sesudah (Photo 100%)</th>
-            <th rowspan="3" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
+            <th rowspan="2" class="no-col">No</th>
+            <th rowspan="2" class="hari-tanggal-col">Hari/Tanggal</th>
+            <th rowspan="2" class="lokasi-col">Lokasi</th>
+            <th colspan="2" rowspan="2">Sebelum (Photo 0%)</th>
+            <th colspan="2" rowspan="2">Sesudah (Photo 100%)</th>
+            <th rowspan="2" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
             <th colspan="2">Alat yang dibutuhkan</th>
             <th colspan="2">Orang<br/>Kebutuhan Tenaga<br/>Kerja</th>
             <th colspan="2">Rencana<br/>Dimensi yang dikerjakan</th>
             <th colspan="2">Realisasi<br/>Dimensi yang dikerjakan</th>
-            <th rowspan="3" class="sisa-target-col">Sisa Target<br/>Penyelesaian<br/>Pekerjaan<br/>(hari)</th>
-            <th rowspan="3" class="penanggungjawab-col">Penanggungjawab<br/>Lapangan<br/>(Koordinator)</th>
-            <th rowspan="3" class="keterangan-col">Keterangan</th>
+            <th rowspan="2" class="sisa-target-col">Sisa Target<br/>Penyelesaian<br/>Pekerjaan<br/>(hari)</th>
+            <th rowspan="2" class="penanggungjawab-col">Penanggungjawab<br/>Lapangan<br/>(Koordinator)</th>
+            <th rowspan="2" class="keterangan-col">Keterangan</th>
           </tr>
           <tr>
-            <th colspan="2">Foto Kondisi Eksisting</th>
-            <th colspan="2">Foto Kondisi Eksisting</th>
-            <th rowspan="2" class="alat-jenis-col">Jenis</th>
-            <th rowspan="2" class="alat-jumlah-col">Jumlah</th>
-            <th rowspan="2" class="upt-col">UPT</th>
-            <th rowspan="2" class="p3su-col">P3SU</th>
-            <th rowspan="2" class="rencana-panjang-col">Panjang<br/>(m)</th>
-            <th rowspan="2" class="rencana-volume-col">Volume<br/>(m³)</th>
-            <th rowspan="2" class="realisasi-panjang-col">Panjang<br/>(m)</th>
-            <th rowspan="2" class="realisasi-volume-col">Volume<br/>(m³)</th>
-          </tr>
-          <tr>
-            <th class="photo-cell"></th>
-            <th class="photo-cell"></th>
-            <th class="photo-cell"></th>
-            <th class="photo-cell"></th>
+            <th class="alat-jenis-col">Jenis</th>
+            <th class="alat-jumlah-col">Jumlah</th>
+            <th class="upt-col">UPT</th>
+            <th class="p3su-col">P3SU</th>
+            <th class="rencana-panjang-col">Panjang<br/>(m)</th>
+            <th class="rencana-volume-col">Volume<br/>(m³)</th>
+            <th class="realisasi-panjang-col">Panjang<br/>(m)</th>
+            <th class="realisasi-volume-col">Volume<br/>(m³)</th>
           </tr>
         </thead>
         <tbody>
