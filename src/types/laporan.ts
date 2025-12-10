@@ -53,20 +53,11 @@ export interface KegiatanDrainase {
   jumlahPHL: number;
   keterangan: string;
   hariTanggal?: Date | null;
-  
-  // Tersier-specific fields
-  jumlahUPT?: number;
-  jumlahP3SU?: number;
-  rencanaPanjang?: string;
-  rencanaVolume?: string;
-  realisasiPanjang?: string;
-  realisasiVolume?: string;
-  sisaTargetHari?: string;
 }
 
 export interface LaporanDrainase {
   tanggal: Date | null;
   periode: string;
-  reportType: "harian" | "bulanan" | "tersier"; // Re-added "tersier"
+  reportType: "harian" | "bulanan";
   kegiatans: KegiatanDrainase[];
 }

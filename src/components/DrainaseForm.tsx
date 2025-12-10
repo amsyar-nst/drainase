@@ -36,14 +36,13 @@ import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
-import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
   "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
   "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
-  "Batu/ Padat & Cair", "Sampah" // Added "Sampah" here
+  "Batu/ Padat & Cair", "Sampah"
 ];
 
 export const DrainaseForm = () => {
@@ -54,7 +53,7 @@ export const DrainaseForm = () => {
   const [formData, setFormData] = useState<LaporanDrainase>({
     tanggal: new Date(),
     periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
-    reportType: "harian", // Default to harian, but now user can change
+    reportType: "harian",
     kegiatans: [{
       id: "1",
       namaJalan: "",
@@ -93,15 +92,6 @@ export const DrainaseForm = () => {
       jumlahPHL: 0,
       keterangan: "",
       hariTanggal: new Date(),
-
-      // Tersier-specific fields
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-      sisaTargetHari: "",
     }]
   });
 
@@ -356,15 +346,8 @@ export const DrainaseForm = () => {
             operasionalAlatBerats: operasionalAlatBerats,
             koordinator: kegiatan.koordinator || [],
             jumlahPHL: kegiatan.jumlah_phl || 0,
-            jumlahUPT: kegiatan.jumlah_upt || 0,
-            jumlahP3SU: kegiatan.jumlah_p3su || 0,
-            keterangan: kegiatan.keterangan || "",
+            keterangan: kegiatan.keterangan,
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
-            rencanaPanjang: kegiatan.rencana_panjang || "",
-            rencanaVolume: kegiatan.rencana_volume || "",
-            realisasiPanjang: kegiatan.realisasi_panjang || "", 
-            realisasiVolume: kegiatan.realisasi_volume || "", 
-            sisaTargetHari: kegiatan.sisa_target || "",
           };
         })
       );
@@ -372,7 +355,7 @@ export const DrainaseForm = () => {
       setFormData({
         tanggal: new Date(laporanData.tanggal),
         periode: laporanData.periode,
-        reportType: (laporanData.report_type || "harian") as "harian" | "bulanan" | "tersier",
+        reportType: (laporanData.report_type || "harian") as "harian" | "bulanan",
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
       });
 
@@ -438,15 +421,6 @@ export const DrainaseForm = () => {
       jumlahPHL: 0,
       keterangan: "",
       hariTanggal: new Date(),
-
-      // Tersier-specific fields, initialized as empty/default
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-      sisaTargetHari: "",
     };
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
@@ -657,12 +631,12 @@ export const DrainaseForm = () => {
     const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
       periode: formData.periode,
-      reportType: "harian", // Always generate Harian preview from the form
+      reportType: "harian",
       kegiatans: formData.kegiatans,
     };
     try {
       let blob: Blob;
-      blob = await generatePDF(laporanForPdf, false); // Use Harian PDF generator
+      blob = await generatePDF(laporanForPdf, false);
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewDialog(true);
@@ -682,58 +656,15 @@ export const DrainaseForm = () => {
     const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
       periode: formData.periode,
-      reportType: "harian", // Always generate Harian download from the form
+      reportType: "harian",
       kegiatans: formData.kegiatans,
     };
     try {
-      await generatePDF(laporanForPdf, true); // Use Harian PDF generator
+      await generatePDF(laporanForPdf, true);
       toast.success("Laporan berhasil diunduh.");
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Gagal mengunduh PDF.");
-    }
-  };
-
-  const handlePrintPreviewTersier = async () => {
-    if (!formData.tanggal) {
-      toast.error("Mohon isi tanggal laporan.");
-      return;
-    }
-    const laporanForPdf: LaporanDrainase = {
-      tanggal: formData.tanggal,
-      periode: formData.periode,
-      reportType: "tersier",
-      kegiatans: formData.kegiatans,
-    };
-    try {
-      const blob = await generatePDFTersier(laporanForPdf, false);
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setShowPreviewDialog(true);
-      toast.success("Laporan Tersier berhasil dipratinjau.");
-    } catch (error) {
-      console.error("Preview Tersier error:", error);
-      toast.error("Gagal membuat pratinjau PDF Tersier.");
-    }
-  };
-
-  const handlePrintDownloadTersier = async () => {
-    if (!formData.tanggal) {
-      toast.error("Mohon isi tanggal laporan.");
-      return;
-    }
-    const laporanForPdf: LaporanDrainase = {
-      tanggal: formData.tanggal,
-      periode: formData.periode,
-      reportType: "tersier",
-      kegiatans: formData.kegiatans,
-    };
-    try {
-      await generatePDFTersier(laporanForPdf, true);
-      toast.success("Laporan Tersier berhasil diunduh.");
-    } catch (error) {
-      console.error("Download Tersier error:", error);
-      toast.error("Gagal mengunduh PDF Tersier.");
     }
   };
 
@@ -756,7 +687,7 @@ export const DrainaseForm = () => {
           .update({
             tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
             periode: periodeFormatted,
-            report_type: formData.reportType, // Save the selected report type
+            report_type: formData.reportType,
           })
           .eq('id', currentLaporanId);
 
@@ -784,7 +715,7 @@ export const DrainaseForm = () => {
           .insert({
             tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
             periode: periodeFormatted,
-            report_type: formData.reportType, // Save the selected report type
+            report_type: formData.reportType,
           })
           .select()
           .single();
@@ -820,15 +751,8 @@ export const DrainaseForm = () => {
             volume_galian: kegiatan.volumeGalian,
             koordinator: kegiatan.koordinator,
             jumlah_phl: kegiatan.jumlahPHL,
-            jumlah_upt: kegiatan.jumlahUPT,
-            jumlah_p3su: kegiatan.jumlahP3SU,
             keterangan: kegiatan.keterangan,
             hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
-            rencana_panjang: kegiatan.rencanaPanjang,
-            rencana_volume: kegiatan.rencanaVolume,
-            realisasi_panjang: kegiatan.realisasiPanjang,
-            realisasi_volume: kegiatan.realisasiVolume,
-            sisa_target: kegiatan.sisaTargetHari,
           })
           .select()
           .single();
@@ -837,7 +761,7 @@ export const DrainaseForm = () => {
 
         const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.jenis || m.satuan).map(m => ({
           kegiatan_id: kegiatanData!.id,
-          jenis: m.jenis === "custom" ? materialCustomInputs[m.id] || "" : m.jenis, // Use custom input if 'custom' was selected
+          jenis: m.jenis === "custom" ? materialCustomInputs[m.id] || "" : m.jenis,
           jumlah: m.jumlah,
           satuan: m.satuan,
           keterangan: m.keterangan,
@@ -853,7 +777,7 @@ export const DrainaseForm = () => {
 
         const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
           kegiatan_id: kegiatanData!.id,
-          nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama, // Use custom input if 'custom' was selected
+          nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
           jumlah: p.jumlah,
           satuan: p.satuan,
         }));
@@ -868,7 +792,7 @@ export const DrainaseForm = () => {
 
         const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
           kegiatan_id: kegiatanData!.id,
-          jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis, // Use custom input if 'custom' was selected
+          jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
           jumlah: o.jumlah,
           dexlite_jumlah: o.dexliteJumlah,
           dexlite_satuan: o.dexliteSatuan,
@@ -889,7 +813,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/'); // Always redirect to main list after saving
+      navigate('/');
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan: ' + error.message);
@@ -1015,14 +939,14 @@ export const DrainaseForm = () => {
             <Label htmlFor="report-type">Jenis Laporan</Label>
             <Select
               value={formData.reportType}
-              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "tersier" })}
+              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "bulanan" })}
             >
               <SelectTrigger id="report-type">
                 <SelectValue placeholder="Pilih jenis laporan" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="harian">Harian</SelectItem>
-                <SelectItem value="tersier">Tersier</SelectItem>
+                <SelectItem value="bulanan">Bulanan</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1063,8 +987,8 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Hari/Tanggal Kegiatan (Only for Tersier) */}
-          {formData.reportType === "tersier" && (
+          {/* Hari/Tanggal Kegiatan (Only for Harian) */}
+          {formData.reportType === "harian" && (
             <div className="space-y-2">
               <Label htmlFor="hari-tanggal-kegiatan">Hari/Tanggal Kegiatan</Label>
               <div className="relative flex items-center">
@@ -1192,50 +1116,48 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {/* Foto 50% (Only for Harian) */}
-            {formData.reportType === "harian" && (
-              <div className="space-y-2">
-                <Label htmlFor="foto-50">Foto 50%</Label>
-                <Input
-                  id="foto-50"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleFileChange(e, 'foto50')}
-                />
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
-                    <div key={index} className="relative group">
-                      <img 
-                        src={
-                          photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || ''
-                        } 
-                        alt={`Foto 50% ${index + 1}`} 
-                        className="w-full h-24 object-cover rounded border cursor-pointer"
-                        onClick={() => {
-                          const url = photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || '';
-                          setPreviewUrl(url);
-                          setShowPreviewDialog(true);
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removePhoto('foto50', index)}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+            {/* Foto 50% */}
+            <div className="space-y-2">
+              <Label htmlFor="foto-50">Foto 50%</Label>
+              <Input
+                id="foto-50"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleFileChange(e, 'foto50')}
+              />
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={
+                        photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || ''
+                      } 
+                      alt={`Foto 50% ${index + 1}`} 
+                      className="w-full h-24 object-cover rounded border cursor-pointer"
+                      onClick={() => {
+                        const url = photo instanceof File 
+                          ? URL.createObjectURL(photo)
+                          : photo || '';
+                        setPreviewUrl(url);
+                        setShowPreviewDialog(true);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto('foto50', index)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
             {/* Foto 100% */}
             <div className="space-y-2">
               <Label htmlFor="foto-100">Foto 100%</Label>
@@ -1278,7 +1200,7 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {/* Foto Sket (Now always visible) */}
+            {/* Foto Sket */}
             <div className="space-y-2">
               <Label htmlFor="foto-sket">Gambar Sket</Label>
               <Input
@@ -1335,24 +1257,22 @@ export const DrainaseForm = () => {
 
           {/* Jenis Saluran & Sedimen */}
           <div className="grid gap-4 md:grid-cols-2">
-            {formData.reportType === "harian" && (
-              <div className="space-y-2">
-                <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
-                <Select
-                  value={currentKegiatan.jenisSaluran}
-                  onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
-                >
-                  <SelectTrigger id="jenis-saluran">
-                    <SelectValue placeholder="Pilih jenis saluran" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Terbuka">Terbuka</SelectItem>
-                    <SelectItem value="Tertutup">Tertutup</SelectItem>
-                    <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
+              <Select
+                value={currentKegiatan.jenisSaluran}
+                onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
+              >
+                <SelectTrigger id="jenis-saluran">
+                  <SelectValue placeholder="Pilih jenis saluran" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Terbuka">Terbuka</SelectItem>
+                  <SelectItem value="Tertutup">Tertutup</SelectItem>
+                  <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
               <Select
@@ -1394,146 +1314,142 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Aktifitas & Measurements (Only for Harian) */}
-          {formData.reportType === "harian" && (
-            <div className="space-y-4">
+          {/* Aktifitas & Measurements */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
+              <Input
+                id="aktifitas"
+                value={currentKegiatan.aktifitasPenanganan}
+                onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
+                placeholder="Contoh: Pembersihan dan Pengerukan"
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
+                <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
                 <Input
-                  id="aktifitas"
-                  value={currentKegiatan.aktifitasPenanganan}
-                  onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
-                  placeholder="Contoh: Pembersihan dan Pengerukan"
+                  id="panjang"
+                  value={currentKegiatan.panjangPenanganan}
+                  onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
+                  placeholder="0"
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
-                  <Input
-                    id="panjang"
-                    value={currentKegiatan.panjangPenanganan}
-                    onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
-                  <Input
-                    id="lebar"
-                    value={currentKegiatan.lebarRataRata}
-                    onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
-                  <Input
-                    id="sedimen"
-                    value={currentKegiatan.rataRataSedimen}
-                    onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="volume">Volume Galian (M³)</Label>
-                  <Input
-                    id="volume"
-                    value={currentKegiatan.volumeGalian}
-                    onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
+                <Input
+                  id="lebar"
+                  value={currentKegiatan.lebarRataRata}
+                  onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
+                <Input
+                  id="sedimen"
+                  value={currentKegiatan.rataRataSedimen}
+                  onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="volume">Volume Galian (M³)</Label>
+                <Input
+                  id="volume"
+                  value={currentKegiatan.volumeGalian}
+                  onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
+                  placeholder="0"
+                />
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Materials (Only for Harian) */}
-          {formData.reportType === "harian" && (
-            <div className="space-y-4">
-              <Label>Material yang Digunakan</Label>
-              {currentKegiatan.materials.map((material) => (
-                <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
-                  <div className="space-y-2">
-                    <Label>Jenis Material</Label>
-                    <Select
-                      value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
-                      onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih material" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {materialOptions.map((jenis) => (
-                          <SelectItem key={jenis} value={jenis}>
-                            {jenis}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="custom">Lainnya</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {material.jenis === "custom" ? (
-                      <Input
-                        type="text"
-                        placeholder="Masukkan jenis material manual"
-                        value={materialCustomInputs[material.id] || ""}
-                        onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
-                        className="mt-2"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Jumlah</Label>
-                    <Input
-                      value={material.jumlah}
-                      onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Satuan</Label>
-                    <Select
-                      value={material.satuan}
-                      onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {satuanOptions.map((satuan) => (
-                          <SelectItem key={satuan} value={satuan}>
-                            {satuan}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Keterangan</Label>
-                    <Input
-                      value={material.keterangan || ""}
-                      onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
-                      placeholder="Catatan material (opsional)"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => removeMaterial(material.id)}
-                    disabled={currentKegiatan.materials.length === 1}
+          {/* Materials */}
+          <div className="space-y-4">
+            <Label>Material yang Digunakan</Label>
+            {currentKegiatan.materials.map((material) => (
+              <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
+                <div className="space-y-2">
+                  <Label>Jenis Material</Label>
+                  <Select
+                    value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
+                    onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih material" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {materialOptions.map((jenis) => (
+                        <SelectItem key={jenis} value={jenis}>
+                          {jenis}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {material.jenis === "custom" ? (
+                    <Input
+                      type="text"
+                      placeholder="Masukkan jenis material manual"
+                      value={materialCustomInputs[material.id] || ""}
+                      onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
+                      className="mt-2"
+                    />
+                  ) : null}
                 </div>
-              ))}
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Material
+                <div className="space-y-2">
+                  <Label>Jumlah</Label>
+                  <Input
+                    value={material.jumlah}
+                    onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Satuan</Label>
+                  <Select
+                    value={material.satuan}
+                    onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {satuanOptions.map((satuan) => (
+                        <SelectItem key={satuan} value={satuan}>
+                          {satuan}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Keterangan</Label>
+                  <Input
+                    value={material.keterangan || ""}
+                    onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
+                    placeholder="Catatan material (opsional)"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => removeMaterial(material.id)}
+                  disabled={currentKegiatan.materials.length === 1}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+            ))}
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Material
+              </Button>
             </div>
-          )}
+          </div>
 
           {/* Peralatan */}
           <div className="space-y-4">
@@ -1614,15 +1530,13 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Operasional Alat Berat Section (Only for Harian) */}
-          {formData.reportType === "harian" && (
-            <OperasionalAlatBeratSection
-              currentKegiatan={currentKegiatan}
-              updateCurrentKegiatan={updateCurrentKegiatan}
-              operasionalCustomInputs={operasionalCustomInputs}
-              setOperasionalCustomInputs={setOperasionalCustomInputs}
-            />
-          )}
+          {/* Operasional Alat Berat Section */}
+          <OperasionalAlatBeratSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+            operasionalCustomInputs={operasionalCustomInputs}
+            setOperasionalCustomInputs={setOperasionalCustomInputs}
+          />
 
           {/* Koordinator & PHL */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -1643,142 +1557,23 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {formData.reportType === "harian" && (
-              <div className="space-y-2">
-                <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
-                <Input
-                  id="jumlah-phl"
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Only for Tersier */}
-          {formData.reportType === "tersier" && (
-            <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
-              <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
-              <div className="space-y-2">
-                <Label htmlFor="jumlah-upt">UPT</Label>
-                <Input
-                  id="jumlah-upt"
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="jumlah-p3su">P3SU</Label>
-                <Input
-                  id="jumlah-p3su"
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Rencana Dimensi - Only for Tersier */}
-          {formData.reportType === "tersier" && (
-            <div className="space-y-4 border rounded-lg p-4">
-              <h3 className="font-semibold text-lg">Rencana Dimensi yang Dikerjakan</h3>
-              <div>
-                <Label htmlFor="rencanaPanjang">Panjang (m)</Label>
-                <Input
-                  id="rencanaPanjang"
-                  placeholder="Masukkan panjang"
-                  value={currentKegiatan.rencanaPanjang || ""}
-                  onChange={(e) =>
-                    updateCurrentKegiatan({ rencanaPanjang: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="rencanaVolume">Volume (m³)</Label>
-                <Input
-                  id="rencanaVolume"
-                  placeholder="Masukkan volume"
-                  value={currentKegiatan.rencanaVolume || ""}
-                  onChange={(e) =>
-                    updateCurrentKegiatan({ rencanaVolume: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Realisasi Dimensi - Only for Tersier */}
-          {formData.reportType === "tersier" && (
-            <div className="space-y-4 border rounded-lg p-4">
-              <h3 className="font-semibold text-lg">Realisasi Dimensi yang Dikerjakan</h3>
-              <div>
-                <Label htmlFor="realisasiPanjang">Panjang (m)</Label>
-                <Input
-                  id="realisasiPanjang"
-                  placeholder="Masukkan panjang"
-                  value={currentKegiatan.realisasiPanjang || ""}
-                  onChange={(e) =>
-                    updateCurrentKegiatan({ realisasiPanjang: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="realisasiVolume">Volume (m³)</Label>
-                <Input
-                  id="realisasiVolume"
-                  placeholder="Masukkan volume"
-                  value={currentKegiatan.realisasiVolume || ""}
-                  onChange={(e) =>
-                    updateCurrentKegiatan({ realisasiVolume: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Sisa Target Penyelesaian Pekerjaan (Hari) - Only for Tersier */}
-          {formData.reportType === "tersier" && (
             <div className="space-y-2">
-              <Label htmlFor="sisaTargetHari">Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
+              <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
               <Input
-                id="sisaTargetHari"
+                id="jumlah-phl"
                 type="text"
-                placeholder="00"
-                value={currentKegiatan.sisaTargetHari || ""}
+                placeholder="0"
+                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
                 onChange={(e) => {
                   const value = e.target.value;
                   if (value === "" || /^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ sisaTargetHari: value });
+                    updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
                   }
                 }}
                 maxLength={2}
               />
             </div>
-          )}
+          </div>
 
           {/* Keterangan */}
           <div className="space-y-2">
@@ -1794,46 +1589,22 @@ export const DrainaseForm = () => {
 
           {/* Actions */}
           <div className="flex flex-wrap gap-4 pt-4">
-            {formData.reportType === "harian" && (
-              <>
-                <Button 
-                  onClick={handlePrintPreview} 
-                  variant="outline" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview PDF Harian
-                </Button>
-                <Button 
-                  onClick={handlePrintDownload} 
-                  variant="default" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF Harian
-                </Button>
-              </>
-            )}
-            {formData.reportType === "tersier" && (
-              <>
-                <Button 
-                  onClick={handlePrintPreviewTersier} 
-                  variant="outline" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview PDF Tersier
-                </Button>
-                <Button 
-                  onClick={handlePrintDownloadTersier} 
-                  variant="default" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF Tersier
-                </Button>
-              </>
-            )}
+            <Button 
+              onClick={handlePrintPreview} 
+              variant="outline" 
+              className="flex-1 min-w-[150px]"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Preview PDF Harian
+            </Button>
+            <Button 
+              onClick={handlePrintDownload} 
+              variant="default" 
+              className="flex-1 min-w-[150px]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF Harian
+            </Button>
             <Button onClick={handleSave} disabled={isSaving} className="flex-1 min-w-[150px]">
               {isSaving ? (
                 <>Menyimpan...</>

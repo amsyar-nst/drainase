@@ -27,7 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import DrainasePrintDialog from "@/components/DrainasePrintDialog"; // Import the new dialog
+import DrainasePrintDialog from "@/components/DrainasePrintDialog";
 
 interface LaporanItem {
   id: string;
@@ -35,7 +35,7 @@ interface LaporanItem {
   periode: string;
   created_at: string;
   kegiatan_count: number;
-  report_type: "harian" | "bulanan" | "tersier"; // Include report_type
+  report_type: "harian" | "bulanan";
 }
 
 // Define a type for the period data
@@ -51,7 +51,7 @@ const LaporanList = () => {
   // States for the new DrainasePrintDialog
   const [isDrainasePrintDialogOpen, setIsDrainasePrintDialogOpen] = useState(false);
   const [laporanIdsToPrint, setLaporanIdsToPrint] = useState<string[]>([]);
-  const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan" | "tersier">("harian"); // Added "tersier"
+  const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan">("harian");
 
   // New states for period filtering
   const [uniquePeriods, setUniquePeriods] = useState<string[]>([]);
@@ -80,9 +80,9 @@ const LaporanList = () => {
       if (laporanError) {
         console.error("Supabase Error fetching main laporans:", laporanError);
         toast.error("Gagal memuat laporan utama: " + laporanError.message);
-        setLaporans([]); // Reset laporans on error
-        setUniquePeriods([]); // Reset periods on error
-        return; // Exit early
+        setLaporans([]);
+        setUniquePeriods([]);
+        return;
       }
 
       // 2. Fetch all periods and deduplicate client-side for the filter dropdown
@@ -94,8 +94,8 @@ const LaporanList = () => {
       if (allPeriodsError) {
         console.error("Supabase Error fetching all periods:", allPeriodsError);
         toast.error("Gagal memuat semua periode: " + allPeriodsError.message);
-        setUniquePeriods([]); // Reset periods on error
-        return; // Exit early
+        setUniquePeriods([]);
+        return;
       }
 
       // Deduplicate periods client-side
@@ -112,13 +112,12 @@ const LaporanList = () => {
 
           if (countError) {
             console.warn(`Warning: Could not fetch kegiatan count for laporan ${laporan.id}:`, countError);
-            // Jangan lempar error di sini agar laporan lain tetap bisa dimuat
           }
 
           return {
             ...laporan,
             kegiatan_count: count || 0,
-            report_type: laporan.report_type as "harian" | "bulanan" | "tersier",
+            report_type: laporan.report_type as "harian" | "bulanan",
           };
         })
       );
@@ -128,8 +127,8 @@ const LaporanList = () => {
     } catch (error: any) {
       console.error("Error in fetchLaporans:", error);
       toast.error("Gagal memuat data laporan: " + (error.message || "Terjadi kesalahan tidak dikenal."));
-      setLaporans([]); // Reset laporans on any error
-      setUniquePeriods([]); // Reset periods on any error
+      setLaporans([]);
+      setUniquePeriods([]);
     } finally {
       setLoading(false);
     }
@@ -137,7 +136,7 @@ const LaporanList = () => {
 
   useEffect(() => {
     fetchLaporans(selectedFilterPeriod);
-  }, [selectedFilterPeriod]); // Re-fetch when filter period changes
+  }, [selectedFilterPeriod]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -158,7 +157,7 @@ const LaporanList = () => {
       if (laporanError) throw laporanError;
 
       toast.success("Laporan berhasil dihapus");
-      fetchLaporans(selectedFilterPeriod); // Re-fetch with current filter
+      fetchLaporans(selectedFilterPeriod);
     } catch (error) {
       console.error("Error deleting laporan:", error);
       toast.error("Gagal menghapus laporan");
@@ -167,7 +166,7 @@ const LaporanList = () => {
     }
   };
 
-  const handleIndividualPrintClick = (laporanId: string, type: "harian" | "tersier") => {
+  const handleIndividualPrintClick = (laporanId: string, type: "harian") => {
     setLaporanIdsToPrint([laporanId]);
     setCurrentPrintReportType(type);
     setIsDrainasePrintDialogOpen(true);
@@ -184,7 +183,7 @@ const LaporanList = () => {
   const confirmMonthlyPrint = () => {
     setShowMonthlyPrintConfirm(false);
     setCurrentPrintReportType("bulanan");
-    setLaporanIdsToPrint([]); // Empty array, dialog will fetch based on filterPeriod
+    setLaporanIdsToPrint([]);
     setIsDrainasePrintDialogOpen(true);
   };
 
@@ -240,7 +239,7 @@ const LaporanList = () => {
                 variant="outline" 
                 className="gap-2 w-full sm:w-auto"
                 onClick={handleMonthlyPrintClick}
-                disabled={!selectedFilterPeriod} // Disable if no period is selected
+                disabled={!selectedFilterPeriod}
               >
                 <Printer className="h-4 w-4" />
                 Cetak Laporan Bulanan
@@ -262,7 +261,7 @@ const LaporanList = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[120px]">Tanggal</TableHead>
-                      <TableHead className="min-w-[100px]">Jenis Laporan</TableHead> {/* New column */}
+                      <TableHead className="min-w-[100px]">Jenis Laporan</TableHead>
                       <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
                       <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
                       <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
@@ -275,7 +274,7 @@ const LaporanList = () => {
                         <TableCell className="font-medium">
                           {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
                         </TableCell>
-                        <TableCell className="capitalize">{laporan.report_type}</TableCell> {/* Display report type */}
+                        <TableCell className="capitalize">{laporan.report_type}</TableCell>
                         <TableCell className="hidden md:table-cell">{laporan.periode}</TableCell>
                         <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell>
                         <TableCell className="hidden md:table-cell">
@@ -286,7 +285,7 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="icon"
-                              onClick={() => handleIndividualPrintClick(laporan.id, laporan.report_type === "tersier" ? "tersier" : "harian")}
+                              onClick={() => handleIndividualPrintClick(laporan.id, "harian")}
                               className="md:size-sm md:w-auto"
                             >
                               <Printer className="h-4 w-4 md:mr-2" />

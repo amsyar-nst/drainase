@@ -12,10 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan"; // Import LaporanDrainase
-import { generatePDF } from "@/lib/pdf-generator"; // For harian
-import { generatePDFBulanan } from "@/lib/pdf-generator-bulanan"; // For bulanan
-import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
+import { generatePDF } from "@/lib/pdf-generator";
+import { generatePDFBulanan } from "@/lib/pdf-generator-bulanan";
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -24,16 +23,14 @@ import { cn } from "@/lib/utils";
 interface DrainasePrintDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  laporanIdsToFetch: string[]; // Array of laporan IDs to fetch activities from (used for harian/tersier)
-  reportType: "harian" | "bulanan" | "tersier"; // Type of report to generate
-  filterPeriod: string | null; // Optional filter for bulanan reports
+  laporanIdsToFetch: string[];
+  reportType: "harian" | "bulanan";
+  filterPeriod: string | null;
 }
 
-// Use KegiatanDrainase directly as it now contains all necessary fields
 interface KegiatanItemForPrint extends KegiatanDrainase {
-  tanggalKegiatan: string; // Added this property for display in the dialog
-  laporanTanggal: Date; // The specific date of the parent report for this activity
-  reportType: "harian" | "tersier"; // Store report type for each activity
+  tanggalKegiatan: string;
+  laporanTanggal: Date;
 }
 
 const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
@@ -65,15 +62,15 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       const fetchedKegiatans: KegiatanItemForPrint[] = [];
       
       let targetLaporanIds = laporanIdsToFetch;
-      let periodLaporanDates: { [key: string]: Date } = {}; // Map laporanId to its date
-      let periodLaporanPeriode: { [key: string]: string } = {}; // Map laporanId to its periode
+      let periodLaporanDates: { [key: string]: Date } = {};
+      let periodLaporanPeriode: { [key: string]: string } = {};
 
       if (reportType === "bulanan" && filterPeriod) {
         const { data: periodLaporans, error: periodError } = await supabase
           .from("laporan_drainase")
           .select("id, tanggal, periode")
           .eq("periode", filterPeriod)
-          .eq("report_type", "harian") // Only fetch 'harian' reports for monthly summary
+          .eq("report_type", "harian")
           .order("tanggal", { ascending: true });
 
         if (periodError) throw periodError;
@@ -82,8 +79,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           periodLaporanDates[l.id] = new Date(l.tanggal);
           periodLaporanPeriode[l.id] = l.periode;
         });
-      } else if ((reportType === "harian" || reportType === "tersier") && laporanIdsToFetch.length > 0) {
-        // For harian/tersier, we need the date, periode, and report_type of the single report being printed
+      } else if (reportType === "harian" && laporanIdsToFetch.length > 0) {
         const { data: singleLaporan, error: singleLaporanError } = await supabase
           .from("laporan_drainase")
           .select("tanggal, periode, report_type")
@@ -144,42 +140,30 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             lebarRataRata: kegiatan.lebar_rata_rata || "",
             rataRataSedimen: kegiatan.rata_rata_sedimen || "",
             volumeGalian: kegiatan.volume_galian || "",
-            materials: [], // Will be fetched later for selected items
-            peralatans: [], // Will be fetched later for selected items
-            operasionalAlatBerats: [], // Will be fetched later for selected items
+            materials: [],
+            peralatans: [],
+            operasionalAlatBerats: [],
             koordinator: kegiatan.koordinator || [],
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
 
             tanggalKegiatan: format(currentLaporanDate, "dd MMMM yyyy", { locale: idLocale }),
-            laporanTanggal: currentLaporanDate, // Crucial for monthly report sorting and display
-            reportType: reportType === "tersier" ? "tersier" : "harian", // Store report type for each activity
-            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : null, // Map from DB
-
-            // Tersier-specific fields
-            jumlahUPT: kegiatan.jumlah_upt || 0,
-            jumlahP3SU: kegiatan.jumlah_p3su || 0,
-            rencanaPanjang: kegiatan.rencana_panjang || "",
-            rencanaVolume: kegiatan.rencana_volume || "",
-            realisasiPanjang: kegiatan.realisasi_panjang || "",
-            realisasiVolume: kegiatan.realisasi_volume || "",
-            sisaTargetHari: kegiatan.sisa_target || "",
+            laporanTanggal: currentLaporanDate,
+            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : null,
           };
         });
         fetchedKegiatans.push(...mappedKegiatans);
       }
 
-      // Sort activities by their parent report date, then by activity creation date
       fetchedKegiatans.sort((a, b) => {
         if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
           return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
         }
-        // If dates are the same, maintain original order (or add another sort key if available)
         return 0; 
       });
 
       setAllKegiatans(fetchedKegiatans);
-      setSelectedKegiatanIds(new Set(fetchedKegiatans.map(k => k.id))); // Select all by default
+      setSelectedKegiatanIds(new Set(fetchedKegiatans.map(k => k.id)));
     } catch (error: any) {
       console.error("Error fetching activities for print:", error);
       toast.error("Gagal memuat daftar kegiatan: " + error.message);
@@ -271,20 +255,18 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         }
       }
 
-      // Sort activities by their report date for the PDF
       selectedKegiatansWithDetails.sort((a, b) => a.laporanTanggal.getTime() - b.laporanTanggal.getTime());
 
-      // Determine the overall report type and period from the dialog's props
       const overallPeriode = filterPeriod || format(selectedKegiatansWithDetails[0].laporanTanggal, 'MMMM yyyy', { locale: idLocale });
-      const overallTanggal = selectedKegiatansWithDetails[0].laporanTanggal; // For harian report
+      const overallTanggal = selectedKegiatansWithDetails[0].laporanTanggal;
 
       const laporanToPrint: LaporanDrainase = {
         tanggal: overallTanggal,
         periode: overallPeriode,
-        reportType: reportType, // Use the reportType from dialog props
-        kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, reportType: activityReportType, ...rest }) => ({
+        reportType: reportType,
+        kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, ...rest }) => ({
           ...rest,
-          hariTanggal: laporanTanggal, // Use the parent report's date as hariTanggal for the activity
+          hariTanggal: laporanTanggal,
         })),
       };
 
@@ -292,8 +274,6 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         await generatePDF(laporanToPrint, true);
       } else if (reportType === "bulanan") {
         await generatePDFBulanan(laporanToPrint, true);
-      } else if (reportType === "tersier") {
-        await generatePDFTersier(laporanToPrint, true);
       }
       
       toast.success("Laporan PDF berhasil dibuat.");
@@ -310,13 +290,13 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Cetak Laporan Drainase ({reportType === "harian" ? "Harian" : reportType === "bulanan" ? "Bulanan" : "Tersier"})</DialogTitle>
+          <DialogTitle>Cetak Laporan Drainase ({reportType === "harian" ? "Harian" : "Bulanan"})</DialogTitle>
           <DialogDescription>
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
             {reportType === "bulanan" && filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
-            {(reportType === "bulanan" || reportType === "tersier") && (
+            {reportType === "bulanan" && (
               <p className="text-red-500 text-xs mt-1">
-                Catatan: Laporan {reportType} akan menggabungkan semua kegiatan yang dipilih dalam satu dokumen.
+                Catatan: Laporan bulanan akan menggabungkan semua kegiatan yang dipilih dalam satu dokumen.
               </p>
             )}
           </DialogDescription>
@@ -341,7 +321,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 Pilih Semua ({selectedKegiatanIds.size}/{allKegiatans.length})
               </Label>
             </div>
-            <div className="flex-1 overflow-y-auto pr-4"> {/* Using div with overflow-y-auto */}
+            <div className="flex-1 overflow-y-auto pr-4">
               <div className="space-y-3">
                 {allKegiatans.map((kegiatan) => {
                   const isSelected = selectedKegiatanIds.has(kegiatan.id);
