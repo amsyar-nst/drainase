@@ -17,14 +17,17 @@ import { Textarea } from "@/components/ui/textarea";
 interface OperasionalAlatBeratSectionProps {
   currentKegiatan: KegiatanDrainase;
   updateCurrentKegiatan: (updates: Partial<KegiatanDrainase>) => void;
+  operasionalCustomInputs: Record<string, string>; // Added prop
+  setOperasionalCustomInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>; // Added prop
 }
 
 export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionProps> = ({
   currentKegiatan,
   updateCurrentKegiatan,
+  operasionalCustomInputs, // Destructure from props
+  setOperasionalCustomInputs, // Destructure from props
 }) => {
-  // State for custom inputs for Operasional Alat Berat
-  const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
+  // No longer need local state for operasionalCustomInputs here, it's passed via props.
 
   // Effect to initialize custom inputs when currentKegiatan changes (e.g., on load or activity switch)
   useEffect(() => {
@@ -38,7 +41,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       }
     });
     setOperasionalCustomInputs(initialOperasionalCustomInputs);
-  }, [currentKegiatan.operasionalAlatBerats]);
+  }, [currentKegiatan.operasionalAlatBerats, setOperasionalCustomInputs]);
 
 
   const addOperasionalAlatBerat = () => {

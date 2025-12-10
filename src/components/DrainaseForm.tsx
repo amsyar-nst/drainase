@@ -30,7 +30,7 @@ import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions } from "@/data/kecamatan-kelurahan";
+import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions, alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
@@ -130,6 +130,9 @@ export const DrainaseForm = () => {
   // States for custom inputs for Material and Peralatan
   const [materialCustomInputs, setMaterialCustomInputs] = useState<Record<string, string>>({});
   const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({});
+  // State for custom inputs for Operasional Alat Berat (moved here)
+  const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
+
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
@@ -318,6 +321,15 @@ export const DrainaseForm = () => {
             }
           });
           setPeralatanCustomInputs(initialPeralatanCustomInputs);
+
+          const initialOperasionalCustomInputs: Record<string, string> = {};
+          operasionalAlatBerats.forEach(op => {
+            if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
+              initialOperasionalCustomInputs[op.id] = op.jenis;
+              op.jenis = "custom"; 
+            }
+          });
+          setOperasionalCustomInputs(initialOperasionalCustomInputs);
 
           return {
             id: kegiatan.id,
@@ -1607,6 +1619,8 @@ export const DrainaseForm = () => {
             <OperasionalAlatBeratSection
               currentKegiatan={currentKegiatan}
               updateCurrentKegiatan={updateCurrentKegiatan}
+              operasionalCustomInputs={operasionalCustomInputs}
+              setOperasionalCustomInputs={setOperasionalCustomInputs}
             />
           )}
 
@@ -1662,9 +1676,7 @@ export const DrainaseForm = () => {
                   value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (value === "") {
-                      updateCurrentKegiatan({ jumlahUPT: 0 });
-                    } else if (/^\d{0,2}$/.test(value)) {
+                    if (value === "" || /^\d{0,2}$/.test(value)) {
                       updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
                     }
                   }}
@@ -1680,9 +1692,7 @@ export const DrainaseForm = () => {
                   value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (value === "") {
-                      updateCurrentKegiatan({ jumlahP3SU: 0 });
-                    } else if (/^\d{0,2}$/.test(value)) {
+                    if (value === "" || /^\d{0,2}$/.test(value)) {
                       updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
                     }
                   }}

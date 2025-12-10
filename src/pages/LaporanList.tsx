@@ -57,6 +57,9 @@ const LaporanList = () => {
   const [uniquePeriods, setUniquePeriods] = useState<string[]>([]);
   const [selectedFilterPeriod, setSelectedFilterPeriod] = useState<string | null>(null);
 
+  // State for monthly print confirmation
+  const [showMonthlyPrintConfirm, setShowMonthlyPrintConfirm] = useState(false);
+
   const navigate = useNavigate();
 
   const fetchLaporans = async (filterPeriod: string | null = null) => {
@@ -170,18 +173,18 @@ const LaporanList = () => {
     setIsDrainasePrintDialogOpen(true);
   };
 
-  const handleGlobalPrintSelection = (reportType: "harian" | "bulanan" | "tersier") => {
-    setCurrentPrintReportType(reportType);
-    if (reportType === "harian" || reportType === "tersier") {
-      // For global harian/tersier, fetch all laporans matching the current filter period AND report_type
-      const allFilteredLaporanIds = laporans
-        .filter(l => l.report_type === reportType) // Filter by the selected reportType
-        .map(l => l.id);
-      setLaporanIdsToPrint(allFilteredLaporanIds);
-    } else if (reportType === "bulanan") {
-      // For bulanan, we will pass the filterPeriod to the dialog, and it will fetch all harian laporans for that period
-      setLaporanIdsToPrint([]); // Empty array, dialog will fetch based on filterPeriod
+  const handleMonthlyPrintClick = () => {
+    if (!selectedFilterPeriod) {
+      toast.error("Pilih periode terlebih dahulu untuk mencetak laporan bulanan.");
+      return;
     }
+    setShowMonthlyPrintConfirm(true);
+  };
+
+  const confirmMonthlyPrint = () => {
+    setShowMonthlyPrintConfirm(false);
+    setCurrentPrintReportType("bulanan");
+    setLaporanIdsToPrint([]); // Empty array, dialog will fetch based on filterPeriod
     setIsDrainasePrintDialogOpen(true);
   };
 
@@ -215,7 +218,7 @@ const LaporanList = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 w-full sm:w-auto">
                     <CalendarDays className="h-4 w-4" />
-                    {selectedFilterPeriod ? selectedFilterPeriod : "Periode"}
+                    {selectedFilterPeriod ? selectedFilterPeriod : "Pilih Periode"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -232,25 +235,16 @@ const LaporanList = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 w-full sm:w-auto">
-                    <Printer className="h-4 w-4" />
-                    Cetak
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("harian")}>
-                    Laporan Harian
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("bulanan")}>
-                    Laporan Bulanan
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleGlobalPrintSelection("tersier")}>
-                    Laporan Tersier
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Simplified Print Button */}
+              <Button 
+                variant="outline" 
+                className="gap-2 w-full sm:w-auto"
+                onClick={handleMonthlyPrintClick}
+                disabled={!selectedFilterPeriod} // Disable if no period is selected
+              >
+                <Printer className="h-4 w-4" />
+                Cetak Laporan Bulanan
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -343,6 +337,24 @@ const LaporanList = () => {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirmation Dialog for Monthly Print */}
+        <AlertDialog open={showMonthlyPrintConfirm} onOpenChange={setShowMonthlyPrintConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Konfirmasi Cetak Laporan Bulanan</AlertDialogTitle>
+              <AlertDialogDescription>
+                Anda akan mencetak laporan bulanan untuk periode <span className="font-semibold">{selectedFilterPeriod}</span>. Ini akan menggabungkan semua kegiatan harian dalam periode tersebut ke dalam satu dokumen. Lanjutkan?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmMonthlyPrint}>
+                Cetak Laporan Bulanan
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
