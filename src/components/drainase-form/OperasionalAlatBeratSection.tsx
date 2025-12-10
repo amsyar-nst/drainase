@@ -84,10 +84,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 if (isOpen) {
                   setOperasionalSearchTerms(prev => ({ ...prev, [operasional.id]: operasional.jenis }));
                 } else {
-                  const currentSearchTerm = operasionalSearchTerms[operasional.id];
-                  if (currentSearchTerm !== undefined && currentSearchTerm !== operasional.jenis) {
-                    updateOperasionalAlatBerat(operasional.id, "jenis", currentSearchTerm);
-                  }
                   setOperasionalSearchTerms(prev => {
                     const newState = { ...prev };
                     delete newState[operasional.id];

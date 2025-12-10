@@ -519,7 +519,7 @@ export const DrainaseForm = () => {
         koordinator: [...currentCoordinators, koordinatorName],
       });
     }
-    setKoordinatorSearchTerm(""); // Clear search term after selection
+    // Removed setKoordinatorSearchTerm("") from here to allow continuous search in multi-select
   };
 
   const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
@@ -1300,15 +1300,10 @@ export const DrainaseForm = () => {
                       onOpenChange={(isOpen) => {
                         setOpenMaterialPopoverId(isOpen ? material.id : null);
                         if (isOpen) {
-                          // Initialize search term when opening
+                          // When opening, set search term to current value
                           setMaterialSearchTerms(prev => ({ ...prev, [material.id]: material.jenis }));
                         } else {
-                          // When closing, if the search term is different from the actual value, update the actual value
-                          const currentSearchTerm = materialSearchTerms[material.id];
-                          if (currentSearchTerm !== undefined && currentSearchTerm !== material.jenis) {
-                            updateMaterial(material.id, "jenis", currentSearchTerm);
-                          }
-                          // Clear search term for this material when closing
+                          // When closing, clear the search term for this specific material
                           setMaterialSearchTerms(prev => {
                             const newState = { ...prev };
                             delete newState[material.id];
@@ -1432,10 +1427,6 @@ export const DrainaseForm = () => {
                       if (isOpen) {
                         setPeralatanSearchTerms(prev => ({ ...prev, [peralatan.id]: peralatan.nama }));
                       } else {
-                        const currentSearchTerm = peralatanSearchTerms[peralatan.id];
-                        if (currentSearchTerm !== undefined && currentSearchTerm !== peralatan.nama) {
-                          updatePeralatan(peralatan.id, "nama", currentSearchTerm);
-                        }
                         setPeralatanSearchTerms(prev => {
                           const newState = { ...prev };
                           delete newState[peralatan.id];
