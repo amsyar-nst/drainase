@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { generatePDF } from "@/lib/pdf-generator";
 import { generatePDFBulanan } from "@/lib/pdf-generator-bulanan";
-import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
+import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -29,7 +29,6 @@ interface DrainasePrintDialogProps {
   filterPeriod: string | null;
 }
 
-// Memindahkan definisi interface ke tingkat modul
 interface KegiatanItemForPrint extends KegiatanDrainase {
   tanggalKegiatan: string;
   laporanPeriode: string;
@@ -73,7 +72,7 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           .select("id, periode, report_type")
           .eq("periode", filterPeriod)
           .eq("report_type", "harian") // Only fetch harian reports for monthly aggregation
-          .order("created_at", { ascending: true }); // Order by created_at as tanggal is removed
+          .order("created_at", { ascending: true });
 
         if (periodError) throw periodError;
         targetLaporanIds = periodLaporans.map(l => l.id);
@@ -91,7 +90,6 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         periodLaporanPeriode[laporanIdsToFetch[0]] = singleLaporan.periode;
         periodLaporanReportType[laporanIdsToFetch[0]] = singleLaporan.report_type as "harian" | "bulanan" | "tersier";
       }
-
 
       if (targetLaporanIds.length === 0) {
         setAllKegiatans([]);
@@ -151,9 +149,8 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             keterangan: kegiatan.keterangan || "",
 
             tanggalKegiatan: hariTanggal ? format(hariTanggal, "dd MMMM yyyy", { locale: idLocale }) : 'N/A',
-            laporanPeriode: currentPeriode, // Use laporanPeriode
+            laporanPeriode: currentPeriode,
             hariTanggal: hariTanggal,
-            // Tersier specific fields
             jumlahUPT: kegiatan.jumlah_upt || 0,
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
             sisaTarget: kegiatan.sisa_target || "",
@@ -167,7 +164,6 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         fetchedKegiatans.push(...mappedKegiatans);
       }
 
-      // Sort by hariTanggal for consistent monthly reports
       fetchedKegiatans.sort((a, b) => {
         if (a.hariTanggal && b.hariTanggal) {
           return a.hariTanggal.getTime() - b.hariTanggal.getTime();
