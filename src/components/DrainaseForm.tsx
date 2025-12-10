@@ -30,12 +30,12 @@ import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
-import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits } from "@/data/kecamatan-kelurahan";
+import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
-import { Command, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 
@@ -121,6 +121,10 @@ export const DrainaseForm = () => {
   const [dateInputString, setDateInputString] = useState<string>(
     formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
   );
+
+  const [openMaterialPopoverId, setOpenMaterialPopoverId] = useState<string | null>(null);
+  const [openPeralatanPopoverId, setOpenPeralatanPopoverId] = useState<string | null>(null);
+
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
@@ -1278,11 +1282,45 @@ export const DrainaseForm = () => {
                 <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
                   <div className="space-y-2">
                     <Label>Jenis Material</Label>
-                    <Input
-                      value={material.jenis}
-                      onChange={(e) => updateMaterial(material.id, "jenis", e.target.value)}
-                      placeholder="Contoh: Pasir"
-                    />
+                    <Popover
+                      open={openMaterialPopoverId === material.id}
+                      onOpenChange={(isOpen) => setOpenMaterialPopoverId(isOpen ? material.id : null)}
+                    >
+                      <PopoverTrigger asChild>
+                        <Input
+                          type="text"
+                          placeholder="Pilih atau ketik"
+                          value={material.jenis}
+                          onChange={(e) => {
+                            updateMaterial(material.id, "jenis", e.target.value);
+                          }}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                        <Command>
+                          <CommandList>
+                            <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis material baru.</CommandEmpty>
+                            <CommandGroup>
+                              {materialOptions
+                                .filter((jenis) =>
+                                  jenis.toLowerCase().includes(material.jenis.toLowerCase())
+                                )
+                                .map((jenis) => (
+                                  <CommandItem
+                                    key={jenis}
+                                    onSelect={() => {
+                                      updateMaterial(material.id, "jenis", jenis);
+                                      setOpenMaterialPopoverId(null);
+                                    }}
+                                  >
+                                    {jenis}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label>Jumlah</Label>
@@ -1345,11 +1383,45 @@ export const DrainaseForm = () => {
               <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
                 <div className="space-y-2 md:col-span-2">
                   <Label>Nama Peralatan</Label>
-                  <Input
-                    value={peralatan.nama}
-                    onChange={(e) => updatePeralatan(peralatan.id, "nama", e.target.value)}
-                    placeholder="" 
-                  />
+                  <Popover
+                    open={openPeralatanPopoverId === peralatan.id}
+                    onOpenChange={(isOpen) => setOpenPeralatanPopoverId(isOpen ? peralatan.id : null)}
+                  >
+                    <PopoverTrigger asChild>
+                      <Input
+                        type="text"
+                        placeholder="Pilih atau ketik"
+                        value={peralatan.nama}
+                        onChange={(e) => {
+                          updatePeralatan(peralatan.id, "nama", e.target.value);
+                        }}
+                      />
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                      <Command>
+                        <CommandList>
+                          <CommandEmpty>Tidak ditemukan. Anda dapat mengetik nama peralatan baru.</CommandEmpty>
+                          <CommandGroup>
+                            {peralatanOptions
+                              .filter((nama) =>
+                                nama.toLowerCase().includes(peralatan.nama.toLowerCase())
+                              )
+                              .map((nama) => (
+                                <CommandItem
+                                  key={nama}
+                                  onSelect={() => {
+                                    updatePeralatan(peralatan.id, "nama", nama);
+                                    setOpenPeralatanPopoverId(null);
+                                  }}
+                                >
+                                  {nama}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label>Jumlah</Label>

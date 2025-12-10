@@ -141,6 +141,35 @@ export const alatBeratOptions = [
   "Trado Mini"  
 ];
 
+export const peralatanOptions = [
+  "Bonjor",
+  "Cangkul",
+  "Jack Hammer",
+  "Meteran",
+  "Sekop",
+  "Toing",
+  "Martil",
+  "Sendok Semen",
+  "Ember",
+  "Pahat",
+  "Angkong",
+  "Linggis",
+  "Rambu Kerucut",
+  "Parang"
+];
+
+export const materialOptions = [
+  "Batubata",
+  "Semen",
+  "Pasir",
+  "Batu Pecah",
+  "Besi (Uk.10mm)",
+  "Kayu (Uk.2x2)",
+  "Papan",
+  "Triplek",
+  "Paku (Uk.2½\")"
+];
+
 // Mapping material types to default units (case-insensitive)
 export const materialDefaultUnits: Record<string, string> = {
   "pasir": "M³",
