@@ -130,7 +130,7 @@ export const DrainaseForm = () => {
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
-  const lastCalculatedVolumeRef = useRef<string | null>(null); // Fixed: Initialize useRef with null
+  const lastCalculatedVolumeRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -1555,13 +1555,13 @@ export const DrainaseForm = () => {
                             <CommandItem
                               key={koordinator}
                               value={koordinator} 
-                              onSelect={(currentValue) => {
-                                toggleKoordinator(currentValue);
-                                // No need to setKoordinatorSearchTerm("") here, as onOpenChange handles it
+                              onSelect={() => { // Menggunakan koordinator secara langsung
+                                toggleKoordinator(koordinator);
+                                // Tidak perlu setKoordinatorSearchTerm("") di sini, karena onOpenChange menanganinya
                               }}
                               onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation(); 
+                                e.preventDefault(); // Mencegah popover menutup
+                                e.stopPropagation(); // Mencegah event bubbling
                               }}
                             >
                               <Check
