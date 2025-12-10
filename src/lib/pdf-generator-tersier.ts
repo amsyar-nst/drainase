@@ -1,0 +1,240 @@
+import { LaporanDrainase, KegiatanDrainase } from "@/types/laporan";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+
+export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
+  // Convert images to base64
+  const getBase64 = async (file: File | string | null): Promise<string> => {
+    return new Promise(async (resolve) => {
+      if (!file) {
+        resolve("");
+        return;
+      }
+      if (typeof file === 'string') {
+        try {
+          const response = await fetch(file);
+          if (!response.ok) throw new Error(`Failed to fetch image from URL: ${file}`);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        } catch (error) {
+          console.error("Error converting URL to base64:", error);
+          resolve("");
+        }
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const kegiatansWithImages = await Promise.all(
+    data.kegiatans.map(async (kegiatan) => ({
+      ...kegiatan,
+      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))),
+    }))
+  );
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Laporan Tersier - ${data.periode}</title>
+      <style>
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
+        }
+        body {
+          font-family: 'Arial', sans-serif;
+          font-size: 8pt;
+          line-height: 1.2;
+          color: #000;
+          margin: 0;
+          padding: 0;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 5px;
+        }
+        .header .office {
+          margin: 2px 0;
+          font-size: 10pt;
+          font-weight: bold;
+          color: #000;
+        }
+        .header .address {
+          margin: 2px 0;
+          font-size: 8pt;
+          color: #000;
+        }
+        .report-title {
+          text-align: center;
+          font-size: 10pt;
+          font-weight: bold;
+          margin: 5px 0 10px 0;
+          text-transform: uppercase;
+        }
+        .period {
+          margin-bottom: 10px;
+          font-size: 9pt;
+          font-weight: bold;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        table th {
+          background-color: #f0f0f0;
+          padding: 4px 3px;
+          text-align: center;
+          font-weight: bold;
+          border: 1px solid #000;
+          font-size: 7pt;
+          vertical-align: middle;
+        }
+        table td {
+          padding: 3px;
+          border: 1px solid #000;
+          font-size: 7pt;
+          vertical-align: top;
+        }
+        .photo-cell {
+          width: 100px;
+          text-align: center;
+          padding: 2px;
+        }
+        .photo-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px;
+          justify-content: center;
+        }
+        .photo-container img {
+          width: 45px;
+          height: 34px;
+          object-fit: cover;
+          border: 1px solid #ccc;
+        }
+        ul {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        li {
+          margin: 0;
+          padding: 0;
+          line-height: 1.1;
+        }
+        .center {
+          text-align: center;
+        }
+        .no-col { width: 20px; }
+        .date-col { width: 70px; }
+        .location-col { width: 120px; }
+        .target-col { width: 50px; }
+        .realisasi-col { width: 50px; }
+        .personil-col { width: 50px; }
+        .alat-col { width: 80px; }
+        .keterangan-col { width: 80px; }
+
+        @media print {
+          body {
+            padding: 0;
+          }
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="office">LAPORAN PELAKSANAAN PEKERJAAN PEMELIHARAAN DRAINASE TERSIER</div>
+        <div class="office">UPT OPJD MEDAN KOTA</div>
+        <div class="address">DINAS SUMBER DAYA AIR BINA MARGA DAN BINA KONSTRUKSI KOTA MEDAN</div>
+        <div class="address">SUMBER DAYA AIR</div>
+      </div>
+
+      <div class="period">Periode : ${data.periode}</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2" class="no-col">NO</th>
+            <th rowspan="2" class="date-col">HARI/<br/>TANGGAL</th>
+            <th rowspan="2" class="location-col">LOKASI</th>
+            <th rowspan="2" class="photo-cell">FOTO SKET</th>
+            <th rowspan="2" class="alat-col">ALAT YANG DIBUTUHKAN</th>
+            <th colspan="2">TARGET</th>
+            <th colspan="2">REALISASI</th>
+            <th colspan="3">JUMLAH PERSONIL</th>
+            <th rowspan="2" class="keterangan-col">KETERANGAN</th>
+          </tr>
+          <tr>
+            <th class="target-col">PANJANG<br/>(M)</th>
+            <th class="target-col">VOLUME<br/>(M³)</th>
+            <th class="realisasi-col">PANJANG<br/>(M)</th>
+            <th class="realisasi-col">VOLUME<br/>(M³)</th>
+            <th class="personil-col">UPT</th>
+            <th class="personil-col">P3SU</th>
+            <th class="personil-col">PHL</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${kegiatansWithImages.map((kegiatan, index) => `
+            <tr>
+              <td class="center">${index + 1}</td>
+              <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
+              <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
+              <td class="photo-cell">
+                <div class="photo-container">
+                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
+                </div>
+              </td>
+              <td>
+                <ul>
+                  ${kegiatan.alatYangDibutuhkan?.map(alat => `<li>${alat}</li>`).join('') || '-'}
+                </ul>
+              </td>
+              <td class="center">${kegiatan.rencanaPanjang || '-'}</td>
+              <td class="center">${kegiatan.rencanaVolume || '-'}</td>
+              <td class="center">${kegiatan.realisasiPanjang || '-'}</td>
+              <td class="center">${kegiatan.realisasiVolume || '-'}</td>
+              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
+              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
+              <td class="center">${kegiatan.jumlahPHL || '-'}</td>
+              <td>${kegiatan.keterangan || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  
+  if (downloadNow) {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      throw new Error("Popup blocked. Please allow popups for this site.");
+    }
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  }
+  
+  return blob;
+};

@@ -38,6 +38,14 @@ export type Database = {
           updated_at: string
           volume_galian: string | null
           hari_tanggal: string | null
+          jumlah_upt: number | null
+          jumlah_p3su: number | null
+          sisa_target: string | null
+          alat_yang_dibutuhkan: string[] | null
+          rencana_panjang: string | null
+          rencana_volume: string | null
+          realisasi_panjang: string | null
+          realisasi_volume: string | null
         }
         Insert: {
           aktifitas_penanganan?: string | null
@@ -62,6 +70,14 @@ export type Database = {
           updated_at?: string
           volume_galian?: string | null
           hari_tanggal?: string | null
+          jumlah_upt?: number | null
+          jumlah_p3su?: number | null
+          sisa_target?: string | null
+          alat_yang_dibutuhkan?: string[] | null
+          rencana_panjang?: string | null
+          rencana_volume?: string | null
+          realisasi_panjang?: string | null
+          realisasi_volume?: string | null
         }
         Update: {
           aktifitas_penanganan?: string | null
@@ -86,6 +102,14 @@ export type Database = {
           updated_at?: string
           volume_galian?: string | null
           hari_tanggal?: string | null
+          jumlah_upt?: number | null
+          jumlah_p3su?: number | null
+          sisa_target?: string | null
+          alat_yang_dibutuhkan?: string[] | null
+          rencana_panjang?: string | null
+          rencana_volume?: string | null
+          realisasi_panjang?: string | null
+          realisasi_volume?: string | null
         }
         Relationships: [
           {

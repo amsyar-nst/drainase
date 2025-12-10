@@ -33,6 +33,7 @@ import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlat
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions, alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
+import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
@@ -92,6 +93,15 @@ export const DrainaseForm = () => {
       jumlahPHL: 0,
       keterangan: "",
       hariTanggal: new Date(),
+      // Tersier specific fields
+      jumlahUPT: 0,
+      jumlahP3SU: 0,
+      sisaTarget: "",
+      alatYangDibutuhkan: [],
+      rencanaPanjang: "",
+      rencanaVolume: "",
+      realisasiPanjang: "",
+      realisasiVolume: "",
     }]
   });
 
@@ -179,26 +189,29 @@ export const DrainaseForm = () => {
   }, [currentKegiatan.jenisSedimen, currentKegiatanIndex]);
 
   useEffect(() => {
-    const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
-    const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
-    const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
+    // Only calculate volume for Harian/Bulanan reports
+    if (formData.reportType !== "tersier") {
+      const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
+      const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
+      const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
 
-    const calculatedVolume = (panjang * lebar * tinggi).toFixed(2);
+      const calculatedVolume = (panjang * lebar * tinggi).toFixed(2);
 
-    const isVolumeGalianEmpty = currentKegiatan.volumeGalian === "";
-    const isVolumeGalianSameAsLastCalculated = currentKegiatan.volumeGalian === lastCalculatedVolumeRef.current;
+      const isVolumeGalianEmpty = currentKegiatan.volumeGalian === "";
+      const isVolumeGalianSameAsLastCalculated = currentKegiatan.volumeGalian === lastCalculatedVolumeRef.current;
 
-    if (isVolumeGalianEmpty || (isVolumeGalianSameAsLastCalculated && currentKegiatan.volumeGalian !== calculatedVolume)) {
-      updateCurrentKegiatan({ volumeGalian: calculatedVolume });
+      if (isVolumeGalianEmpty || (isVolumeGalianSameAsLastCalculated && currentKegiatan.volumeGalian !== calculatedVolume)) {
+        updateCurrentKegiatan({ volumeGalian: calculatedVolume });
+      }
+
+      lastCalculatedVolumeRef.current = calculatedVolume;
     }
-
-    lastCalculatedVolumeRef.current = calculatedVolume;
-
   }, [
     currentKegiatan.panjangPenanganan,
     currentKegiatan.lebarRataRata,
     currentKegiatan.rataRataSedimen,
     currentKegiatanIndex,
+    formData.reportType,
   ]);
 
 
@@ -348,6 +361,15 @@ export const DrainaseForm = () => {
             jumlahPHL: kegiatan.jumlah_phl || 0,
             keterangan: kegiatan.keterangan,
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
+            // Tersier specific fields
+            jumlahUPT: kegiatan.jumlah_upt || 0,
+            jumlahP3SU: kegiatan.jumlah_p3su || 0,
+            sisaTarget: kegiatan.sisa_target || "",
+            alatYangDibutuhkan: ensureArray(kegiatan.alat_yang_dibutuhkan),
+            rencanaPanjang: kegiatan.rencana_panjang || "",
+            rencanaVolume: kegiatan.rencana_volume || "",
+            realisasiPanjang: kegiatan.realisasi_panjang || "",
+            realisasiVolume: kegiatan.realisasi_volume || "",
           };
         })
       );
@@ -355,7 +377,7 @@ export const DrainaseForm = () => {
       setFormData({
         tanggal: new Date(laporanData.tanggal),
         periode: laporanData.periode,
-        reportType: (laporanData.report_type || "harian") as "harian" | "bulanan",
+        reportType: (laporanData.report_type || "harian") as "harian" | "bulanan" | "tersier",
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
       });
 
@@ -421,6 +443,15 @@ export const DrainaseForm = () => {
       jumlahPHL: 0,
       keterangan: "",
       hariTanggal: new Date(),
+      // Tersier specific fields
+      jumlahUPT: 0,
+      jumlahP3SU: 0,
+      sisaTarget: "",
+      alatYangDibutuhkan: [],
+      rencanaPanjang: "",
+      rencanaVolume: "",
+      realisasiPanjang: "",
+      realisasiVolume: "",
     };
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
@@ -627,16 +658,19 @@ export const DrainaseForm = () => {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
-    // For the form's preview, we always generate a Harian report
     const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
       periode: formData.periode,
-      reportType: "harian",
+      reportType: formData.reportType,
       kegiatans: formData.kegiatans,
     };
     try {
       let blob: Blob;
-      blob = await generatePDF(laporanForPdf, false);
+      if (formData.reportType === "tersier") {
+        blob = await generatePDFTersier(laporanForPdf, false);
+      } else {
+        blob = await generatePDF(laporanForPdf, false);
+      }
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewDialog(true);
@@ -652,15 +686,18 @@ export const DrainaseForm = () => {
       toast.error("Mohon isi tanggal laporan.");
       return;
     }
-    // For the form's download, we always generate a Harian report
     const laporanForPdf: LaporanDrainase = {
       tanggal: formData.tanggal,
       periode: formData.periode,
-      reportType: "harian",
+      reportType: formData.reportType,
       kegiatans: formData.kegiatans,
     };
     try {
-      await generatePDF(laporanForPdf, true);
+      if (formData.reportType === "tersier") {
+        await generatePDFTersier(laporanForPdf, true);
+      } else {
+        await generatePDF(laporanForPdf, true);
+      }
       toast.success("Laporan berhasil diunduh.");
     } catch (error) {
       console.error("Download error:", error);
@@ -753,6 +790,15 @@ export const DrainaseForm = () => {
             jumlah_phl: kegiatan.jumlahPHL,
             keterangan: kegiatan.keterangan,
             hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
+            // Tersier specific fields
+            jumlah_upt: kegiatan.jumlahUPT,
+            jumlah_p3su: kegiatan.jumlahP3SU,
+            sisa_target: kegiatan.sisaTarget,
+            alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan,
+            rencana_panjang: kegiatan.rencanaPanjang,
+            rencana_volume: kegiatan.rencanaVolume,
+            realisasi_panjang: kegiatan.realisasiPanjang,
+            realisasi_volume: kegiatan.realisasiVolume,
           })
           .select()
           .single();
@@ -939,7 +985,7 @@ export const DrainaseForm = () => {
             <Label htmlFor="report-type">Jenis Laporan</Label>
             <Select
               value={formData.reportType}
-              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "bulanan" })}
+              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "bulanan" | "tersier" })}
             >
               <SelectTrigger id="report-type">
                 <SelectValue placeholder="Pilih jenis laporan" />
@@ -947,6 +993,7 @@ export const DrainaseForm = () => {
               <SelectContent>
                 <SelectItem value="harian">Harian</SelectItem>
                 <SelectItem value="bulanan">Bulanan</SelectItem>
+                <SelectItem value="tersier">Tersier</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -987,8 +1034,8 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Hari/Tanggal Kegiatan (Only for Harian) */}
-          {formData.reportType === "harian" && (
+          {/* Hari/Tanggal Kegiatan (Only for Harian and Tersier) */}
+          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
             <div className="space-y-2">
               <Label htmlFor="hari-tanggal-kegiatan">Hari/Tanggal Kegiatan</Label>
               <div className="relative flex items-center">
@@ -1072,164 +1119,29 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Photos */}
-          <div className="grid gap-4 md:grid-cols-4">
-            {/* Foto 0% */}
-            <div className="space-y-2">
-              <Label htmlFor="foto-0">Foto 0%</Label>
-              <Input
-                id="foto-0"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => handleFileChange(e, 'foto0')}
-              />
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.foto0) ? currentKegiatan.foto0 : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    <img 
-                      src={
-                        photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || ''
-                      } 
-                      alt={`Foto 0% ${index + 1}`} 
-                      className="w-full h-24 object-cover rounded border cursor-pointer"
-                      onClick={() => {
-                        const url = photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || '';
-                        setPreviewUrl(url);
-                        setShowPreviewDialog(true);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('foto0', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Foto 50% */}
-            <div className="space-y-2">
-              <Label htmlFor="foto-50">Foto 50%</Label>
-              <Input
-                id="foto-50"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => handleFileChange(e, 'foto50')}
-              />
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    <img 
-                      src={
-                        photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || ''
-                      } 
-                      alt={`Foto 50% ${index + 1}`} 
-                      className="w-full h-24 object-cover rounded border cursor-pointer"
-                      onClick={() => {
-                        const url = photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || '';
-                        setPreviewUrl(url);
-                        setShowPreviewDialog(true);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('foto50', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Foto 100% */}
-            <div className="space-y-2">
-              <Label htmlFor="foto-100">Foto 100%</Label>
-              <Input
-                id="foto-100"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => handleFileChange(e, 'foto100')}
-              />
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.foto100) ? currentKegiatan.foto100 : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    <img 
-                      src={
-                        photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || ''
-                        } 
-                        alt={`Foto 100% ${index + 1}`} 
-                        className="w-full h-24 object-cover rounded border cursor-pointer"
-                        onClick={() => {
-                          const url = photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || '';
-                          setPreviewUrl(url);
-                          setShowPreviewDialog(true);
-                        }}
-                      />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('foto100', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Foto Sket */}
-            <div className="space-y-2">
-              <Label htmlFor="foto-sket">Gambar Sket</Label>
-              <Input
-                id="foto-sket"
-                type="file"
-                accept="image/*,application/pdf"
-                multiple
-                onChange={(e) => handleFileChange(e, 'fotoSket')}
-              />
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    {typeof photo === 'string' && photo.endsWith('.pdf') ? (
-                      <a 
-                        href={photo} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
-                      >
-                        <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
-                      </a>
-                    ) : (
+          {/* Photos (Conditional for Harian/Bulanan vs Tersier) */}
+          {formData.reportType !== "tersier" ? (
+            <div className="grid gap-4 md:grid-cols-4">
+              {/* Foto 0% */}
+              <div className="space-y-2">
+                <Label htmlFor="foto-0">Foto 0%</Label>
+                <Input
+                  id="foto-0"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'foto0')}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.foto0) ? currentKegiatan.foto0 : []).map((photo, index) => (
+                    <div key={index} className="relative group">
                       <img 
                         src={
                           photo instanceof File 
                             ? URL.createObjectURL(photo)
                             : photo || ''
                         } 
-                        alt={`Gambar Sket ${index + 1}`} 
+                        alt={`Foto 0% ${index + 1}`} 
                         className="w-full h-24 object-cover rounded border cursor-pointer"
                         onClick={() => {
                           const url = photo instanceof File 
@@ -1239,306 +1151,588 @@ export const DrainaseForm = () => {
                           setShowPreviewDialog(true);
                         }}
                       />
-                    )}
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('fotoSket', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('foto0', index)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Foto 50% */}
+              <div className="space-y-2">
+                <Label htmlFor="foto-50">Foto 50%</Label>
+                <Input
+                  id="foto-50"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'foto50')}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={
+                          photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || ''
+                        } 
+                        alt={`Foto 50% ${index + 1}`} 
+                        className="w-full h-24 object-cover rounded border cursor-pointer"
+                        onClick={() => {
+                          const url = photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || '';
+                          setPreviewUrl(url);
+                          setShowPreviewDialog(true);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('foto50', index)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Foto 100% */}
+              <div className="space-y-2">
+                <Label htmlFor="foto-100">Foto 100%</Label>
+                <Input
+                  id="foto-100"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'foto100')}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.foto100) ? currentKegiatan.foto100 : []).map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={
+                          photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || ''
+                          } 
+                          alt={`Foto 100% ${index + 1}`} 
+                          className="w-full h-24 object-cover rounded border cursor-pointer"
+                          onClick={() => {
+                            const url = photo instanceof File 
+                              ? URL.createObjectURL(photo)
+                              : photo || '';
+                            setPreviewUrl(url);
+                            setShowPreviewDialog(true);
+                          }}
+                        />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('foto100', index)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Foto Sket */}
+              <div className="space-y-2">
+                <Label htmlFor="foto-sket">Gambar Sket</Label>
+                <Input
+                  id="foto-sket"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'fotoSket')}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
+                    <div key={index} className="relative group">
+                      {typeof photo === 'string' && photo.endsWith('.pdf') ? (
+                        <a 
+                          href={photo} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
+                        >
+                          <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
+                        </a>
+                      ) : (
+                        <img 
+                          src={
+                            photo instanceof File 
+                              ? URL.createObjectURL(photo)
+                              : photo || ''
+                          } 
+                          alt={`Gambar Sket ${index + 1}`} 
+                          className="w-full h-24 object-cover rounded border cursor-pointer"
+                          onClick={() => {
+                            const url = photo instanceof File 
+                              ? URL.createObjectURL(photo)
+                              : photo || '';
+                            setPreviewUrl(url);
+                            setShowPreviewDialog(true);
+                          }}
+                        />
+                      )}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('fotoSket', index)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Jenis Saluran & Sedimen */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
-              <Select
-                value={currentKegiatan.jenisSaluran}
-                onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
-              >
-                <SelectTrigger id="jenis-saluran">
-                  <SelectValue placeholder="Pilih jenis saluran" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Terbuka">Terbuka</SelectItem>
-                  <SelectItem value="Tertutup">Tertutup</SelectItem>
-                  <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
-              <Select
-                value={selectedSedimenOption}
-                onValueChange={(value) => {
-                  setSelectedSedimenOption(value);
-                  if (value === "custom") {
-                    updateCurrentKegiatan({ jenisSedimen: customSedimen });
-                  } else {
-                    updateCurrentKegiatan({ jenisSedimen: value });
-                    setCustomSedimen("");
-                  }
-                }}
-              >
-                <SelectTrigger id="jenis-sedimen">
-                  <SelectValue placeholder="Pilih jenis sedimen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {predefinedSedimenOptions.map((jenis) => (
-                    <SelectItem key={jenis} value={jenis}>
-                      {jenis}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Lainnya</SelectItem>
-                </SelectContent>
-              </Select>
-              {selectedSedimenOption === "custom" && (
+          ) : (
+            // Tersier specific photo input (only Foto Sket)
+            <div className="grid gap-4 md:grid-cols-1">
+              <div className="space-y-2">
+                <Label htmlFor="foto-sket-tersier">Gambar Sket (Tersier)</Label>
                 <Input
-                  type="text"
-                  placeholder="Masukkan jenis sedimen manual"
-                  value={customSedimen}
-                  onChange={(e) => {
-                    setCustomSedimen(e.target.value);
-                    updateCurrentKegiatan({ jenisSedimen: e.target.value });
-                  }}
-                  className="mt-2"
+                  id="foto-sket-tersier"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'fotoSket')}
                 />
-              )}
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
+                    <div key={index} className="relative group">
+                      {typeof photo === 'string' && photo.endsWith('.pdf') ? (
+                        <a 
+                          href={photo} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
+                        >
+                          <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
+                        </a>
+                      ) : (
+                        <img 
+                          src={
+                            photo instanceof File 
+                              ? URL.createObjectURL(photo)
+                              : photo || ''
+                          } 
+                          alt={`Gambar Sket ${index + 1}`} 
+                          className="w-full h-24 object-cover rounded border cursor-pointer"
+                          onClick={() => {
+                            const url = photo instanceof File 
+                              ? URL.createObjectURL(photo)
+                              : photo || '';
+                            setPreviewUrl(url);
+                            setShowPreviewDialog(true);
+                          }}
+                        />
+                      )}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('fotoSket', index)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Aktifitas & Measurements */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
-              <Input
-                id="aktifitas"
-                value={currentKegiatan.aktifitasPenanganan}
-                onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
-                placeholder="Contoh: Pembersihan dan Pengerukan"
-              />
-            </div>
+
+          {/* Jenis Saluran & Sedimen (Conditional for Harian/Bulanan) */}
+          {formData.reportType !== "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
-                <Input
-                  id="panjang"
-                  value={currentKegiatan.panjangPenanganan}
-                  onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
-                  placeholder="0"
-                />
+                <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
+                <Select
+                  value={currentKegiatan.jenisSaluran}
+                  onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
+                >
+                  <SelectTrigger id="jenis-saluran">
+                    <SelectValue placeholder="Pilih jenis saluran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Terbuka">Terbuka</SelectItem>
+                    <SelectItem value="Tertutup">Tertutup</SelectItem>
+                    <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
-                <Input
-                  id="lebar"
-                  value={currentKegiatan.lebarRataRata}
-                  onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
-                <Input
-                  id="sedimen"
-                  value={currentKegiatan.rataRataSedimen}
-                  onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="volume">Volume Galian (M³)</Label>
-                <Input
-                  id="volume"
-                  value={currentKegiatan.volumeGalian}
-                  onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
-                  placeholder="0"
-                />
+                <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
+                <Select
+                  value={selectedSedimenOption}
+                  onValueChange={(value) => {
+                    setSelectedSedimenOption(value);
+                    if (value === "custom") {
+                      updateCurrentKegiatan({ jenisSedimen: customSedimen });
+                    } else {
+                      updateCurrentKegiatan({ jenisSedimen: value });
+                      setCustomSedimen("");
+                    }
+                  }}
+                >
+                  <SelectTrigger id="jenis-sedimen">
+                    <SelectValue placeholder="Pilih jenis sedimen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {predefinedSedimenOptions.map((jenis) => (
+                      <SelectItem key={jenis} value={jenis}>
+                        {jenis}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Lainnya</SelectItem>
+                  </SelectContent>
+                </Select>
+                {selectedSedimenOption === "custom" && (
+                  <Input
+                    type="text"
+                    placeholder="Masukkan jenis sedimen manual"
+                    value={customSedimen}
+                    onChange={(e) => {
+                      setCustomSedimen(e.target.value);
+                      updateCurrentKegiatan({ jenisSedimen: e.target.value });
+                    }}
+                    className="mt-2"
+                  />
+                )}
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Materials */}
-          <div className="space-y-4">
-            <Label>Material yang Digunakan</Label>
-            {currentKegiatan.materials.map((material) => (
-              <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
+          {/* Aktifitas & Measurements (Conditional for Harian/Bulanan) */}
+          {formData.reportType !== "tersier" && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
+                <Input
+                  id="aktifitas"
+                  value={currentKegiatan.aktifitasPenanganan}
+                  onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
+                  placeholder="Contoh: Pembersihan dan Pengerukan"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Jenis Material</Label>
-                  <Select
-                    value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
-                    onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialOptions.map((jenis) => (
-                        <SelectItem key={jenis} value={jenis}>
-                          {jenis}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="custom">Lainnya</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {material.jenis === "custom" ? (
-                    <Input
-                      type="text"
-                      placeholder="Masukkan jenis material manual"
-                      value={materialCustomInputs[material.id] || ""}
-                      onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
-                      className="mt-2"
-                    />
-                  ) : null}
-                </div>
-                <div className="space-y-2">
-                  <Label>Jumlah</Label>
+                  <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
                   <Input
-                    value={material.jumlah}
-                    onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                    id="panjang"
+                    value={currentKegiatan.panjangPenanganan}
+                    onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
                     placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Satuan</Label>
-                  <Select
-                    value={material.satuan}
-                    onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {satuanOptions.map((satuan) => (
-                        <SelectItem key={satuan} value={satuan}>
-                          {satuan}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Keterangan</Label>
+                  <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
                   <Input
-                    value={material.keterangan || ""}
-                    onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
-                    placeholder="Catatan material (opsional)"
+                    id="lebar"
+                    value={currentKegiatan.lebarRataRata}
+                    onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
+                    placeholder="0"
                   />
                 </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => removeMaterial(material.id)}
-                  disabled={currentKegiatan.materials.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
+                  <Input
+                    id="sedimen"
+                    value={currentKegiatan.rataRataSedimen}
+                    onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="volume">Volume Galian (M³)</Label>
+                  <Input
+                    id="volume"
+                    value={currentKegiatan.volumeGalian}
+                    onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
               </div>
-            ))}
-            <div className="flex justify-end">
-              <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah Material
-              </Button>
             </div>
-          </div>
+          )}
 
-          {/* Peralatan */}
-          <div className="space-y-4">
-            <Label>Peralatan yang Digunakan</Label>
-            {currentKegiatan.peralatans.map((peralatan) => (
-              <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Nama Peralatan</Label>
-                  <Select
-                    value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
-                    onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih peralatan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {peralatanOptions.map((nama) => (
-                        <SelectItem key={nama} value={nama}>
-                          {nama}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="custom">Lainnya</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {peralatan.nama === "custom" ? (
+          {/* Materials (Conditional for Harian/Bulanan) */}
+          {formData.reportType !== "tersier" && (
+            <div className="space-y-4">
+              <Label>Material yang Digunakan</Label>
+              {currentKegiatan.materials.map((material) => (
+                <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
+                  <div className="space-y-2">
+                    <Label>Jenis Material</Label>
+                    <Select
+                      value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
+                      onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih material" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {materialOptions.map((jenis) => (
+                          <SelectItem key={jenis} value={jenis}>
+                            {jenis}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom">Lainnya</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {material.jenis === "custom" ? (
+                      <Input
+                        type="text"
+                        placeholder="Masukkan jenis material manual"
+                        value={materialCustomInputs[material.id] || ""}
+                        onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
+                        className="mt-2"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Jumlah</Label>
                     <Input
-                      type="text"
-                      placeholder="Masukkan nama peralatan manual"
-                      value={peralatanCustomInputs[peralatan.id] || ""}
-                      onChange={(e) => updatePeralatanCustomInput(peralatan.id, e.target.value)}
-                      className="mt-2"
+                      value={material.jumlah}
+                      onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                      placeholder="0"
                     />
-                  ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Satuan</Label>
+                    <Select
+                      value={material.satuan}
+                      onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {satuanOptions.map((satuan) => (
+                          <SelectItem key={satuan} value={satuan}>
+                            {satuan}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Keterangan</Label>
+                    <Input
+                      value={material.keterangan || ""}
+                      onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
+                      placeholder="Catatan material (opsional)"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => removeMaterial(material.id)}
+                    disabled={currentKegiatan.materials.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
+              ))}
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah Material
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Peralatan (Conditional for Harian/Bulanan) */}
+          {formData.reportType !== "tersier" && (
+            <div className="space-y-4">
+              <Label>Peralatan yang Digunakan</Label>
+              {currentKegiatan.peralatans.map((peralatan) => (
+                <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Nama Peralatan</Label>
+                    <Select
+                      value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
+                      onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih peralatan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {peralatanOptions.map((nama) => (
+                          <SelectItem key={nama} value={nama}>
+                            {nama}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom">Lainnya</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {peralatan.nama === "custom" ? (
+                      <Input
+                        type="text"
+                        placeholder="Masukkan nama peralatan manual"
+                        value={peralatanCustomInputs[peralatan.id] || ""}
+                        onChange={(e) => updatePeralatanCustomInput(peralatan.id, e.target.value)}
+                        className="mt-2"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Jumlah</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={peralatan.jumlah}
+                      onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Satuan</Label>
+                    <Select
+                      value={peralatan.satuan}
+                      onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {satuanOptions.map((satuan) => (
+                          <SelectItem key={satuan} value={satuan}>
+                            {satuan}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => removePeralatan(peralatan.id)}
+                    disabled={currentKegiatan.peralatans.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah Peralatan
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Operasional Alat Berat Section (Conditional for Harian/Bulanan) */}
+          {formData.reportType !== "tersier" && (
+            <OperasionalAlatBeratSection
+              currentKegiatan={currentKegiatan}
+              updateCurrentKegiatan={updateCurrentKegiatan}
+              operasionalCustomInputs={operasionalCustomInputs}
+              setOperasionalCustomInputs={setOperasionalCustomInputs}
+            />
+          )}
+
+          {/* Tersier Specific Fields */}
+          {formData.reportType === "tersier" && (
+            <>
+              <div className="space-y-4">
+                <Label>Alat yang Dibutuhkan</Label>
+                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-md p-2">
+                  {peralatanOptions.map((alat) => (
+                    <div key={alat} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`alat-${alat}`}
+                        checked={currentKegiatan.alatYangDibutuhkan?.includes(alat)}
+                        onCheckedChange={(checked) => {
+                          const currentAlat = currentKegiatan.alatYangDibutuhkan || [];
+                          if (checked) {
+                            updateCurrentKegiatan({ alatYangDibutuhkan: [...currentAlat, alat] });
+                          } else {
+                            updateCurrentKegiatan({ alatYangDibutuhkan: currentAlat.filter((a) => a !== alat) });
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`alat-${alat}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {alat}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Jumlah</Label>
+                  <Label htmlFor="rencana-panjang">Rencana Panjang (M)</Label>
                   <Input
-                    type="number"
-                    min="1"
-                    value={peralatan.jumlah}
-                    onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
+                    id="rencana-panjang"
+                    value={currentKegiatan.rencanaPanjang || ""}
+                    onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Satuan</Label>
-                  <Select
-                    value={peralatan.satuan}
-                    onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {satuanOptions.map((satuan) => (
-                        <SelectItem key={satuan} value={satuan}>
-                          {satuan}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="rencana-volume">Rencana Volume (M³)</Label>
+                  <Input
+                    id="rencana-volume"
+                    value={currentKegiatan.rencanaVolume || ""}
+                    onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
+                    placeholder="0"
+                  />
                 </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => removePeralatan(peralatan.id)}
-                  disabled={currentKegiatan.peralatans.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="realisasi-panjang">Realisasi Panjang (M)</Label>
+                  <Input
+                    id="realisasi-panjang"
+                    value={currentKegiatan.realisasiPanjang || ""}
+                    onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="realisasi-volume">Realisasi Volume (M³)</Label>
+                  <Input
+                    id="realisasi-volume"
+                    value={currentKegiatan.realisasiVolume || ""}
+                    onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sisa-target">Sisa Target</Label>
+                  <Input
+                    id="sisa-target"
+                    value={currentKegiatan.sisaTarget || ""}
+                    onChange={(e) => updateCurrentKegiatan({ sisaTarget: e.target.value })}
+                    placeholder="Sisa target"
+                  />
+                </div>
               </div>
-            ))}
-            <div className="flex justify-end">
-              <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah Peralatan
-              </Button>
-            </div>
-          </div>
+            </>
+          )}
 
-          {/* Operasional Alat Berat Section */}
-          <OperasionalAlatBeratSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-            operasionalCustomInputs={operasionalCustomInputs}
-            setOperasionalCustomInputs={setOperasionalCustomInputs}
-          />
-
-          {/* Koordinator & PHL */}
+          {/* Koordinator & PHL (Always visible, but PHL is conditional for Tersier) */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="koordinator">Koordinator</Label>
@@ -1557,22 +1751,75 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
-              <Input
-                id="jumlah-phl"
-                type="text"
-                placeholder="0"
-                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "" || /^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
-                  }
-                }}
-                maxLength={2}
-              />
-            </div>
+            {formData.reportType !== "tersier" ? (
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
+                <Input
+                  id="jumlah-phl"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="jumlah-upt">Jumlah Personil UPT</Label>
+                  <Input
+                    id="jumlah-upt"
+                    type="text"
+                    placeholder="0"
+                    value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString() || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d{0,2}$/.test(value)) {
+                        updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) });
+                      }
+                    }}
+                    maxLength={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="jumlah-p3su">Jumlah Personil P3SU</Label>
+                  <Input
+                    id="jumlah-p3su"
+                    type="text"
+                    placeholder="0"
+                    value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString() || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d{0,2}$/.test(value)) {
+                        updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) });
+                      }
+                    }}
+                    maxLength={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="jumlah-phl-tersier">Jumlah PHL</Label>
+                  <Input
+                    id="jumlah-phl-tersier"
+                    type="text"
+                    placeholder="0"
+                    value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d{0,2}$/.test(value)) {
+                        updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
+                      }
+                    }}
+                    maxLength={2}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Keterangan */}
@@ -1595,7 +1842,7 @@ export const DrainaseForm = () => {
               className="flex-1 min-w-[150px]"
             >
               <Eye className="mr-2 h-4 w-4" />
-              Preview PDF Harian
+              Preview PDF {formData.reportType === "tersier" ? "Tersier" : "Harian"}
             </Button>
             <Button 
               onClick={handlePrintDownload} 
@@ -1603,7 +1850,7 @@ export const DrainaseForm = () => {
               className="flex-1 min-w-[150px]"
             >
               <Download className="mr-2 h-4 w-4" />
-              Download PDF Harian
+              Download PDF {formData.reportType === "tersier" ? "Tersier" : "Harian"}
             </Button>
             <Button onClick={handleSave} disabled={isSaving} className="flex-1 min-w-[150px]">
               {isSaving ? (

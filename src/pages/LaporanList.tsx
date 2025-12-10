@@ -35,7 +35,7 @@ interface LaporanItem {
   periode: string;
   created_at: string;
   kegiatan_count: number;
-  report_type: "harian" | "bulanan";
+  report_type: "harian" | "bulanan" | "tersier";
 }
 
 // Define a type for the period data
@@ -51,7 +51,7 @@ const LaporanList = () => {
   // States for the new DrainasePrintDialog
   const [isDrainasePrintDialogOpen, setIsDrainasePrintDialogOpen] = useState(false);
   const [laporanIdsToPrint, setLaporanIdsToPrint] = useState<string[]>([]);
-  const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan">("harian");
+  const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan" | "tersier">("harian");
 
   // New states for period filtering
   const [uniquePeriods, setUniquePeriods] = useState<string[]>([]);
@@ -117,7 +117,7 @@ const LaporanList = () => {
           return {
             ...laporan,
             kegiatan_count: count || 0,
-            report_type: laporan.report_type as "harian" | "bulanan",
+            report_type: laporan.report_type as "harian" | "bulanan" | "tersier",
           };
         })
       );
@@ -166,7 +166,7 @@ const LaporanList = () => {
     }
   };
 
-  const handleIndividualPrintClick = (laporanId: string, type: "harian") => {
+  const handleIndividualPrintClick = (laporanId: string, type: "harian" | "tersier") => {
     setLaporanIdsToPrint([laporanId]);
     setCurrentPrintReportType(type);
     setIsDrainasePrintDialogOpen(true);
@@ -285,7 +285,7 @@ const LaporanList = () => {
                             <Button
                               variant="outline"
                               size="icon"
-                              onClick={() => handleIndividualPrintClick(laporan.id, "harian")}
+                              onClick={() => handleIndividualPrintClick(laporan.id, laporan.report_type === "tersier" ? "tersier" : "harian")}
                               className="md:size-sm md:w-auto"
                             >
                               <Printer className="h-4 w-4 md:mr-2" />
