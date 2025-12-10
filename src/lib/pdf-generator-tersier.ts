@@ -103,15 +103,9 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           font-size: 7pt;
           vertical-align: top;
         }
-        .photo-main-header-col {
-          width: 100px; /* Total width for both photo columns */
-          text-align: center;
-          padding: 4px 3px;
-          border: 1px solid #000;
-          vertical-align: middle;
-        }
+        /* Removed photo-main-header-col as it's no longer needed */
         .photo-sub-header-col {
-          width: 50px; /* Half of photo-main-header-col */
+          width: 50px; /* Each photo column takes half the width */
           text-align: center;
           padding: 4px 3px;
           border: 1px solid #000;
@@ -180,19 +174,23 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       <table>
         <thead>
           <tr>
-            <th rowspan="3" class="no-col">NO</th>
-            <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
-            <th rowspan="3" class="location-col">LOKASI</th>
-            <th colspan="2" class="photo-main-header-col">FOTO KONDISI EKSISTING</th>
-            <th rowspan="3" class="alat-col">ALAT YANG DIBUTUHKAN</th>
+            <th rowspan="2" class="no-col">NO</th>
+            <th rowspan="2" class="date-col">HARI/<br/>TANGGAL</th>
+            <th rowspan="2" class="location-col">LOKASI</th>
+            <!-- Photo headers -->
+            <th class="photo-sub-header-col">Sebelum</th>
+            <th class="photo-sub-header-col">Sesudah</th>
+            <th rowspan="2" class="alat-col">ALAT YANG DIBUTUHKAN</th>
             <th colspan="2">TARGET</th>
             <th colspan="2">REALISASI</th>
             <th colspan="3">JUMLAH PERSONIL</th>
-            <th rowspan="3" class="keterangan-col">KETERANGAN</th>
+            <th rowspan="2" class="keterangan-col">KETERANGAN</th>
           </tr>
           <tr>
-            <th class="photo-sub-header-col">Sebelum</th>
-            <th class="photo-sub-header-col">Sesudah</th>
+            <!-- Second row for photo headers -->
+            <th class="photo-sub-header-col">Foto Kondisi Eksisting</th>
+            <th class="photo-sub-header-col">Foto Kondisi Eksisting</th>
+            <!-- Sub-headers for TARGET, REALISASI, JUMLAH PERSONIL -->
             <th class="target-col">PANJANG<br/>(M)</th>
             <th class="target-col">VOLUME<br/>(M³)</th>
             <th class="realisasi-col">PANJANG<br/>(M)</th>
