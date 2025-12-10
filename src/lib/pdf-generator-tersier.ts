@@ -189,23 +189,19 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       <table>
         <thead>
           <tr>
-            <th rowspan="3" class="no-col">No</th>
-            <th rowspan="3" class="hari-tanggal-col">Hari/Tanggal</th>
-            <th rowspan="3" class="lokasi-col">Lokasi</th>
-            <th colspan="1">Sebelum</th>
-            <th colspan="1">Sesudah</th>
-            <th rowspan="3" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
-            <th colspan="2" rowspan="2">Alat yang dibutuhkan</th>
-            <th colspan="2" rowspan="2">Orang<br/>Kebutuhan Tenaga<br/>Kerja</th>
-            <th colspan="2" rowspan="2">Rencana<br/>Dimensi yang dikerjakan</th>
-            <th colspan="2" rowspan="2">Realisasi<br/>Dimensi yang dikerjakan</th>
-            <th rowspan="3" class="sisa-target-col">Sisa Target<br/>Penyelesaian<br/>Pekerjaan<br/>(hari)</th>
-            <th rowspan="3" class="penanggungjawab-col">Penanggungjawab<br/>Lapangan<br/>(Koordinator)</th>
-            <th rowspan="3" class="keterangan-col">Keterangan</th>
-          </tr>
-          <tr>
-            <th class="photo-cell">Foto Kondisi Eksisting</th>
-            <th class="photo-cell">Foto Kondisi Eksisting</th>
+            <th rowspan="2" class="no-col">No</th>
+            <th rowspan="2" class="hari-tanggal-col">Hari/Tanggal</th>
+            <th rowspan="2" class="lokasi-col">Lokasi</th>
+            <th rowspan="2" class="photo-cell">Sebelum<br/>(Foto Kondisi Eksisting)</th>
+            <th rowspan="2" class="photo-cell">Sesudah<br/>(Foto Kondisi Eksisting)</th>
+            <th rowspan="2" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
+            <th colspan="2">Alat yang dibutuhkan</th>
+            <th colspan="2">Orang<br/>Kebutuhan Tenaga<br/>Kerja</th>
+            <th colspan="2">Rencana<br/>Dimensi yang dikerjakan</th>
+            <th colspan="2">Realisasi<br/>Dimensi yang dikerjakan</th>
+            <th rowspan="2" class="sisa-target-col">Sisa Target<br/>Penyelesaian<br/>Pekerjaan<br/>(hari)</th>
+            <th rowspan="2" class="penanggungjawab-col">Penanggungjawab<br/>Lapangan<br/>(Koordinator)</th>
+            <th rowspan="2" class="keterangan-col">Keterangan</th>
           </tr>
           <tr>
             <th class="alat-jenis-col">Jenis</th>
