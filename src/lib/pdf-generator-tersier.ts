@@ -116,7 +116,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-cell {
-          width: 80px; /* Adjusted width for single image */
+          width: 100px; /* Adjusted width for single image */
           text-align: center;
           padding: 2px;
         }
@@ -129,8 +129,8 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-container img {
-          width: 70px; /* Larger width for single image */
-          height: 50px; /* Larger height for single image */
+          width: 90px; /* Larger width for single image */
+          height: 60px; /* Larger height for single image */
           object-fit: cover;
           border: 1px solid #ccc;
         }

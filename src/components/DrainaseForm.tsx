@@ -96,7 +96,7 @@ export const DrainaseForm = () => {
       keterangan: "",
       hariTanggal: new Date(),
 
-      // Tersier-specific fields, always present in the form data
+      // Tersier-specific fields
       jumlahUPT: 0,
       jumlahP3SU: 0,
       rencanaPanjang: "",
@@ -582,6 +582,49 @@ export const DrainaseForm = () => {
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Gagal mengunduh PDF.");
+    }
+  };
+
+  const handlePrintPreviewTersier = async () => {
+    if (!formData.tanggal) {
+      toast.error("Mohon isi tanggal laporan.");
+      return;
+    }
+    const laporanForPdf: LaporanDrainase = {
+      tanggal: formData.tanggal,
+      periode: formData.periode,
+      reportType: "tersier",
+      kegiatans: formData.kegiatans,
+    };
+    try {
+      const blob = await generatePDFTersier(laporanForPdf, false);
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setShowPreviewDialog(true);
+      toast.success("Laporan Tersier berhasil dipratinjau.");
+    } catch (error) {
+      console.error("Preview Tersier error:", error);
+      toast.error("Gagal membuat pratinjau PDF Tersier.");
+    }
+  };
+
+  const handlePrintDownloadTersier = async () => {
+    if (!formData.tanggal) {
+      toast.error("Mohon isi tanggal laporan.");
+      return;
+    }
+    const laporanForPdf: LaporanDrainase = {
+      tanggal: formData.tanggal,
+      periode: formData.periode,
+      reportType: "tersier",
+      kegiatans: formData.kegiatans,
+    };
+    try {
+      await generatePDFTersier(laporanForPdf, true);
+      toast.success("Laporan Tersier berhasil diunduh.");
+    } catch (error) {
+      console.error("Download Tersier error:", error);
+      toast.error("Gagal mengunduh PDF Tersier.");
     }
   };
 
@@ -1524,16 +1567,40 @@ export const DrainaseForm = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-4 pt-4">
+          <div className="flex flex-wrap gap-4 pt-4">
             <Button 
               onClick={handlePrintPreview} 
               variant="outline" 
-              className="flex-1"
+              className="flex-1 min-w-[150px]"
             >
               <Eye className="mr-2 h-4 w-4" />
               Preview PDF Harian
             </Button>
-            <Button onClick={handleSave} disabled={isSaving} className="flex-1">
+            <Button 
+              onClick={handlePrintDownload} 
+              variant="default" 
+              className="flex-1 min-w-[150px]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF Harian
+            </Button>
+            <Button 
+              onClick={handlePrintPreviewTersier} 
+              variant="outline" 
+              className="flex-1 min-w-[150px]"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Preview PDF Tersier
+            </Button>
+            <Button 
+              onClick={handlePrintDownloadTersier} 
+              variant="default" 
+              className="flex-1 min-w-[150px]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF Tersier
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} className="flex-1 min-w-[150px]">
               {isSaving ? (
                 <>Menyimpan...</>
               ) : (
@@ -1542,14 +1609,6 @@ export const DrainaseForm = () => {
                   Simpan
                 </>
               )}
-            </Button>
-            <Button 
-              onClick={handlePrintDownload} 
-              variant="default" 
-              className="flex-1"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF Harian
             </Button>
           </div>
         </Card>
