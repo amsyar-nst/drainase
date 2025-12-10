@@ -175,7 +175,7 @@ const LaporanList = () => {
     if (reportType === "harian" || reportType === "tersier") {
       // For global harian/tersier, fetch all laporans matching the current filter period AND report_type
       const allFilteredLaporanIds = laporans
-        .filter(l => l.report_type === reportType)
+        .filter(l => l.report_type === reportType) // Filter by the selected reportType
         .map(l => l.id);
       setLaporanIdsToPrint(allFilteredLaporanIds);
     } else if (reportType === "bulanan") {

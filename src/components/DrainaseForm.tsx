@@ -51,12 +51,10 @@ export const DrainaseForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // The form will now always save as 'harian' for the parent report,
-  // but will contain all fields for both harian and tersier activities.
   const [formData, setFormData] = useState<LaporanDrainase>({
     tanggal: new Date(),
     periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
-    reportType: "harian", // Default to harian, as this form is for daily activities
+    reportType: "harian", // Default to harian, but now user can change
     kegiatans: [{
       id: "1",
       namaJalan: "",
@@ -647,7 +645,7 @@ export const DrainaseForm = () => {
           .update({
             tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
             periode: periodeFormatted,
-            report_type: "harian", // Parent report type is always 'harian' for this unified input
+            report_type: formData.reportType, // Save the selected report type
           })
           .eq('id', currentLaporanId);
 
@@ -675,7 +673,7 @@ export const DrainaseForm = () => {
           .insert({
             tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
             periode: periodeFormatted,
-            report_type: "harian", // Parent report type is always 'harian' for this unified input
+            report_type: formData.reportType, // Save the selected report type
           })
           .select()
           .single();
@@ -871,6 +869,23 @@ export const DrainaseForm = () => {
         </Card>
 
         <Card className="p-6 space-y-6">
+          {/* Report Type Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="report-type">Jenis Laporan</Label>
+            <Select
+              value={formData.reportType}
+              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "tersier" })}
+            >
+              <SelectTrigger id="report-type">
+                <SelectValue placeholder="Pilih jenis laporan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="harian">Harian</SelectItem>
+                <SelectItem value="tersier">Tersier</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Tanggal */}
           <div className="space-y-2">
             <Label htmlFor="tanggal">Tanggal</Label>
@@ -998,48 +1013,50 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {/* Foto 50% */}
-            <div className="space-y-2">
-              <Label htmlFor="foto-50">Foto 50%</Label>
-              <Input
-                id="foto-50"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => handleFileChange(e, 'foto50')}
-              />
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    <img 
-                      src={
-                        photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || ''
-                      } 
-                      alt={`Foto 50% ${index + 1}`} 
-                      className="w-full h-24 object-cover rounded border cursor-pointer"
-                      onClick={() => {
-                        const url = photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || '';
-                        setPreviewUrl(url);
-                        setShowPreviewDialog(true);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('foto50', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+            {/* Foto 50% (Only for Harian) */}
+            {formData.reportType === "harian" && (
+              <div className="space-y-2">
+                <Label htmlFor="foto-50">Foto 50%</Label>
+                <Input
+                  id="foto-50"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'foto50')}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={
+                          photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || ''
+                        } 
+                        alt={`Foto 50% ${index + 1}`} 
+                        className="w-full h-24 object-cover rounded border cursor-pointer"
+                        onClick={() => {
+                          const url = photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || '';
+                          setPreviewUrl(url);
+                          setShowPreviewDialog(true);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('foto50', index)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             {/* Foto 100% */}
             <div className="space-y-2">
               <Label htmlFor="foto-100">Foto 100%</Label>
@@ -1082,79 +1099,83 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {/* Foto Sket (New Field) */}
-            <div className="space-y-2">
-              <Label htmlFor="foto-sket">Gambar Sket</Label>
-              <Input
-                id="foto-sket"
-                type="file"
-                accept="image/*,application/pdf"
-                multiple
-                onChange={(e) => handleFileChange(e, 'fotoSket')}
-              />
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    {typeof photo === 'string' && photo.endsWith('.pdf') ? (
-                      <a 
-                        href={photo} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
+            {/* Foto Sket (Only for Tersier) */}
+            {formData.reportType === "tersier" && (
+              <div className="space-y-2">
+                <Label htmlFor="foto-sket">Gambar Sket</Label>
+                <Input
+                  id="foto-sket"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'fotoSket')}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
+                    <div key={index} className="relative group">
+                      {typeof photo === 'string' && photo.endsWith('.pdf') ? (
+                        <a 
+                          href={photo} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
+                        >
+                          <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
+                        </a>
+                      ) : (
+                        <img 
+                          src={
+                            photo instanceof File 
+                              ? URL.createObjectURL(photo)
+                              : photo || ''
+                          } 
+                          alt={`Gambar Sket ${index + 1}`} 
+                          className="w-full h-24 object-cover rounded border cursor-pointer"
+                          onClick={() => {
+                            const url = photo instanceof File 
+                              ? URL.createObjectURL(photo)
+                              : photo || '';
+                            setPreviewUrl(url);
+                            setShowPreviewDialog(true);
+                          }}
+                        />
+                      )}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('fotoSket', index)}
                       >
-                        <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
-                      </a>
-                    ) : (
-                      <img 
-                        src={
-                          photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || ''
-                        } 
-                        alt={`Gambar Sket ${index + 1}`} 
-                        className="w-full h-24 object-cover rounded border cursor-pointer"
-                        onClick={() => {
-                          const url = photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || '';
-                          setPreviewUrl(url);
-                          setShowPreviewDialog(true);
-                        }}
-                      />
-                    )}
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('fotoSket', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Jenis Saluran & Sedimen */}
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
-              <Select
-                value={currentKegiatan.jenisSaluran}
-                onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
-              >
-                <SelectTrigger id="jenis-saluran">
-                  <SelectValue placeholder="Pilih jenis saluran" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Terbuka">Terbuka</SelectItem>
-                  <SelectItem value="Tertutup">Tertutup</SelectItem>
-                  <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {formData.reportType === "harian" && (
+              <div className="space-y-2">
+                <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
+                <Select
+                  value={currentKegiatan.jenisSaluran}
+                  onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
+                >
+                  <SelectTrigger id="jenis-saluran">
+                    <SelectValue placeholder="Pilih jenis saluran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Terbuka">Terbuka</SelectItem>
+                    <SelectItem value="Tertutup">Tertutup</SelectItem>
+                    <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
               <Select
@@ -1196,122 +1217,126 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Aktifitas & Measurements */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
-              <Input
-                id="aktifitas"
-                value={currentKegiatan.aktifitasPenanganan}
-                onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
-                placeholder="Contoh: Pembersihan dan Pengerukan"
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
+          {/* Aktifitas & Measurements (Only for Harian) */}
+          {formData.reportType === "harian" && (
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
+                <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
                 <Input
-                  id="panjang"
-                  value={currentKegiatan.panjangPenanganan}
-                  onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
-                  placeholder="0"
+                  id="aktifitas"
+                  value={currentKegiatan.aktifitasPenanganan}
+                  onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
+                  placeholder="Contoh: Pembersihan dan Pengerukan"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
-                <Input
-                  id="lebar"
-                  value={currentKegiatan.lebarRataRata}
-                  onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
-                <Input
-                  id="sedimen"
-                  value={currentKegiatan.rataRataSedimen}
-                  onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="volume">Volume Galian (M³)</Label>
-                <Input
-                  id="volume"
-                  value={currentKegiatan.volumeGalian}
-                  onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Materials */}
-          <div className="space-y-4">
-            <Label>Material yang Digunakan</Label>
-            {currentKegiatan.materials.map((material) => (
-              <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Jenis Material</Label>
+                  <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
                   <Input
-                    value={material.jenis}
-                    onChange={(e) => updateMaterial(material.id, "jenis", e.target.value)}
-                    placeholder="Contoh: Pasir"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Jumlah</Label>
-                  <Input
-                    value={material.jumlah}
-                    onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                    id="panjang"
+                    value={currentKegiatan.panjangPenanganan}
+                    onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
                     placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Satuan</Label>
-                  <Select
-                    value={material.satuan}
-                    onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {satuanOptions.map((satuan) => (
-                        <SelectItem key={satuan} value={satuan}>
-                          {satuan}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Keterangan</Label>
+                  <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
                   <Input
-                    value={material.keterangan || ""}
-                    onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
-                    placeholder="Catatan material (opsional)"
+                    id="lebar"
+                    value={currentKegiatan.lebarRataRata}
+                    onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
+                    placeholder="0"
                   />
                 </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => removeMaterial(material.id)}
-                  disabled={currentKegiatan.materials.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
+                <div className="space-y-2">
+                  <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
+                  <Input
+                    id="sedimen"
+                    value={currentKegiatan.rataRataSedimen}
+                    onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="volume">Volume Galian (M³)</Label>
+                  <Input
+                    id="volume"
+                    value={currentKegiatan.volumeGalian}
+                    onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Materials (Only for Harian) */}
+          {formData.reportType === "harian" && (
+            <div className="space-y-4">
+              <Label>Material yang Digunakan</Label>
+              {currentKegiatan.materials.map((material) => (
+                <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
+                  <div className="space-y-2">
+                    <Label>Jenis Material</Label>
+                    <Input
+                      value={material.jenis}
+                      onChange={(e) => updateMaterial(material.id, "jenis", e.target.value)}
+                      placeholder="Contoh: Pasir"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Jumlah</Label>
+                    <Input
+                      value={material.jumlah}
+                      onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Satuan</Label>
+                    <Select
+                      value={material.satuan}
+                      onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {satuanOptions.map((satuan) => (
+                          <SelectItem key={satuan} value={satuan}>
+                            {satuan}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Keterangan</Label>
+                    <Input
+                      value={material.keterangan || ""}
+                      onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
+                      placeholder="Catatan material (opsional)"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => removeMaterial(material.id)}
+                    disabled={currentKegiatan.materials.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah Material
                 </Button>
               </div>
-            ))}
-            <div className="flex justify-end">
-              <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah Material
-              </Button>
             </div>
-          </div>
+          )}
 
           {/* Peralatan */}
           <div className="space-y-4">
@@ -1372,11 +1397,13 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Operasional Alat Berat Section */}
-          <OperasionalAlatBeratSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-          />
+          {/* Operasional Alat Berat Section (Only for Harian) */}
+          {formData.reportType === "harian" && (
+            <OperasionalAlatBeratSection
+              currentKegiatan={currentKegiatan}
+              updateCurrentKegiatan={updateCurrentKegiatan}
+            />
+          )}
 
           {/* Koordinator & PHL */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -1421,138 +1448,148 @@ export const DrainaseForm = () => {
                 </PopoverContent>
               </Popover>
             </div>
+            {formData.reportType === "harian" && (
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
+                <Input
+                  id="jumlah-phl"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      updateCurrentKegiatan({ jumlahPHL: 0 });
+                    } else if (/^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Only for Tersier */}
+          {formData.reportType === "tersier" && (
+            <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
+              <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-upt">UPT</Label>
+                <Input
+                  id="jumlah-upt"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      updateCurrentKegiatan({ jumlahUPT: 0 });
+                    } else if (/^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-p3su">P3SU</Label>
+                <Input
+                  id="jumlah-p3su"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      updateCurrentKegiatan({ jumlahP3SU: 0 });
+                    } else if (/^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Rencana Dimensi - Only for Tersier */}
+          {formData.reportType === "tersier" && (
+            <div className="space-y-4 border rounded-lg p-4">
+              <h3 className="font-semibold text-lg">Rencana Dimensi yang Dikerjakan</h3>
+              <div>
+                <Label htmlFor="rencanaPanjang">Panjang (m)</Label>
+                <Input
+                  id="rencanaPanjang"
+                  placeholder="Masukkan panjang"
+                  value={currentKegiatan.rencanaPanjang || ""}
+                  onChange={(e) =>
+                    updateCurrentKegiatan({ rencanaPanjang: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="rencanaVolume">Volume (m³)</Label>
+                <Input
+                  id="rencanaVolume"
+                  placeholder="Masukkan volume"
+                  value={currentKegiatan.rencanaVolume || ""}
+                  onChange={(e) =>
+                    updateCurrentKegiatan({ rencanaVolume: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Realisasi Dimensi - Only for Tersier */}
+          {formData.reportType === "tersier" && (
+            <div className="space-y-4 border rounded-lg p-4">
+              <h3 className="font-semibold text-lg">Realisasi Dimensi yang Dikerjakan</h3>
+              <div>
+                <Label htmlFor="realisasiPanjang">Panjang (m)</Label>
+                <Input
+                  id="realisasiPanjang"
+                  placeholder="Masukkan panjang"
+                  value={currentKegiatan.realisasiPanjang || ""}
+                  onChange={(e) =>
+                    updateCurrentKegiatan({ realisasiPanjang: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="realisasiVolume">Volume (m³)</Label>
+                <Input
+                  id="realisasiVolume"
+                  placeholder="Masukkan volume"
+                  value={currentKegiatan.realisasiVolume || ""}
+                  onChange={(e) =>
+                    updateCurrentKegiatan({ realisasiVolume: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Sisa Target Penyelesaian Pekerjaan (Hari) - Only for Tersier */}
+          {formData.reportType === "tersier" && (
             <div className="space-y-2">
-              <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
+              <Label htmlFor="sisaTargetHari">Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
               <Input
-                id="jumlah-phl"
+                id="sisaTargetHari"
                 type="text"
-                placeholder="0"
-                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
+                placeholder="00"
+                value={currentKegiatan.sisaTargetHari || ""}
                 onChange={(e) => {
                   const value = e.target.value;
-                  if (value === "") {
-                    updateCurrentKegiatan({ jumlahPHL: 0 });
-                  } else if (/^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ sisaTargetHari: value });
                   }
                 }}
                 maxLength={2}
               />
             </div>
-          </div>
-
-          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Always visible */}
-          <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
-            <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
-            <div className="space-y-2">
-              <Label htmlFor="jumlah-upt">UPT</Label>
-              <Input
-                id="jumlah-upt"
-                type="text"
-                placeholder="0"
-                value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "") {
-                    updateCurrentKegiatan({ jumlahUPT: 0 });
-                  } else if (/^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
-                  }
-                }}
-                maxLength={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="jumlah-p3su">P3SU</Label>
-              <Input
-                id="jumlah-p3su"
-                type="text"
-                placeholder="0"
-                value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "") {
-                    updateCurrentKegiatan({ jumlahP3SU: 0 });
-                  } else if (/^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
-                  }
-                }}
-                maxLength={2}
-              />
-            </div>
-          </div>
-
-          {/* Rencana Dimensi - Always visible */}
-          <div className="space-y-4 border rounded-lg p-4">
-            <h3 className="font-semibold text-lg">Rencana Dimensi yang Dikerjakan</h3>
-            <div>
-              <Label htmlFor="rencanaPanjang">Panjang (m)</Label>
-              <Input
-                id="rencanaPanjang"
-                placeholder="Masukkan panjang"
-                value={currentKegiatan.rencanaPanjang || ""}
-                onChange={(e) =>
-                  updateCurrentKegiatan({ rencanaPanjang: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="rencanaVolume">Volume (m³)</Label>
-              <Input
-                id="rencanaVolume"
-                placeholder="Masukkan volume"
-                value={currentKegiatan.rencanaVolume || ""}
-                onChange={(e) =>
-                  updateCurrentKegiatan({ rencanaVolume: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          {/* Realisasi Dimensi - Always visible */}
-          <div className="space-y-4 border rounded-lg p-4">
-            <h3 className="font-semibold text-lg">Realisasi Dimensi yang Dikerjakan</h3>
-            <div>
-              <Label htmlFor="realisasiPanjang">Panjang (m)</Label>
-              <Input
-                id="realisasiPanjang"
-                placeholder="Masukkan panjang"
-                value={currentKegiatan.realisasiPanjang || ""}
-                onChange={(e) =>
-                  updateCurrentKegiatan({ realisasiPanjang: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="realisasiVolume">Volume (m³)</Label>
-              <Input
-                id="realisasiVolume"
-                placeholder="Masukkan volume"
-                value={currentKegiatan.realisasiVolume || ""}
-                onChange={(e) =>
-                  updateCurrentKegiatan({ realisasiVolume: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          {/* Sisa Target Penyelesaian Pekerjaan (Hari) - Always visible */}
-          <div className="space-y-2">
-            <Label htmlFor="sisaTargetHari">Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
-            <Input
-              id="sisaTargetHari"
-              type="text"
-              placeholder="00"
-              value={currentKegiatan.sisaTargetHari || ""}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === "" || /^\d{0,2}$/.test(value)) {
-                  updateCurrentKegiatan({ sisaTargetHari: value });
-                }
-              }}
-              maxLength={2}
-            />
-          </div>
+          )}
 
           {/* Keterangan */}
           <div className="space-y-2">
@@ -1568,38 +1605,46 @@ export const DrainaseForm = () => {
 
           {/* Actions */}
           <div className="flex flex-wrap gap-4 pt-4">
-            <Button 
-              onClick={handlePrintPreview} 
-              variant="outline" 
-              className="flex-1 min-w-[150px]"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Preview PDF Harian
-            </Button>
-            <Button 
-              onClick={handlePrintDownload} 
-              variant="default" 
-              className="flex-1 min-w-[150px]"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF Harian
-            </Button>
-            <Button 
-              onClick={handlePrintPreviewTersier} 
-              variant="outline" 
-              className="flex-1 min-w-[150px]"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Preview PDF Tersier
-            </Button>
-            <Button 
-              onClick={handlePrintDownloadTersier} 
-              variant="default" 
-              className="flex-1 min-w-[150px]"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF Tersier
-            </Button>
+            {formData.reportType === "harian" && (
+              <>
+                <Button 
+                  onClick={handlePrintPreview} 
+                  variant="outline" 
+                  className="flex-1 min-w-[150px]"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview PDF Harian
+                </Button>
+                <Button 
+                  onClick={handlePrintDownload} 
+                  variant="default" 
+                  className="flex-1 min-w-[150px]"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF Harian
+                </Button>
+              </>
+            )}
+            {formData.reportType === "tersier" && (
+              <>
+                <Button 
+                  onClick={handlePrintPreviewTersier} 
+                  variant="outline" 
+                  className="flex-1 min-w-[150px]"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview PDF Tersier
+                </Button>
+                <Button 
+                  onClick={handlePrintDownloadTersier} 
+                  variant="default" 
+                  className="flex-1 min-w-[150px]"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF Tersier
+                </Button>
+              </>
+            )}
             <Button onClick={handleSave} disabled={isSaving} className="flex-1 min-w-[150px]">
               {isSaving ? (
                 <>Menyimpan...</>
