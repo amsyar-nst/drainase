@@ -130,7 +130,7 @@ export const DrainaseForm = () => {
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
-  const lastCalculatedVolumeRef = useRef<string | null>(null);
+  const lastCalculatedVolumeRef = useRef<string | null>(null); // Fixed: Initialize useRef with null
 
   useEffect(() => {
     if (id) {
@@ -328,8 +328,8 @@ export const DrainaseForm = () => {
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
             rencanaPanjang: kegiatan.rencana_panjang || "",
             rencanaVolume: kegiatan.rencana_volume || "",
-            realisasiPanjang: kegiatan.realisasi_panjang || "",
-            realisasiVolume: kegiatan.realisasi_volume || "",
+            realisasiPanjang: kegiatan.realisasi_panjang || "", 
+            realisasiVolume: kegiatan.realisasi_volume || "", 
             sisaTargetHari: kegiatan.sisa_target || "",
           };
         })
@@ -1537,7 +1537,7 @@ export const DrainaseForm = () => {
                     <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-50" align="start" sideOffset={5}>
+                <PopoverContent className="z-50 w-[--radix-popover-trigger-width] p-0" align="start" sideOffset={5}>
                   <Command>
                     <CommandInput
                       placeholder="Cari koordinator..."
@@ -1554,8 +1554,15 @@ export const DrainaseForm = () => {
                           .map((koordinator) => (
                             <CommandItem
                               key={koordinator}
-                              onSelect={() => toggleKoordinator(koordinator)} // Use toggle for multi-select
-                              onMouseDown={(e) => e.preventDefault()} // Prevent popover from closing on item click
+                              value={koordinator} 
+                              onSelect={(currentValue) => {
+                                toggleKoordinator(currentValue);
+                                // No need to setKoordinatorSearchTerm("") here, as onOpenChange handles it
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation(); 
+                              }}
                             >
                               <Check
                                 className={cn(
@@ -1584,9 +1591,7 @@ export const DrainaseForm = () => {
                   value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (value === "") {
-                      updateCurrentKegiatan({ jumlahPHL: 0 });
-                    } else if (/^\d{0,2}$/.test(value)) {
+                    if (value === "" || /^\d{0,2}$/.test(value)) {
                       updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
                     }
                   }}
