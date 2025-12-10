@@ -44,7 +44,7 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
 }) => {
   const [allKegiatans, setAllKegiatans] = useState<KegiatanItemForPrint[]>([]);
   const [selectedKegiatanIds, setSelectedKegiatanIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true); // Memperbaiki deklarasi useState
+  const [loading, setLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
