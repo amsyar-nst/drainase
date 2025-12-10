@@ -493,10 +493,17 @@ export const DrainaseForm = () => {
     });
   };
 
-  const handleKoordinatorSelect = (koordinatorName: string) => {
-    // For single select, replace the array with the new selection
-    updateCurrentKegiatan({ koordinator: [koordinatorName] });
-    setKoordinatorPopoverOpen(false); // Close popover after selection
+  const toggleKoordinator = (koordinatorName: string) => {
+    const currentCoordinators = currentKegiatan.koordinator;
+    if (currentCoordinators.includes(koordinatorName)) {
+      updateCurrentKegiatan({
+        koordinator: currentCoordinators.filter((name) => name !== koordinatorName),
+      });
+    } else {
+      updateCurrentKegiatan({
+        koordinator: [...currentCoordinators, koordinatorName],
+      });
+    }
   };
 
   const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
@@ -1440,7 +1447,7 @@ export const DrainaseForm = () => {
                     className="w-full justify-between"
                   >
                     {currentKegiatan.koordinator.length > 0
-                      ? currentKegiatan.koordinator[0] // Display only the single selected koordinator
+                      ? currentKegiatan.koordinator.join(", ") // Display all selected coordinators
                       : "Pilih koordinator..."}
                     <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -1462,7 +1469,7 @@ export const DrainaseForm = () => {
                           .map((koordinator) => (
                             <CommandItem
                               key={koordinator}
-                              onSelect={() => handleKoordinatorSelect(koordinator)} // Use single-select handler
+                              onSelect={() => toggleKoordinator(koordinator)} // Use toggle for multi-select
                             >
                               <Check
                                 className={cn(
