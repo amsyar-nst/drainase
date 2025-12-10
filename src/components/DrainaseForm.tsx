@@ -35,8 +35,9 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command"; // Re-import Command components
+// Removed Command imports as they are no longer needed
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox component
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
@@ -120,9 +121,9 @@ export const DrainaseForm = () => {
     formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
   );
 
-  // Re-introduced koordinator search term and popover open/close states
-  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
-  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
+  // Removed koordinator search term and popover open/close states
+  // const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
+  // const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
 
   // State for individual activity date input string
   const [activityDateInputStrings, setActivityDateInputStrings] = useState<string[]>([]);
@@ -1515,70 +1516,20 @@ export const DrainaseForm = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="koordinator">Koordinator</Label>
-              <Popover 
-                open={koordinatorPopoverOpen} 
-                onOpenChange={(isOpen) => {
-                  setKoordinatorPopoverOpen(isOpen);
-                  if (!isOpen) {
-                    setKoordinatorSearchTerm(""); // Reset search term when popover closes
-                  }
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={koordinatorPopoverOpen}
-                    className="w-full justify-between"
-                  >
-                    {currentKegiatan.koordinator.length > 0
-                      ? currentKegiatan.koordinator.join(", ") // Display all selected coordinators
-                      : "Pilih koordinator..."}
-                    <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="z-50 w-[--radix-popover-trigger-width] p-0" align="start" sideOffset={5}>
-                  <Command>
-                    <CommandInput
-                      placeholder="Cari koordinator..."
-                      value={koordinatorSearchTerm}
-                      onValueChange={setKoordinatorSearchTerm}
+              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-md p-2">
+                {koordinatorOptions.map((koordinator) => (
+                  <div key={koordinator} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`koordinator-${koordinator}`}
+                      checked={currentKegiatan.koordinator.includes(koordinator)}
+                      onCheckedChange={() => toggleKoordinator(koordinator)}
                     />
-                    <CommandList>
-                      <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        {koordinatorOptions
-                          .filter((koordinator) =>
-                            koordinator.toLowerCase().includes(koordinatorSearchTerm.toLowerCase())
-                          )
-                          .map((koordinator) => (
-                            <CommandItem
-                              key={koordinator}
-                              value={koordinator} 
-                              onSelect={() => { 
-                                toggleKoordinator(koordinator);
-                              }}
-                              onMouseDown={(e) => {
-                                e.preventDefault(); 
-                                e.stopPropagation(); 
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  currentKegiatan.koordinator.includes(koordinator)
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {koordinator}
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                    <Label htmlFor={`koordinator-${koordinator}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {koordinator}
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </div>
             {formData.reportType === "harian" && (
               <div className="space-y-2">
