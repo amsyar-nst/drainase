@@ -79,8 +79,8 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           const updatedOperasional = { ...o, [field]: value };
           if (field === "jenis") {
             if (value === "custom") {
-              updatedOperasional.jenis = ""; // Actual jenis will be taken from custom input later
-              setOperasionalCustomInputs((prev) => ({ ...prev, [id]: "" }));
+              updatedOperasional.jenis = "custom"; // Keep 'custom' in operasional.jenis
+              setOperasionalCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input to empty
             } else {
               setOperasionalCustomInputs((prev) => {
                 const newInputs = { ...prev };
@@ -130,11 +130,11 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 <SelectItem value="custom">Lainnya</SelectItem>
               </SelectContent>
             </Select>
-            {(!alatBeratOptions.includes(operasional.jenis) && operasional.jenis !== "") || (operasional.jenis === "custom") ? (
+            {operasional.jenis === "custom" ? (
               <Input
                 type="text"
                 placeholder="Masukkan jenis alat berat manual"
-                value={operasionalCustomInputs[operasional.id] || operasional.jenis}
+                value={operasionalCustomInputs[operasional.id] || ""}
                 onChange={(e) => updateOperasionalCustomInput(operasional.id, e.target.value)}
                 className="mt-2"
               />
@@ -149,9 +149,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               value={operasional.jumlah === 0 ? "" : operasional.jumlah.toString()}
               onChange={(e) => {
                 const value = e.target.value;
-                if (value === "") {
-                  updateOperasionalAlatBerat(operasional.id, "jumlah", 0);
-                } else if (/^\d{0,2}$/.test(value)) {
+                if (value === "" || /^\d{0,2}$/.test(value)) {
                   updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(value, 10));
                 }
               }}

@@ -35,9 +35,9 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command"; // Re-import Command components
-import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
-import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox component
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
+import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
@@ -496,9 +496,8 @@ export const DrainaseForm = () => {
           
           if (field === "jenis") {
             if (value === "custom") {
-              // If 'custom' is selected, clear the actual jenis and set custom input
-              updatedMaterial.jenis = ""; // Actual jenis will be taken from custom input later
-              setMaterialCustomInputs((prev) => ({ ...prev, [id]: "" }));
+              updatedMaterial.jenis = "custom"; // Keep 'custom' in material.jenis to trigger conditional rendering
+              setMaterialCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input to empty
             } else {
               // If a predefined option is selected, clear custom input
               setMaterialCustomInputs((prev) => {
@@ -563,8 +562,8 @@ export const DrainaseForm = () => {
           const updatedPeralatan = { ...p, [field]: value };
           if (field === "nama") {
             if (value === "custom") {
-              updatedPeralatan.nama = ""; // Actual nama will be taken from custom input later
-              setPeralatanCustomInputs((prev) => ({ ...prev, [id]: "" }));
+              updatedPeralatan.nama = "custom"; // Keep 'custom' in peralatan.nama
+              setPeralatanCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input to empty
             } else {
               setPeralatanCustomInputs((prev) => {
                 const newInputs = { ...prev };
@@ -857,7 +856,7 @@ export const DrainaseForm = () => {
 
         const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
           kegiatan_id: kegiatanData!.id,
-          jenis: o.jenis, // OperasionalAlatBeratSection will handle its own custom input logic
+          jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis, // Use custom input if 'custom' was selected
           jumlah: o.jumlah,
           dexlite_jumlah: o.dexliteJumlah,
           dexlite_satuan: o.dexliteSatuan,
@@ -1460,11 +1459,11 @@ export const DrainaseForm = () => {
                         <SelectItem value="custom">Lainnya</SelectItem>
                       </SelectContent>
                     </Select>
-                    {(!materialOptions.includes(material.jenis) && material.jenis !== "") || (material.jenis === "custom") ? (
+                    {material.jenis === "custom" ? (
                       <Input
                         type="text"
                         placeholder="Masukkan jenis material manual"
-                        value={materialCustomInputs[material.id] || material.jenis}
+                        value={materialCustomInputs[material.id] || ""}
                         onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
                         className="mt-2"
                       />
@@ -1547,11 +1546,11 @@ export const DrainaseForm = () => {
                       <SelectItem value="custom">Lainnya</SelectItem>
                     </SelectContent>
                   </Select>
-                  {(!peralatanOptions.includes(peralatan.nama) && peralatan.nama !== "") || (peralatan.nama === "custom") ? (
+                  {peralatan.nama === "custom" ? (
                     <Input
                       type="text"
                       placeholder="Masukkan nama peralatan manual"
-                      value={peralatanCustomInputs[peralatan.id] || peralatan.nama}
+                      value={peralatanCustomInputs[peralatan.id] || ""}
                       onChange={(e) => updatePeralatanCustomInput(peralatan.id, e.target.value)}
                       className="mt-2"
                     />
