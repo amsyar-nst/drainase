@@ -33,7 +33,8 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
   const kegiatansWithImages = await Promise.all(
     data.kegiatans.map(async (kegiatan) => ({
       ...kegiatan,
-      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))),
+      foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))),
+      foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))),
     }))
   );
 
@@ -102,8 +103,22 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           font-size: 7pt;
           vertical-align: top;
         }
-        .photo-cell {
-          width: 100px;
+        .photo-main-header-col {
+          width: 100px; /* Total width for both photo columns */
+          text-align: center;
+          padding: 4px 3px;
+          border: 1px solid #000;
+          vertical-align: middle;
+        }
+        .photo-sub-header-col {
+          width: 50px; /* Half of photo-main-header-col */
+          text-align: center;
+          padding: 4px 3px;
+          border: 1px solid #000;
+          vertical-align: middle;
+        }
+        .photo-cell { /* This will be for the actual image cells in tbody */
+          width: 50px; /* Each photo cell takes half the width */
           text-align: center;
           padding: 2px;
         }
@@ -165,17 +180,19 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       <table>
         <thead>
           <tr>
-            <th rowspan="2" class="no-col">NO</th>
-            <th rowspan="2" class="date-col">HARI/<br/>TANGGAL</th>
-            <th rowspan="2" class="location-col">LOKASI</th>
-            <th rowspan="2" class="photo-cell">FOTO SKET</th>
-            <th rowspan="2" class="alat-col">ALAT YANG DIBUTUHKAN</th>
+            <th rowspan="3" class="no-col">NO</th>
+            <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
+            <th rowspan="3" class="location-col">LOKASI</th>
+            <th colspan="2" class="photo-main-header-col">FOTO KONDISI EKSISTING</th>
+            <th rowspan="3" class="alat-col">ALAT YANG DIBUTUHKAN</th>
             <th colspan="2">TARGET</th>
             <th colspan="2">REALISASI</th>
             <th colspan="3">JUMLAH PERSONIL</th>
-            <th rowspan="2" class="keterangan-col">KETERANGAN</th>
+            <th rowspan="3" class="keterangan-col">KETERANGAN</th>
           </tr>
           <tr>
+            <th class="photo-sub-header-col">Sebelum</th>
+            <th class="photo-sub-header-col">Sesudah</th>
             <th class="target-col">PANJANG<br/>(M)</th>
             <th class="target-col">VOLUME<br/>(M³)</th>
             <th class="realisasi-col">PANJANG<br/>(M)</th>
@@ -193,7 +210,12 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 <div class="photo-container">
-                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
+                  ${kegiatan.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
+                </div>
+              </td>
+              <td class="photo-cell">
+                <div class="photo-container">
+                  ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
                 </div>
               </td>
               <td>

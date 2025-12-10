@@ -65,7 +65,7 @@ export const DrainaseForm = () => {
       foto0Url: [],
       foto50Url: [],
       foto100Url: [],
-      fotoSket: [],
+      fotoSket: [], // Keep fotoSket in type, but not used for tersier input
       fotoSketUrl: [],
       jenisSaluran: "",
       jenisSedimen: "",
@@ -333,7 +333,7 @@ export const DrainaseForm = () => {
             foto0: ensureArray(kegiatan.foto_0_url),
             foto50: ensureArray(kegiatan.foto_50_url),
             foto100: ensureArray(kegiatan.foto_100_url),
-            fotoSket: ensureArray(kegiatan.foto_sket_url),
+            fotoSket: ensureArray(kegiatan.foto_sket_url), // Keep fotoSket for loading, but not for tersier input
             foto0Url: ensureArray(kegiatan.foto_0_url),
             foto50Url: ensureArray(kegiatan.foto_50_url),
             foto100Url: ensureArray(kegiatan.foto_100_url),
@@ -746,10 +746,21 @@ export const DrainaseForm = () => {
       }
 
       for (const kegiatan of formData.kegiatans) {
-        const foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
-        const foto50Urls = await uploadFiles(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/50`);
-        const foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
-        const fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`);
+        let foto0Urls: string[] = [];
+        let foto50Urls: string[] = [];
+        let foto100Urls: string[] = [];
+        let fotoSketUrls: string[] = [];
+
+        if (formData.reportType === "tersier") {
+          foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
+          foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
+          // foto50 and fotoSket are not used for tersier input, so no upload needed
+        } else {
+          foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
+          foto50Urls = await uploadFiles(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/50`);
+          foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
+          fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`);
+        }
 
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
@@ -759,9 +770,9 @@ export const DrainaseForm = () => {
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
             foto_0_url: foto0Urls,
-            foto_50_url: foto50Urls,
+            foto_50_url: foto50Urls, // Will be empty for tersier
             foto_100_url: foto100Urls,
-            foto_sket_url: fotoSketUrls,
+            foto_sket_url: fotoSketUrls, // Will be empty for tersier
             jenis_saluran: kegiatan.jenisSaluran,
             jenis_sedimen: kegiatan.jenisSedimen,
             aktifitas_penanganan: kegiatan.aktifitasPenanganan,
@@ -1253,53 +1264,85 @@ export const DrainaseForm = () => {
               </div>
             </div>
           ) : (
-            // Tersier specific photo input (only Foto Sket)
-            <div className="grid gap-4 md:grid-cols-1">
+            // Tersier specific photo inputs (Foto 0% and Foto 100%)
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Foto 0% (Sebelum) */}
               <div className="space-y-2">
-                <Label htmlFor="foto-sket-tersier">Gambar Sket (Tersier)</Label>
+                <Label htmlFor="foto-0-tersier">Foto 0% (Sebelum)</Label>
                 <Input
-                  id="foto-sket-tersier"
+                  id="foto-0-tersier"
                   type="file"
-                  accept="image/*,application/pdf"
+                  accept="image/*"
                   multiple
-                  onChange={(e) => handleFileChange(e, 'fotoSket')}
+                  onChange={(e) => handleFileChange(e, 'foto0')}
                 />
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
+                  {(Array.isArray(currentKegiatan.foto0) ? currentKegiatan.foto0 : []).map((photo, index) => (
                     <div key={index} className="relative group">
-                      {typeof photo === 'string' && photo.endsWith('.pdf') ? (
-                        <a 
-                          href={photo} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
-                        >
-                          <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
-                        </a>
-                      ) : (
-                        <img 
-                          src={
-                            photo instanceof File 
-                              ? URL.createObjectURL(photo)
-                              : photo || ''
-                          } 
-                          alt={`Gambar Sket ${index + 1}`} 
-                          className="w-full h-24 object-cover rounded border cursor-pointer"
-                          onClick={() => {
-                            const url = photo instanceof File 
-                              ? URL.createObjectURL(photo)
-                              : photo || '';
-                            setPreviewUrl(url);
-                            setShowPreviewDialog(true);
-                          }}
-                        />
-                      )}
+                      <img
+                        src={
+                          photo instanceof File
+                            ? URL.createObjectURL(photo)
+                            : photo || ''
+                        }
+                        alt={`Foto 0% (Sebelum) ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border cursor-pointer"
+                        onClick={() => {
+                          const url = photo instanceof File
+                            ? URL.createObjectURL(photo)
+                            : photo || '';
+                          setPreviewUrl(url);
+                          setShowPreviewDialog(true);
+                        }}
+                      />
                       <Button
                         type="button"
                         variant="destructive"
                         size="icon"
                         className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removePhoto('fotoSket', index)}
+                        onClick={() => removePhoto('foto0', index)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Foto 100% (Sesudah) */}
+              <div className="space-y-2">
+                <Label htmlFor="foto-100-tersier">Foto 100% (Sesudah)</Label>
+                <Input
+                  id="foto-100-tersier"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleFileChange(e, 'foto100')}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Array.isArray(currentKegiatan.foto100) ? currentKegiatan.foto100 : []).map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={
+                          photo instanceof File
+                            ? URL.createObjectURL(photo)
+                            : photo || ''
+                        }
+                        alt={`Foto 100% (Sesudah) ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border cursor-pointer"
+                        onClick={() => {
+                          const url = photo instanceof File
+                            ? URL.createObjectURL(photo)
+                            : photo || '';
+                          setPreviewUrl(url);
+                          setShowPreviewDialog(true);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePhoto('foto100', index)}
                       >
                         <XCircle className="h-4 w-4" />
                       </Button>
