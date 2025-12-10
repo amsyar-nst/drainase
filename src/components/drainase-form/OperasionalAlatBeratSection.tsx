@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,23 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   currentKegiatan,
   updateCurrentKegiatan,
 }) => {
+  // State for custom inputs for Operasional Alat Berat
+  const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
+
+  // Effect to initialize custom inputs when currentKegiatan changes (e.g., on load or activity switch)
+  useEffect(() => {
+    const initialOperasionalCustomInputs: Record<string, string> = {};
+    currentKegiatan.operasionalAlatBerats.forEach(op => {
+      if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
+        initialOperasionalCustomInputs[op.id] = op.jenis;
+        // Temporarily set the 'jenis' to 'custom' for the select component to display correctly
+        // The actual value will be stored in operasionalCustomInputs
+        op.jenis = "custom"; 
+      }
+    });
+    setOperasionalCustomInputs(initialOperasionalCustomInputs);
+  }, [currentKegiatan.operasionalAlatBerats]);
+
 
   const addOperasionalAlatBerat = () => {
     const newOperasional: OperasionalAlatBerat = {
@@ -47,13 +64,44 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       updateCurrentKegiatan({
         operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.filter((o) => o.id !== id),
       });
+      setOperasionalCustomInputs((prev) => {
+        const newInputs = { ...prev };
+        delete newInputs[id];
+        return newInputs;
+      });
     }
   };
 
   const updateOperasionalAlatBerat = (id: string, field: keyof OperasionalAlatBerat, value: string | number) => {
     updateCurrentKegiatan({
+      operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map((o) => {
+        if (o.id === id) {
+          const updatedOperasional = { ...o, [field]: value };
+          if (field === "jenis") {
+            if (value === "custom") {
+              updatedOperasional.jenis = ""; // Actual jenis will be taken from custom input later
+              setOperasionalCustomInputs((prev) => ({ ...prev, [id]: "" }));
+            } else {
+              setOperasionalCustomInputs((prev) => {
+                const newInputs = { ...prev };
+                delete newInputs[id];
+                return newInputs;
+              });
+            }
+          }
+          return updatedOperasional;
+        }
+        return o;
+      }),
+    });
+  };
+
+  const updateOperasionalCustomInput = (id: string, value: string) => {
+    setOperasionalCustomInputs((prev) => ({ ...prev, [id]: value }));
+    // Also update the actual operasional.jenis in currentKegiatan
+    updateCurrentKegiatan({
       operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map((o) =>
-        o.id === id ? { ...o, [field]: value } : o
+        o.id === id ? { ...o, jenis: value } : o
       ),
     });
   };
@@ -67,7 +115,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           <div className="space-y-2 md:col-span-3">
             <Label>Jenis Alat Berat</Label>
             <Select
-              value={operasional.jenis}
+              value={alatBeratOptions.includes(operasional.jenis) ? operasional.jenis : "custom"}
               onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
             >
               <SelectTrigger>
@@ -79,8 +127,18 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                     {jenis}
                   </SelectItem>
                 ))}
+                <SelectItem value="custom">Lainnya</SelectItem>
               </SelectContent>
             </Select>
+            {(!alatBeratOptions.includes(operasional.jenis) && operasional.jenis !== "") || (operasional.jenis === "custom") ? (
+              <Input
+                type="text"
+                placeholder="Masukkan jenis alat berat manual"
+                value={operasionalCustomInputs[operasional.id] || operasional.jenis}
+                onChange={(e) => updateOperasionalCustomInput(operasional.id, e.target.value)}
+                className="mt-2"
+              />
+            ) : null}
           </div>
           {/* Jumlah */}
           <div className="space-y-2 md:col-span-1">

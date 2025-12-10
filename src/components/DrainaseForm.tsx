@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
-// Removed Command imports as they are no longer needed
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command"; // Re-import Command components
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox component
 
@@ -121,13 +121,15 @@ export const DrainaseForm = () => {
     formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
   );
 
-  // Removed koordinator search term and popover open/close states
-  // const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
-  // const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
+  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
+  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
 
   // State for individual activity date input string
   const [activityDateInputStrings, setActivityDateInputStrings] = useState<string[]>([]);
 
+  // States for custom inputs for Material and Peralatan
+  const [materialCustomInputs, setMaterialCustomInputs] = useState<Record<string, string>>({});
+  const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({});
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
@@ -298,6 +300,25 @@ export const DrainaseForm = () => {
             return [];
           };
 
+          // Initialize custom input states for loaded data
+          const initialMaterialCustomInputs: Record<string, string> = {};
+          materials.forEach(m => {
+            if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
+              initialMaterialCustomInputs[m.id] = m.jenis;
+              m.jenis = "custom"; // Set select value to 'custom'
+            }
+          });
+          setMaterialCustomInputs(initialMaterialCustomInputs);
+
+          const initialPeralatanCustomInputs: Record<string, string> = {};
+          peralatans.forEach(p => {
+            if (!peralatanOptions.includes(p.nama) && p.nama !== "") {
+              initialPeralatanCustomInputs[p.id] = p.nama;
+              p.nama = "custom"; // Set select value to 'custom'
+            }
+          });
+          setPeralatanCustomInputs(initialPeralatanCustomInputs);
+
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
@@ -459,6 +480,11 @@ export const DrainaseForm = () => {
       updateCurrentKegiatan({
         materials: currentKegiatan.materials.filter((m) => m.id !== id),
       });
+      setMaterialCustomInputs((prev) => {
+        const newInputs = { ...prev };
+        delete newInputs[id];
+        return newInputs;
+      });
     }
   };
 
@@ -468,11 +494,23 @@ export const DrainaseForm = () => {
         if (m.id === id) {
           const updatedMaterial = { ...m, [field]: value };
           
-          if (field === "jenis" && value) {
-            const normalizedJenis = value.toLowerCase().trim();
-            const defaultUnit = materialDefaultUnits[normalizedJenis];
-            if (defaultUnit) {
-              updatedMaterial.satuan = defaultUnit;
+          if (field === "jenis") {
+            if (value === "custom") {
+              // If 'custom' is selected, clear the actual jenis and set custom input
+              updatedMaterial.jenis = ""; // Actual jenis will be taken from custom input later
+              setMaterialCustomInputs((prev) => ({ ...prev, [id]: "" }));
+            } else {
+              // If a predefined option is selected, clear custom input
+              setMaterialCustomInputs((prev) => {
+                const newInputs = { ...prev };
+                delete newInputs[id];
+                return newInputs;
+              });
+              const normalizedJenis = value.toLowerCase().trim();
+              const defaultUnit = materialDefaultUnits[normalizedJenis];
+              if (defaultUnit) {
+                updatedMaterial.satuan = defaultUnit;
+              }
             }
           }
           
@@ -480,6 +518,16 @@ export const DrainaseForm = () => {
         }
         return m;
       }),
+    });
+  };
+
+  const updateMaterialCustomInput = (id: string, value: string) => {
+    setMaterialCustomInputs((prev) => ({ ...prev, [id]: value }));
+    // Also update the actual material.jenis in formData
+    updateCurrentKegiatan({
+      materials: currentKegiatan.materials.map((m) =>
+        m.id === id ? { ...m, jenis: value } : m
+      ),
     });
   };
 
@@ -500,13 +548,44 @@ export const DrainaseForm = () => {
       updateCurrentKegiatan({
         peralatans: currentKegiatan.peralatans.filter((p) => p.id !== id),
       });
+      setPeralatanCustomInputs((prev) => {
+        const newInputs = { ...prev };
+        delete newInputs[id];
+        return newInputs;
+      });
     }
   };
 
   const updatePeralatan = (id: string, field: keyof Peralatan, value: string | number) => {
     updateCurrentKegiatan({
+      peralatans: currentKegiatan.peralatans.map((p) => {
+        if (p.id === id) {
+          const updatedPeralatan = { ...p, [field]: value };
+          if (field === "nama") {
+            if (value === "custom") {
+              updatedPeralatan.nama = ""; // Actual nama will be taken from custom input later
+              setPeralatanCustomInputs((prev) => ({ ...prev, [id]: "" }));
+            } else {
+              setPeralatanCustomInputs((prev) => {
+                const newInputs = { ...prev };
+                delete newInputs[id];
+                return newInputs;
+              });
+            }
+          }
+          return updatedPeralatan;
+        }
+        return p;
+      }),
+    });
+  };
+
+  const updatePeralatanCustomInput = (id: string, value: string) => {
+    setPeralatanCustomInputs((prev) => ({ ...prev, [id]: value }));
+    // Also update the actual peralatan.nama in formData
+    updateCurrentKegiatan({
       peralatans: currentKegiatan.peralatans.map((p) =>
-        p.id === id ? { ...p, [field]: value } : p
+        p.id === id ? { ...p, nama: value } : p
       ),
     });
   };
@@ -747,7 +826,7 @@ export const DrainaseForm = () => {
 
         const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.jenis || m.satuan).map(m => ({
           kegiatan_id: kegiatanData!.id,
-          jenis: m.jenis,
+          jenis: m.jenis === "custom" ? materialCustomInputs[m.id] || "" : m.jenis, // Use custom input if 'custom' was selected
           jumlah: m.jumlah,
           satuan: m.satuan,
           keterangan: m.keterangan,
@@ -763,7 +842,7 @@ export const DrainaseForm = () => {
 
         const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
           kegiatan_id: kegiatanData!.id,
-          nama: p.nama,
+          nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama, // Use custom input if 'custom' was selected
           jumlah: p.jumlah,
           satuan: p.satuan,
         }));
@@ -778,7 +857,7 @@ export const DrainaseForm = () => {
 
         const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
           kegiatan_id: kegiatanData!.id,
-          jenis: o.jenis,
+          jenis: o.jenis, // OperasionalAlatBeratSection will handle its own custom input logic
           jumlah: o.jumlah,
           dexlite_jumlah: o.dexliteJumlah,
           dexlite_satuan: o.dexliteSatuan,
@@ -1366,7 +1445,7 @@ export const DrainaseForm = () => {
                   <div className="space-y-2">
                     <Label>Jenis Material</Label>
                     <Select
-                      value={material.jenis}
+                      value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
                       onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
                     >
                       <SelectTrigger>
@@ -1378,8 +1457,18 @@ export const DrainaseForm = () => {
                             {jenis}
                           </SelectItem>
                         ))}
+                        <SelectItem value="custom">Lainnya</SelectItem>
                       </SelectContent>
                     </Select>
+                    {(!materialOptions.includes(material.jenis) && material.jenis !== "") || (material.jenis === "custom") ? (
+                      <Input
+                        type="text"
+                        placeholder="Masukkan jenis material manual"
+                        value={materialCustomInputs[material.id] || material.jenis}
+                        onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
+                        className="mt-2"
+                      />
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <Label>Jumlah</Label>
@@ -1443,7 +1532,7 @@ export const DrainaseForm = () => {
                 <div className="space-y-2 md:col-span-2">
                   <Label>Nama Peralatan</Label>
                   <Select
-                    value={peralatan.nama}
+                    value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
                     onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
                   >
                     <SelectTrigger>
@@ -1455,8 +1544,18 @@ export const DrainaseForm = () => {
                           {nama}
                         </SelectItem>
                       ))}
+                      <SelectItem value="custom">Lainnya</SelectItem>
                     </SelectContent>
                   </Select>
+                  {(!peralatanOptions.includes(peralatan.nama) && peralatan.nama !== "") || (peralatan.nama === "custom") ? (
+                    <Input
+                      type="text"
+                      placeholder="Masukkan nama peralatan manual"
+                      value={peralatanCustomInputs[peralatan.id] || peralatan.nama}
+                      onChange={(e) => updatePeralatanCustomInput(peralatan.id, e.target.value)}
+                      className="mt-2"
+                    />
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label>Jumlah</Label>
