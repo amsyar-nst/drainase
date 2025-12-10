@@ -189,8 +189,8 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="2" class="no-col">No</th>
             <th rowspan="2" class="hari-tanggal-col">Hari/Tanggal</th>
             <th rowspan="2" class="lokasi-col">Lokasi</th>
-            <th colspan="2" rowspan="2">Sebelum (Photo 0%)</th>
-            <th colspan="2" rowspan="2">Sesudah (Photo 100%)</th>
+            <th rowspan="2" class="photo-cell">Sebelum<br/>(Foto Kondisi Eksisting)</th>
+            <th rowspan="2" class="photo-cell">Sesudah<br/>(Foto Kondisi Eksisting)</th>
             <th rowspan="2" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
             <th colspan="2">Alat yang dibutuhkan</th>
             <th colspan="2">Orang<br/>Kebutuhan Tenaga<br/>Kerja</th>
@@ -217,12 +217,12 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
               <td class="center">${index + 1}</td>
               <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
-              <td class="photo-cell" colspan="2">
+              <td class="photo-cell">
                 <div class="photo-container">
                   ${kegiatan.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
                 </div>
               </td>
-              <td class="photo-cell" colspan="2">
+              <td class="photo-cell">
                 <div class="photo-container">
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
                 </div>
