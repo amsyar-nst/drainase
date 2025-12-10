@@ -1,12 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, List } from "lucide-react"; // Added List icon
+import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
 import { alatBeratOptions } from "@/data/kecamatan-kelurahan";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command"; // Added CommandInput
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 interface OperasionalAlatBeratSectionProps {
@@ -18,14 +23,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   currentKegiatan,
   updateCurrentKegiatan,
 }) => {
-  // State to control which popover is open
-  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
-  // State to manage search terms for each operasional item
-  const [operasionalSearchTerms, setOperasionalSearchTerms] = useState<Record<string, string>>({});
-
-  const handleOperasionalSearchChange = (operasionalId: string, value: string) => {
-    setOperasionalSearchTerms(prev => ({ ...prev, [operasionalId]: value }));
-  };
 
   const addOperasionalAlatBerat = () => {
     const newOperasional: OperasionalAlatBerat = {
@@ -50,14 +47,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       updateCurrentKegiatan({
         operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.filter((o) => o.id !== id),
       });
-      if (openPopoverId === id) {
-        setOpenPopoverId(null);
-      }
-      setOperasionalSearchTerms(prev => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
-      });
     }
   };
 
@@ -71,90 +60,44 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
 
   return (
     <div className="space-y-4">
-      <Label>Operasional Alat Berat</Label> {/* Label remains at the top */}
+      <Label>Operasional Alat Berat</Label>
       {currentKegiatan.operasionalAlatBerats.map((operasional) => (
         <div key={operasional.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
           {/* Jenis Alat Berat */}
           <div className="space-y-2 md:col-span-3">
             <Label>Jenis Alat Berat</Label>
-            <Popover
-              open={openPopoverId === operasional.id}
-              onOpenChange={(isOpen) => {
-                setOpenPopoverId(isOpen ? operasional.id : null);
-                if (isOpen) {
-                  setOperasionalSearchTerms(prev => ({ ...prev, [operasional.id]: operasional.jenis }));
-                } else {
-                  setOperasionalSearchTerms(prev => {
-                    const newState = { ...prev };
-                    delete newState[operasional.id];
-                    return newState;
-                  });
-                }
-              }}
+            <Select
+              value={operasional.jenis}
+              onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
             >
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openPopoverId === operasional.id}
-                  className="w-full justify-between"
-                >
-                  {operasional.jenis || "Pilih atau ketik jenis alat berat..."}
-                  <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
-                <Command>
-                  <CommandInput
-                    placeholder="Cari jenis alat berat..."
-                    value={operasionalSearchTerms[operasional.id] || ""}
-                    onValueChange={(value) => handleOperasionalSearchChange(operasional.id, value)}
-                  />
-                  <CommandList>
-                    <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis alat berat baru.</CommandEmpty>
-                    <CommandGroup>
-                      {alatBeratOptions
-                        .filter((jenis) =>
-                          jenis.toLowerCase().includes((operasionalSearchTerms[operasional.id] || "").toLowerCase())
-                        )
-                        .map((jenis) => (
-                          <CommandItem
-                            key={jenis}
-                            onSelect={() => {
-                              updateOperasionalAlatBerat(operasional.id, "jenis", jenis);
-                              setOpenPopoverId(null);
-                              setOperasionalSearchTerms(prev => {
-                                const newState = { ...prev };
-                                delete newState[operasional.id];
-                                return newState;
-                              });
-                            }}
-                          >
-                            {jenis}
-                          </CommandItem>
-                        ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih jenis alat berat" />
+              </SelectTrigger>
+              <SelectContent>
+                {alatBeratOptions.map((jenis) => (
+                  <SelectItem key={jenis} value={jenis}>
+                    {jenis}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {/* Jumlah */}
           <div className="space-y-2 md:col-span-1">
             <Label>Jumlah</Label>
             <Input
-              type="text" // Changed to text
+              type="text"
               placeholder="0"
-              value={operasional.jumlah === 0 ? "" : operasional.jumlah.toString()} // Display empty if 0
+              value={operasional.jumlah === 0 ? "" : operasional.jumlah.toString()}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === "") {
-                  updateOperasionalAlatBerat(operasional.id, "jumlah", 0); // Save as 0 if empty
-                } else if (/^\d{0,2}$/.test(value)) { // Allow 0 to 2 digits
+                  updateOperasionalAlatBerat(operasional.id, "jumlah", 0);
+                } else if (/^\d{0,2}$/.test(value)) {
                   updateOperasionalAlatBerat(operasional.id, "jumlah", parseInt(value, 10));
                 }
               }}
-              maxLength={2} // Add maxLength attribute
+              maxLength={2}
             />
           </div>
           {/* Dexlite Jumlah */}
@@ -211,7 +154,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           </div>
         </div>
       ))}
-      <div className="flex justify-end"> {/* Moved button here */}
+      <div className="flex justify-end">
         <Button type="button" variant="outline" size="sm" onClick={addOperasionalAlatBerat}>
           <Plus className="h-4 w-4 mr-1" />
           Tambah Operasional Alat Berat
