@@ -126,7 +126,6 @@ export type Database = {
           created_at: string
           id: string
           periode: string
-          tanggal: string
           updated_at: string
           report_type: string | null
         }
@@ -134,7 +133,6 @@ export type Database = {
           created_at?: string
           id?: string
           periode: string
-          tanggal: string
           updated_at?: string
           report_type?: string | null
         }
@@ -142,7 +140,6 @@ export type Database = {
           created_at?: string
           id?: string
           periode?: string
-          tanggal?: string
           updated_at?: string
           report_type?: string | null
         }

@@ -27,12 +27,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import DrainasePrintDialog from "@/components/DrainasePrintDialog";
+import { DrainasePrintDialog } from "@/components/DrainasePrintDialog"; // Perbaikan: Menggunakan named import
 
 interface LaporanItem {
   id: string;
-  tanggal: string;
-  periode: string;
+  periode: string; // Changed from tanggal
   created_at: string;
   kegiatan_count: number;
   report_type: "harian" | "bulanan" | "tersier";
@@ -69,7 +68,7 @@ const LaporanList = () => {
       let laporanQuery = supabase
         .from("laporan_drainase")
         .select("*")
-        .order("tanggal", { ascending: false });
+        .order("created_at", { ascending: false }); // Order by created_at as tanggal is removed
 
       if (filterPeriod) {
         laporanQuery = laporanQuery.eq("periode", filterPeriod);
@@ -260,9 +259,8 @@ const LaporanList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">Tanggal</TableHead>
+                      <TableHead className="min-w-[120px]">Periode</TableHead> {/* Changed from Tanggal */}
                       <TableHead className="min-w-[100px]">Jenis Laporan</TableHead>
-                      <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
                       <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
                       <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
                       <TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
@@ -272,10 +270,9 @@ const LaporanList = () => {
                     {laporans.map((laporan) => (
                       <TableRow key={laporan.id}>
                         <TableCell className="font-medium">
-                          {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
+                          {laporan.periode} {/* Display periode */}
                         </TableCell>
                         <TableCell className="capitalize">{laporan.report_type}</TableCell>
-                        <TableCell className="hidden md:table-cell">{laporan.periode}</TableCell>
                         <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell>
                         <TableCell className="hidden md:table-cell">
                           {format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}

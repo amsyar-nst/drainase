@@ -29,12 +29,7 @@ interface DrainasePrintDialogProps {
   filterPeriod: string | null;
 }
 
-interface KegiatanItemForPrint extends KegiatanDrainase {
-  tanggalKegiatan: string;
-  laporanTanggal: Date;
-}
-
-const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
+export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   isOpen,
   onClose,
   laporanIdsToFetch,
@@ -63,33 +58,30 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       const fetchedKegiatans: KegiatanItemForPrint[] = [];
       
       let targetLaporanIds = laporanIdsToFetch;
-      let periodLaporanDates: { [key: string]: Date } = {};
       let periodLaporanPeriode: { [key: string]: string } = {};
       let periodLaporanReportType: { [key: string]: "harian" | "bulanan" | "tersier" } = {};
 
       if (reportType === "bulanan" && filterPeriod) {
         const { data: periodLaporans, error: periodError } = await supabase
           .from("laporan_drainase")
-          .select("id, tanggal, periode, report_type")
+          .select("id, periode, report_type")
           .eq("periode", filterPeriod)
           .eq("report_type", "harian") // Only fetch harian reports for monthly aggregation
-          .order("tanggal", { ascending: true });
+          .order("created_at", { ascending: true }); // Order by created_at as tanggal is removed
 
         if (periodError) throw periodError;
         targetLaporanIds = periodLaporans.map(l => l.id);
         periodLaporans.forEach(l => {
-          periodLaporanDates[l.id] = new Date(l.tanggal);
           periodLaporanPeriode[l.id] = l.periode;
           periodLaporanReportType[l.id] = l.report_type as "harian" | "bulanan" | "tersier";
         });
-      } else if (reportType === "harian" || reportType === "tersier" && laporanIdsToFetch.length > 0) {
+      } else if ((reportType === "harian" || reportType === "tersier") && laporanIdsToFetch.length > 0) {
         const { data: singleLaporan, error: singleLaporanError } = await supabase
           .from("laporan_drainase")
-          .select("tanggal, periode, report_type")
+          .select("periode, report_type")
           .eq("id", laporanIdsToFetch[0])
           .single();
         if (singleLaporanError) throw singleLaporanError;
-        periodLaporanDates[laporanIdsToFetch[0]] = new Date(singleLaporan.tanggal);
         periodLaporanPeriode[laporanIdsToFetch[0]] = singleLaporan.periode;
         periodLaporanReportType[laporanIdsToFetch[0]] = singleLaporan.report_type as "harian" | "bulanan" | "tersier";
       }
@@ -103,11 +95,10 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       }
 
       for (const laporanId of targetLaporanIds) {
-        const currentLaporanDate = periodLaporanDates[laporanId];
         const currentPeriode = periodLaporanPeriode[laporanId];
         const currentReportType = periodLaporanReportType[laporanId];
 
-        if (!currentLaporanDate || !currentPeriode || !currentReportType) {
+        if (!currentPeriode || !currentReportType) {
           console.warn(`Laporan details not found for ID ${laporanId}. Skipping activities.`);
           continue;
         }
@@ -125,6 +116,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         }
 
         const mappedKegiatans: KegiatanItemForPrint[] = (kegiatanData || []).map((kegiatan) => {
+          const hariTanggal = kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : null;
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
@@ -152,9 +144,9 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             jumlahPHL: kegiatan.jumlah_phl || 1,
             keterangan: kegiatan.keterangan || "",
 
-            tanggalKegiatan: format(currentLaporanDate, "dd MMMM yyyy", { locale: idLocale }),
-            laporanTanggal: currentLaporanDate,
-            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : null,
+            tanggalKegiatan: hariTanggal ? format(hariTanggal, "dd MMMM yyyy", { locale: idLocale }) : 'N/A',
+            laporanPeriode: currentPeriode, // Use laporanPeriode
+            hariTanggal: hariTanggal,
             // Tersier specific fields
             jumlahUPT: kegiatan.jumlah_upt || 0,
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
@@ -169,9 +161,10 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         fetchedKegiatans.push(...mappedKegiatans);
       }
 
+      // Sort by hariTanggal for consistent monthly reports
       fetchedKegiatans.sort((a, b) => {
-        if (a.laporanTanggal.getTime() !== b.laporanTanggal.getTime()) {
-          return a.laporanTanggal.getTime() - b.laporanTanggal.getTime();
+        if (a.hariTanggal && b.hariTanggal) {
+          return a.hariTanggal.getTime() - b.hariTanggal.getTime();
         }
         return 0; 
       });
@@ -269,18 +262,20 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         }
       }
 
-      selectedKegiatansWithDetails.sort((a, b) => a.laporanTanggal.getTime() - b.laporanTanggal.getTime());
+      selectedKegiatansWithDetails.sort((a, b) => {
+        if (a.hariTanggal && b.hariTanggal) {
+          return a.hariTanggal.getTime() - b.hariTanggal.getTime();
+        }
+        return 0;
+      });
 
-      const overallPeriode = filterPeriod || format(selectedKegiatansWithDetails[0].laporanTanggal, 'MMMM yyyy', { locale: idLocale });
-      const overallTanggal = selectedKegiatansWithDetails[0].laporanTanggal;
-
+      const overallPeriode = filterPeriod || (selectedKegiatansWithDetails.length > 0 ? selectedKegiatansWithDetails[0].laporanPeriode : format(new Date(), 'MMMM yyyy', { locale: idLocale }));
+      
       const laporanToPrint: LaporanDrainase = {
-        tanggal: overallTanggal,
         periode: overallPeriode,
         reportType: reportType,
-        kegiatans: selectedKegiatansWithDetails.map(({ laporanTanggal, tanggalKegiatan, ...rest }) => ({
+        kegiatans: selectedKegiatansWithDetails.map(({ laporanPeriode, tanggalKegiatan, ...rest }) => ({
           ...rest,
-          hariTanggal: laporanTanggal,
         })),
       };
 
@@ -394,7 +389,3 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-};
-
-export default DrainasePrintDialog;

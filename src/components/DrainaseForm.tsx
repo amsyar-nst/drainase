@@ -42,7 +42,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
   "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
-  "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
+  "Padat & Batu", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
   "Batu/ Padat & Cair", "Sampah"
 ];
 
@@ -52,7 +52,6 @@ export const DrainaseForm = () => {
   const location = useLocation();
 
   const [formData, setFormData] = useState<LaporanDrainase>({
-    tanggal: new Date(),
     periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
     reportType: "harian",
     kegiatans: [{
@@ -117,9 +116,7 @@ export const DrainaseForm = () => {
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
   const [customSedimen, setCustomSedimen] = useState("");
 
-  const [dateInputString, setDateInputString] = useState<string>(
-    formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
-  );
+  // Removed dateInputString and related state/handlers for "Tanggal Laporan Utama"
 
   const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
@@ -165,13 +162,7 @@ export const DrainaseForm = () => {
     }
   }, [formData.kegiatans, currentKegiatanIndex]);
 
-  useEffect(() => {
-    if (formData.tanggal) {
-      setDateInputString(format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }));
-    } else {
-      setDateInputString("");
-    }
-  }, [formData.tanggal]);
+  // Removed useEffect for formData.tanggal
 
   useEffect(() => {
     if (currentKegiatan.jenisSedimen) {
@@ -375,7 +366,6 @@ export const DrainaseForm = () => {
       );
 
       setFormData({
-        tanggal: new Date(laporanData.tanggal),
         periode: laporanData.periode,
         reportType: (laporanData.report_type || "harian") as "harian" | "bulanan" | "tersier",
         kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
@@ -654,15 +644,15 @@ export const DrainaseForm = () => {
   };
 
   const handlePrintPreview = async () => {
-    if (!formData.tanggal) {
-      toast.error("Mohon isi tanggal laporan.");
-      return;
-    }
+    // For preview, we can use the current date as a placeholder if hariTanggal is null
+    const tempLaporanDate = currentKegiatan.hariTanggal || new Date(); 
     const laporanForPdf: LaporanDrainase = {
-      tanggal: formData.tanggal,
       periode: formData.periode,
       reportType: formData.reportType,
-      kegiatans: formData.kegiatans,
+      kegiatans: formData.kegiatans.map(k => ({
+        ...k,
+        hariTanggal: k.hariTanggal || tempLaporanDate // Ensure hariTanggal is not null for PDF
+      })),
     };
     try {
       let blob: Blob;
@@ -682,15 +672,15 @@ export const DrainaseForm = () => {
   };
 
   const handlePrintDownload = async () => {
-    if (!formData.tanggal) {
-      toast.error("Mohon isi tanggal laporan.");
-      return;
-    }
+    // For download, we can use the current date as a placeholder if hariTanggal is null
+    const tempLaporanDate = currentKegiatan.hariTanggal || new Date();
     const laporanForPdf: LaporanDrainase = {
-      tanggal: formData.tanggal,
       periode: formData.periode,
       reportType: formData.reportType,
-      kegiatans: formData.kegiatans,
+      kegiatans: formData.kegiatans.map(k => ({
+        ...k,
+        hariTanggal: k.hariTanggal || tempLaporanDate // Ensure hariTanggal is not null for PDF
+      })),
     };
     try {
       if (formData.reportType === "tersier") {
@@ -710,20 +700,14 @@ export const DrainaseForm = () => {
     try {
       let currentLaporanId = laporanId;
 
-      if (!formData.tanggal) {
-        toast.error("Mohon isi tanggal laporan.");
-        setIsSaving(false);
-        return;
-      }
-
-      const periodeFormatted = format(formData.tanggal, 'MMMM yyyy', { locale: idLocale });
+      // Ensure periode is set, default to current month/year if not explicitly set
+      const finalPeriode = formData.periode || format(new Date(), 'MMMM yyyy', { locale: idLocale });
 
       if (currentLaporanId) {
         const { error: updateError } = await supabase
           .from('laporan_drainase')
           .update({
-            tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
-            periode: periodeFormatted,
+            periode: finalPeriode,
             report_type: formData.reportType,
           })
           .eq('id', currentLaporanId);
@@ -750,8 +734,7 @@ export const DrainaseForm = () => {
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
           .insert({
-            tanggal: format(formData.tanggal, 'yyyy-MM-dd'),
-            periode: periodeFormatted,
+            periode: finalPeriode,
             report_type: formData.reportType,
           })
           .select()
@@ -868,29 +851,7 @@ export const DrainaseForm = () => {
     }
   };
 
-  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setDateInputString(value);
-
-    if (value === "") {
-      setFormData((prev) => ({ ...prev, tanggal: null }));
-    } else {
-      const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
-      if (isValid(parsedDate)) {
-        setFormData((prev) => ({ ...prev, tanggal: parsedDate, periode: format(parsedDate, 'MMMM yyyy', { locale: idLocale }) }));
-      }
-    }
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setFormData((prev) => ({ ...prev, tanggal: date, periode: format(date, 'MMMM yyyy', { locale: idLocale }) }));
-      setDateInputString(format(date, "dd/MM/yyyy", { locale: idLocale }));
-    } else {
-      setFormData((prev) => ({ ...prev, tanggal: null, periode: "" }));
-      setDateInputString("");
-    }
-  };
+  // Removed handleDateInputChange and handleDateSelect
 
   const handleActivityDateInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
@@ -904,6 +865,10 @@ export const DrainaseForm = () => {
       const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
       if (isValid(parsedDate)) {
         updateCurrentKegiatan({ hariTanggal: parsedDate });
+        // Update main form periode based on the first activity's date if it's a new report
+        if (!laporanId && index === 0) {
+          setFormData((prev) => ({ ...prev, periode: format(parsedDate, 'MMMM yyyy', { locale: idLocale }) }));
+        }
       }
     }
   };
@@ -914,6 +879,10 @@ export const DrainaseForm = () => {
       const newActivityDateInputStrings = [...activityDateInputStrings];
       newActivityDateInputStrings[index] = format(date, "dd/MM/yyyy", { locale: idLocale });
       setActivityDateInputStrings(newActivityDateInputStrings);
+      // Update main form periode based on the first activity's date if it's a new report
+      if (!laporanId && index === 0) {
+        setFormData((prev) => ({ ...prev, periode: format(date, 'MMMM yyyy', { locale: idLocale }) }));
+      }
     } else {
       updateCurrentKegiatan({ hariTanggal: null });
       const newActivityDateInputStrings = [...activityDateInputStrings];
@@ -998,40 +967,21 @@ export const DrainaseForm = () => {
             </Select>
           </div>
 
-          {/* Tanggal Laporan Utama (Always visible) */}
+          {/* Periode Laporan (Always visible, now the primary time identifier) */}
           <div className="space-y-2">
-            <Label htmlFor="tanggal">Tanggal Laporan Utama</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="tanggal"
-                value={dateInputString}
-                onChange={handleDateInputChange}
-                placeholder="dd/MM/yyyy"
-                className={cn(
-                  "w-full justify-start text-left font-normal pr-10",
-                  !formData.tanggal && "text-muted-foreground"
-                )}
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
-                  >
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
-                  <Calendar
-                    mode="single"
-                    selected={formData.tanggal || undefined}
-                    onSelect={handleDateSelect}
-                    initialFocus
-                    locale={idLocale}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <Label htmlFor="periode-laporan">Periode Laporan</Label>
+            <Input
+              id="periode-laporan"
+              value={formData.periode}
+              onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
+              placeholder="Contoh: November 2025"
+              disabled={formData.reportType !== "bulanan"} // Only allow manual edit for monthly reports
+            />
+            {formData.reportType !== "bulanan" && (
+              <p className="text-xs text-muted-foreground">
+                Periode laporan otomatis diambil dari Hari/Tanggal Kegiatan pertama.
+              </p>
+            )}
           </div>
 
           {/* Hari/Tanggal Kegiatan (Only for Harian and Tersier) */}

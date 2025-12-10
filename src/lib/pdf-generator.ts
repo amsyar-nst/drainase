@@ -48,7 +48,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Laporan Drainase - ${format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })}</title>
+      <title>Laporan Drainase - ${data.periode}</title>
       <style>
         @page {
           size: A3 landscape; /* Changed to A3 landscape */
@@ -203,7 +203,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         <div class="report-title">LAPORAN HARIAN PEMELIHARAAN DRAINASE</div>
       </div>
 
-      <div class="period">Periode : ${format(data.tanggal || new Date(), "MMMM yyyy", { locale: id })}</div>
+      <div class="period">Periode : ${data.periode}</div>
 
       <table>
         <thead>
@@ -243,7 +243,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           ${kegiatansWithImages.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
-              <td>${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
+              <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
               <td class="photo-cell">
                 <div class="photo-container">

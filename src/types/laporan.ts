@@ -65,7 +65,6 @@ export interface KegiatanDrainase {
 }
 
 export interface LaporanDrainase {
-  tanggal: Date | null;
   periode: string;
   reportType: "harian" | "bulanan" | "tersier";
   kegiatans: KegiatanDrainase[];
