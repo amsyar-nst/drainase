@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, List } from "lucide-react"; // Added List icon
 import { KegiatanDrainase, OperasionalAlatBerat } from "@/types/laporan";
 import { alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"; 
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command"; // Added CommandInput
 import { Textarea } from "@/components/ui/textarea";
 
 interface OperasionalAlatBeratSectionProps {
@@ -70,17 +70,23 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               onOpenChange={(isOpen) => setOpenPopoverId(isOpen ? operasional.id : null)}
             >
               <PopoverTrigger asChild>
-                <Input
-                  type="text"
-                  placeholder="Pilih atau ketik"
-                  value={operasional.jenis}
-                  onChange={(e) => {
-                    updateOperasionalAlatBerat(operasional.id, "jenis", e.target.value);
-                  }}
-                />
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openPopoverId === operasional.id}
+                  className="w-full justify-between"
+                >
+                  {operasional.jenis || "Pilih atau ketik jenis alat berat..."}
+                  <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
               </PopoverTrigger>
               <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                 <Command>
+                  <CommandInput
+                    placeholder="Cari jenis alat berat..."
+                    value={operasional.jenis}
+                    onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
+                  />
                   <CommandList>
                     <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis alat berat baru.</CommandEmpty>
                     <CommandGroup>

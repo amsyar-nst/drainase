@@ -114,6 +114,7 @@ export const DrainaseForm = () => {
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
+  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState(""); // New state for koordinator search
   
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
   const [customSedimen, setCustomSedimen] = useState("");
@@ -505,6 +506,7 @@ export const DrainaseForm = () => {
         koordinator: [...currentCoordinators, koordinatorName],
       });
     }
+    setKoordinatorSearchTerm(""); // Clear search term after selection
   };
 
   const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
@@ -1103,61 +1105,59 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {/* Foto Sket (Only for Tersier) */}
-            {formData.reportType === "tersier" && (
-              <div className="space-y-2">
-                <Label htmlFor="foto-sket">Gambar Sket</Label>
-                <Input
-                  id="foto-sket"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  multiple
-                  onChange={(e) => handleFileChange(e, 'fotoSket')}
-                />
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
-                    <div key={index} className="relative group">
-                      {typeof photo === 'string' && photo.endsWith('.pdf') ? (
-                        <a 
-                          href={photo} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
-                        >
-                          <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
-                        </a>
-                      ) : (
-                        <img 
-                          src={
-                            photo instanceof File 
-                              ? URL.createObjectURL(photo)
-                              : photo || ''
-                          } 
-                          alt={`Gambar Sket ${index + 1}`} 
-                          className="w-full h-24 object-cover rounded border cursor-pointer"
-                          onClick={() => {
-                            const url = photo instanceof File 
-                              ? URL.createObjectURL(photo)
-                              : photo || '';
-                            setPreviewUrl(url);
-                            setShowPreviewDialog(true);
-                          }}
-                        />
-                      )}
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removePhoto('fotoSket', index)}
+            {/* Foto Sket (Now always visible) */}
+            <div className="space-y-2">
+              <Label htmlFor="foto-sket">Gambar Sket</Label>
+              <Input
+                id="foto-sket"
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                onChange={(e) => handleFileChange(e, 'fotoSket')}
+              />
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
+                  <div key={index} className="relative group">
+                    {typeof photo === 'string' && photo.endsWith('.pdf') ? (
+                      <a 
+                        href={photo} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
                       >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                        <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
+                      </a>
+                    ) : (
+                      <img 
+                        src={
+                          photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || ''
+                        } 
+                        alt={`Gambar Sket ${index + 1}`} 
+                        className="w-full h-24 object-cover rounded border cursor-pointer"
+                        onClick={() => {
+                          const url = photo instanceof File 
+                            ? URL.createObjectURL(photo)
+                            : photo || '';
+                          setPreviewUrl(url);
+                          setShowPreviewDialog(true);
+                        }}
+                      />
+                    )}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto('fotoSket', index)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Jenis Saluran & Sedimen */}
@@ -1509,25 +1509,36 @@ export const DrainaseForm = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                   <Command>
-                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                    <CommandGroup>
-                      {koordinatorOptions.map((koordinator) => (
-                        <CommandItem
-                          key={koordinator}
-                          onSelect={() => toggleKoordinator(koordinator)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              currentKegiatan.koordinator.includes(koordinator)
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          {koordinator}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                    <CommandInput
+                      placeholder="Cari koordinator..."
+                      value={koordinatorSearchTerm}
+                      onValueChange={setKoordinatorSearchTerm}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        {koordinatorOptions
+                          .filter((koordinator) =>
+                            koordinator.toLowerCase().includes(koordinatorSearchTerm.toLowerCase())
+                          )
+                          .map((koordinator) => (
+                            <CommandItem
+                              key={koordinator}
+                              onSelect={() => toggleKoordinator(koordinator)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  currentKegiatan.koordinator.includes(koordinator)
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {koordinator}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
