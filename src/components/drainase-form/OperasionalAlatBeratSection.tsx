@@ -18,7 +18,14 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   currentKegiatan,
   updateCurrentKegiatan,
 }) => {
+  // State to control which popover is open
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+  // State to manage search terms for each operasional item
+  const [operasionalSearchTerms, setOperasionalSearchTerms] = useState<Record<string, string>>({});
+
+  const handleOperasionalSearchChange = (operasionalId: string, value: string) => {
+    setOperasionalSearchTerms(prev => ({ ...prev, [operasionalId]: value }));
+  };
 
   const addOperasionalAlatBerat = () => {
     const newOperasional: OperasionalAlatBerat = {
@@ -46,6 +53,11 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       if (openPopoverId === id) {
         setOpenPopoverId(null);
       }
+      setOperasionalSearchTerms(prev => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
     }
   };
 
@@ -67,7 +79,22 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             <Label>Jenis Alat Berat</Label>
             <Popover
               open={openPopoverId === operasional.id}
-              onOpenChange={(isOpen) => setOpenPopoverId(isOpen ? operasional.id : null)}
+              onOpenChange={(isOpen) => {
+                setOpenPopoverId(isOpen ? operasional.id : null);
+                if (isOpen) {
+                  setOperasionalSearchTerms(prev => ({ ...prev, [operasional.id]: operasional.jenis }));
+                } else {
+                  const currentSearchTerm = operasionalSearchTerms[operasional.id];
+                  if (currentSearchTerm !== undefined && currentSearchTerm !== operasional.jenis) {
+                    updateOperasionalAlatBerat(operasional.id, "jenis", currentSearchTerm);
+                  }
+                  setOperasionalSearchTerms(prev => {
+                    const newState = { ...prev };
+                    delete newState[operasional.id];
+                    return newState;
+                  });
+                }
+              }}
             >
               <PopoverTrigger asChild>
                 <Button
@@ -84,15 +111,15 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 <Command>
                   <CommandInput
                     placeholder="Cari jenis alat berat..."
-                    value={operasional.jenis}
-                    onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
+                    value={operasionalSearchTerms[operasional.id] || ""}
+                    onValueChange={(value) => handleOperasionalSearchChange(operasional.id, value)}
                   />
                   <CommandList>
                     <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis alat berat baru.</CommandEmpty>
                     <CommandGroup>
                       {alatBeratOptions
                         .filter((jenis) =>
-                          jenis.toLowerCase().includes(operasional.jenis.toLowerCase())
+                          jenis.toLowerCase().includes((operasionalSearchTerms[operasional.id] || "").toLowerCase())
                         )
                         .map((jenis) => (
                           <CommandItem
@@ -100,6 +127,11 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                             onSelect={() => {
                               updateOperasionalAlatBerat(operasional.id, "jenis", jenis);
                               setOpenPopoverId(null);
+                              setOperasionalSearchTerms(prev => {
+                                const newState = { ...prev };
+                                delete newState[operasional.id];
+                                return newState;
+                              });
                             }}
                           >
                             {jenis}
