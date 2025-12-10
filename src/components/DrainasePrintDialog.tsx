@@ -29,6 +29,12 @@ interface DrainasePrintDialogProps {
   filterPeriod: string | null;
 }
 
+// Memindahkan definisi interface ke tingkat modul
+interface KegiatanItemForPrint extends KegiatanDrainase {
+  tanggalKegiatan: string;
+  laporanPeriode: string;
+}
+
 export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   isOpen,
   onClose,
@@ -38,7 +44,7 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
 }) => {
   const [allKegiatans, setAllKegiatans] = useState<KegiatanItemForPrint[]>([]);
   const [selectedKegiatanIds, setSelectedKegiatanIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Memperbaiki deklarasi useState
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
