@@ -39,6 +39,11 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandI
 import { Checkbox } from "@/components/ui/checkbox";
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 
+// Import new item components
+import { MaterialItemForm } from "./drainase-form/MaterialItemForm";
+import { PeralatanItemForm } from "./drainase-form/PeralatanItemForm";
+
+
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
   "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
@@ -113,8 +118,6 @@ export const DrainaseForm = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
-  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState(""); // New state for koordinator search
   
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
   const [customSedimen, setCustomSedimen] = useState("");
@@ -124,8 +127,8 @@ export const DrainaseForm = () => {
   );
 
   // State to control popover open/close
-  const [openMaterialPopoverId, setOpenMaterialPopoverId] = useState<string | null>(null);
-  const [openPeralatanPopoverId, setOpenPeralatanPopoverId] = useState<string | null>(null);
+  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
+  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
 
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
@@ -507,7 +510,7 @@ export const DrainaseForm = () => {
         koordinator: [...currentCoordinators, koordinatorName],
       });
     }
-    setKoordinatorSearchTerm(""); // Clear search term after selection
+    // No need to clear koordinatorSearchTerm here, it's handled by Popover onOpenChange
   };
 
   const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
@@ -1280,99 +1283,13 @@ export const DrainaseForm = () => {
             <div className="space-y-4">
               <Label>Material yang Digunakan</Label>
               {currentKegiatan.materials.map((material) => (
-                <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
-                  <div className="space-y-2">
-                    <Label>Jenis Material</Label>
-                    <Popover
-                      open={openMaterialPopoverId === material.id}
-                      onOpenChange={(isOpen) => setOpenMaterialPopoverId(isOpen ? material.id : null)}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={openMaterialPopoverId === material.id}
-                          className="w-full justify-between"
-                        >
-                          {material.jenis || "Pilih atau ketik material..."}
-                          <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
-                        <Command>
-                          <CommandInput
-                            placeholder="Cari material..."
-                            value={material.jenis}
-                            onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
-                          />
-                          <CommandList>
-                            <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis material baru.</CommandEmpty>
-                            <CommandGroup>
-                              {materialOptions
-                                .filter((jenis) =>
-                                  jenis.toLowerCase().includes(material.jenis.toLowerCase())
-                                )
-                                .map((jenis) => (
-                                  <CommandItem
-                                    key={jenis}
-                                    onSelect={() => {
-                                      updateMaterial(material.id, "jenis", jenis);
-                                      setOpenMaterialPopoverId(null);
-                                    }}
-                                  >
-                                    {jenis}
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Jumlah</Label>
-                    <Input
-                      value={material.jumlah}
-                      onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Satuan</Label>
-                    <Select
-                      value={material.satuan}
-                      onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {satuanOptions.map((satuan) => (
-                          <SelectItem key={satuan} value={satuan}>
-                            {satuan}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Keterangan</Label>
-                    <Input
-                      value={material.keterangan || ""}
-                      onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
-                      placeholder="Catatan material (opsional)"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => removeMaterial(material.id)}
-                    disabled={currentKegiatan.materials.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                <MaterialItemForm
+                  key={material.id}
+                  material={material}
+                  updateMaterial={updateMaterial}
+                  removeMaterial={removeMaterial}
+                  isRemoveDisabled={currentKegiatan.materials.length === 1}
+                />
               ))}
               <div className="flex justify-end">
                 <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
@@ -1387,92 +1304,13 @@ export const DrainaseForm = () => {
           <div className="space-y-4">
             <Label>Peralatan yang Digunakan</Label>
             {currentKegiatan.peralatans.map((peralatan) => (
-              <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Nama Peralatan</Label>
-                  <Popover
-                    open={openPeralatanPopoverId === peralatan.id}
-                    onOpenChange={(isOpen) => setOpenPeralatanPopoverId(isOpen ? peralatan.id : null)}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openPeralatanPopoverId === peralatan.id}
-                        className="w-full justify-between"
-                      >
-                        {peralatan.nama || "Pilih atau ketik peralatan..."}
-                        <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
-                      <Command>
-                        <CommandInput
-                          placeholder="Cari peralatan..."
-                          value={peralatan.nama}
-                          onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
-                        />
-                        <CommandList>
-                          <CommandEmpty>Tidak ditemukan. Anda dapat mengetik nama peralatan baru.</CommandEmpty>
-                          <CommandGroup>
-                            {peralatanOptions
-                              .filter((nama) =>
-                                nama.toLowerCase().includes(peralatan.nama.toLowerCase())
-                              )
-                              .map((nama) => (
-                                <CommandItem
-                                  key={nama}
-                                  onSelect={() => {
-                                    updatePeralatan(peralatan.id, "nama", nama);
-                                    setOpenPeralatanPopoverId(null);
-                                  }}
-                                >
-                                  {nama}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label>Jumlah</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={peralatan.jumlah}
-                    onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Satuan</Label>
-                  <Select
-                    value={peralatan.satuan}
-                    onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {satuanOptions.map((satuan) => (
-                        <SelectItem key={satuan} value={satuan}>
-                          {satuan}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => removePeralatan(peralatan.id)}
-                  disabled={currentKegiatan.peralatans.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <PeralatanItemForm
+                key={peralatan.id}
+                peralatan={peralatan}
+                updatePeralatan={updatePeralatan}
+                removePeralatan={removePeralatan}
+                isRemoveDisabled={currentKegiatan.peralatans.length === 1}
+              />
             ))}
             <div className="flex justify-end">
               <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
@@ -1498,8 +1336,8 @@ export const DrainaseForm = () => {
                 open={koordinatorPopoverOpen} 
                 onOpenChange={(isOpen) => {
                   setKoordinatorPopoverOpen(isOpen);
-                  if (!isOpen) {
-                    setKoordinatorSearchTerm(""); // Reset search term when popover closes
+                  if (isOpen) {
+                    setKoordinatorSearchTerm(""); // Reset search term when opening
                   }
                 }}
               >
