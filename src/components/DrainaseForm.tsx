@@ -113,8 +113,6 @@ export const DrainaseForm = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
-  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState(""); // New state for koordinator search
   
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
   const [customSedimen, setCustomSedimen] = useState("");
@@ -123,8 +121,15 @@ export const DrainaseForm = () => {
     formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
   );
 
+  // New state for managing search terms within popovers
+  const [materialSearchTerms, setMaterialSearchTerms] = useState<Record<string, string>>({});
+  const [peralatanSearchTerms, setPeralatanSearchTerms] = useState<Record<string, string>>({});
+  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState(""); // Global for koordinator multi-select
+
+  // State to control popover open/close
   const [openMaterialPopoverId, setOpenMaterialPopoverId] = useState<string | null>(null);
   const [openPeralatanPopoverId, setOpenPeralatanPopoverId] = useState<string | null>(null);
+  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
 
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
@@ -467,6 +472,10 @@ export const DrainaseForm = () => {
     });
   };
 
+  const handleMaterialSearchChange = (materialId: string, value: string) => {
+    setMaterialSearchTerms(prev => ({ ...prev, [materialId]: value }));
+  };
+
   const addPeralatan = () => {
     const newPeralatan: Peralatan = {
       id: Date.now().toString(),
@@ -493,6 +502,10 @@ export const DrainaseForm = () => {
         p.id === id ? { ...p, [field]: value } : p
       ),
     });
+  };
+
+  const handlePeralatanSearchChange = (peralatanId: string, value: string) => {
+    setPeralatanSearchTerms(prev => ({ ...prev, [peralatanId]: value }));
   };
 
   const toggleKoordinator = (koordinatorName: string) => {
@@ -1284,7 +1297,22 @@ export const DrainaseForm = () => {
                     <Label>Jenis Material</Label>
                     <Popover
                       open={openMaterialPopoverId === material.id}
-                      onOpenChange={(isOpen) => setOpenMaterialPopoverId(isOpen ? material.id : null)}
+                      onOpenChange={(isOpen) => {
+                        setOpenMaterialPopoverId(isOpen ? material.id : null);
+                        if (isOpen) {
+                          setMaterialSearchTerms(prev => ({ ...prev, [material.id]: material.jenis }));
+                        } else {
+                          const currentSearchTerm = materialSearchTerms[material.id];
+                          if (currentSearchTerm !== undefined && currentSearchTerm !== material.jenis) {
+                            updateMaterial(material.id, "jenis", currentSearchTerm);
+                          }
+                          setMaterialSearchTerms(prev => {
+                            const newState = { ...prev };
+                            delete newState[material.id];
+                            return newState;
+                          });
+                        }
+                      }}
                     >
                       <PopoverTrigger asChild>
                         <Button
@@ -1301,15 +1329,15 @@ export const DrainaseForm = () => {
                         <Command>
                           <CommandInput
                             placeholder="Cari material..."
-                            value={material.jenis}
-                            onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
+                            value={materialSearchTerms[material.id] || ""}
+                            onValueChange={(value) => handleMaterialSearchChange(material.id, value)}
                           />
                           <CommandList>
                             <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis material baru.</CommandEmpty>
                             <CommandGroup>
                               {materialOptions
                                 .filter((jenis) =>
-                                  jenis.toLowerCase().includes(material.jenis.toLowerCase())
+                                  jenis.toLowerCase().includes((materialSearchTerms[material.id] || "").toLowerCase())
                                 )
                                 .map((jenis) => (
                                   <CommandItem
@@ -1391,7 +1419,22 @@ export const DrainaseForm = () => {
                   <Label>Nama Peralatan</Label>
                   <Popover
                     open={openPeralatanPopoverId === peralatan.id}
-                    onOpenChange={(isOpen) => setOpenPeralatanPopoverId(isOpen ? peralatan.id : null)}
+                    onOpenChange={(isOpen) => {
+                      setOpenPeralatanPopoverId(isOpen ? peralatan.id : null);
+                      if (isOpen) {
+                        setPeralatanSearchTerms(prev => ({ ...prev, [peralatan.id]: peralatan.nama }));
+                      } else {
+                        const currentSearchTerm = peralatanSearchTerms[peralatan.id];
+                        if (currentSearchTerm !== undefined && currentSearchTerm !== peralatan.nama) {
+                          updatePeralatan(peralatan.id, "nama", currentSearchTerm);
+                        }
+                        setPeralatanSearchTerms(prev => {
+                          const newState = { ...prev };
+                          delete newState[peralatan.id];
+                          return newState;
+                        });
+                      }
+                    }}
                   >
                     <PopoverTrigger asChild>
                       <Button
@@ -1408,15 +1451,15 @@ export const DrainaseForm = () => {
                       <Command>
                         <CommandInput
                           placeholder="Cari peralatan..."
-                          value={peralatan.nama}
-                          onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
+                          value={peralatanSearchTerms[peralatan.id] || ""}
+                          onValueChange={(value) => handlePeralatanSearchChange(peralatan.id, value)}
                         />
                         <CommandList>
                           <CommandEmpty>Tidak ditemukan. Anda dapat mengetik nama peralatan baru.</CommandEmpty>
                           <CommandGroup>
                             {peralatanOptions
                               .filter((nama) =>
-                                nama.toLowerCase().includes(peralatan.nama.toLowerCase())
+                                nama.toLowerCase().includes((peralatanSearchTerms[peralatan.id] || "").toLowerCase())
                               )
                               .map((nama) => (
                                 <CommandItem
@@ -1493,7 +1536,15 @@ export const DrainaseForm = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="koordinator">Koordinator</Label>
-              <Popover open={koordinatorPopoverOpen} onOpenChange={setKoordinatorPopoverOpen}>
+              <Popover 
+                open={koordinatorPopoverOpen} 
+                onOpenChange={(isOpen) => {
+                  setKoordinatorPopoverOpen(isOpen);
+                  if (!isOpen) {
+                    setKoordinatorSearchTerm(""); // Reset search term when popover closes
+                  }
+                }}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
