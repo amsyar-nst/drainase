@@ -959,7 +959,7 @@ export const DrainaseForm = () => {
                     <CalendarIcon className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
                   <Calendar
                     mode="single"
                     selected={formData.tanggal || undefined}
@@ -996,7 +996,7 @@ export const DrainaseForm = () => {
                       <CalendarIcon className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
                     <Calendar
                       mode="single"
                       selected={currentKegiatan.hariTanggal || undefined}
@@ -1537,7 +1537,7 @@ export const DrainaseForm = () => {
                     <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-50" align="start" sideOffset={5}>
                   <Command>
                     <CommandInput
                       placeholder="Cari koordinator..."
@@ -1555,6 +1555,7 @@ export const DrainaseForm = () => {
                             <CommandItem
                               key={koordinator}
                               onSelect={() => toggleKoordinator(koordinator)} // Use toggle for multi-select
+                              onMouseDown={(e) => e.preventDefault()} // Prevent popover from closing on item click
                             >
                               <Check
                                 className={cn(
