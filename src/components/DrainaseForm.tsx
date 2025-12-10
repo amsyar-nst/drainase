@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { format, parse, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, XCircle } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions } from "@/data/kecamatan-kelurahan";
@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 
 // Define predefined sedimen options for easier comparison
@@ -87,7 +88,7 @@ export const DrainaseForm = () => {
         bioSolarSatuan: "Liter",
         keterangan: "",
       }],
-      koordinator: [], // Will be single string, but type is array for now
+      koordinator: [],
       jumlahPHL: 0,
       keterangan: "",
       hariTanggal: new Date(),
@@ -118,6 +119,17 @@ export const DrainaseForm = () => {
   const [dateInputString, setDateInputString] = useState<string>(
     formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
   );
+
+  // New state for managing search terms within popovers
+  const [materialSearchTerms, setMaterialSearchTerms] = useState<Record<string, string>>({});
+  const [peralatanSearchTerms, setPeralatanSearchTerms] = useState<Record<string, string>>({});
+  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState(""); // Global for koordinator multi-select
+
+  // State to control popover open/close
+  const [openMaterialPopoverId, setOpenMaterialPopoverId] = useState<string | null>(null);
+  const [openPeralatanPopoverId, setOpenPeralatanPopoverId] = useState<string | null>(null);
+  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
+
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
@@ -380,7 +392,7 @@ export const DrainaseForm = () => {
         bioSolarSatuan: "Liter",
         keterangan: "",
       }],
-      koordinator: [], // Will be single string, but type is array for now
+      koordinator: [],
       jumlahPHL: 0,
       keterangan: "",
       hariTanggal: new Date(),
@@ -459,6 +471,10 @@ export const DrainaseForm = () => {
     });
   };
 
+  const handleMaterialSearchChange = (materialId: string, value: string) => {
+    setMaterialSearchTerms(prev => ({ ...prev, [materialId]: value }));
+  };
+
   const addPeralatan = () => {
     const newPeralatan: Peralatan = {
       id: Date.now().toString(),
@@ -487,8 +503,21 @@ export const DrainaseForm = () => {
     });
   };
 
-  const handleKoordinatorChange = (value: string) => {
-    updateCurrentKegiatan({ koordinator: [value] }); // Store as an array with a single item
+  const handlePeralatanSearchChange = (peralatanId: string, value: string) => {
+    setPeralatanSearchTerms(prev => ({ ...prev, [peralatanId]: value }));
+  };
+
+  const toggleKoordinator = (koordinatorName: string) => {
+    const currentCoordinators = currentKegiatan.koordinator;
+    if (currentCoordinators.includes(koordinatorName)) {
+      updateCurrentKegiatan({
+        koordinator: currentCoordinators.filter((name) => name !== koordinatorName),
+      });
+    } else {
+      updateCurrentKegiatan({
+        koordinator: [...currentCoordinators, koordinatorName],
+      });
+    }
   };
 
   const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
@@ -1264,21 +1293,69 @@ export const DrainaseForm = () => {
                 <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
                   <div className="space-y-2">
                     <Label>Jenis Material</Label>
-                    <Select
-                      value={material.jenis}
-                      onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
+                    <Popover
+                      open={openMaterialPopoverId === material.id}
+                      onOpenChange={(isOpen) => {
+                        setOpenMaterialPopoverId(isOpen ? material.id : null);
+                        if (isOpen) {
+                          // When opening, set search term to current value
+                          setMaterialSearchTerms(prev => ({ ...prev, [material.id]: material.jenis }));
+                        } else {
+                          // When closing, clear the search term for this specific material
+                          setMaterialSearchTerms(prev => {
+                            const newState = { ...prev };
+                            delete newState[material.id];
+                            return newState;
+                          });
+                        }
+                      }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih material" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {materialOptions.map((jenis) => (
-                          <SelectItem key={jenis} value={jenis}>
-                            {jenis}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openMaterialPopoverId === material.id}
+                          className="w-full justify-between"
+                        >
+                          {material.jenis || "Pilih atau ketik material..."}
+                          <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                        <Command>
+                          <CommandInput
+                            placeholder="Cari material..."
+                            value={materialSearchTerms[material.id] || ""} // Bind to local search term
+                            onValueChange={(value) => handleMaterialSearchChange(material.id, value)} // Update local search term
+                          />
+                          <CommandList>
+                            <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis material baru.</CommandEmpty>
+                            <CommandGroup>
+                              {materialOptions
+                                .filter((jenis) =>
+                                  jenis.toLowerCase().includes((materialSearchTerms[material.id] || "").toLowerCase())
+                                )
+                                .map((jenis) => (
+                                  <CommandItem
+                                    key={jenis}
+                                    onSelect={() => {
+                                      updateMaterial(material.id, "jenis", jenis); // Update actual form value
+                                      setOpenMaterialPopoverId(null); // Close popover
+                                      setMaterialSearchTerms(prev => { // Clear search term
+                                        const newState = { ...prev };
+                                        delete newState[material.id];
+                                        return newState;
+                                      });
+                                    }}
+                                  >
+                                    {jenis}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label>Jumlah</Label>
@@ -1341,21 +1418,67 @@ export const DrainaseForm = () => {
               <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
                 <div className="space-y-2 md:col-span-2">
                   <Label>Nama Peralatan</Label>
-                  <Select
-                    value={peralatan.nama}
-                    onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
+                  <Popover
+                    open={openPeralatanPopoverId === peralatan.id}
+                    onOpenChange={(isOpen) => {
+                      setOpenPeralatanPopoverId(isOpen ? peralatan.id : null);
+                      if (isOpen) {
+                        setPeralatanSearchTerms(prev => ({ ...prev, [peralatan.id]: peralatan.nama }));
+                      } else {
+                        setPeralatanSearchTerms(prev => {
+                          const newState = { ...prev };
+                          delete newState[peralatan.id];
+                          return newState;
+                        });
+                      }
+                    }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih peralatan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {peralatanOptions.map((nama) => (
-                        <SelectItem key={nama} value={nama}>
-                          {nama}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openPeralatanPopoverId === peralatan.id}
+                        className="w-full justify-between"
+                      >
+                        {peralatan.nama || "Pilih atau ketik peralatan..."}
+                        <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                      <Command>
+                        <CommandInput
+                          placeholder="Cari peralatan..."
+                          value={peralatanSearchTerms[peralatan.id] || ""}
+                          onValueChange={(value) => handlePeralatanSearchChange(peralatan.id, value)}
+                        />
+                        <CommandList>
+                          <CommandEmpty>Tidak ditemukan. Anda dapat mengetik nama peralatan baru.</CommandEmpty>
+                          <CommandGroup>
+                            {peralatanOptions
+                              .filter((nama) =>
+                                nama.toLowerCase().includes((peralatanSearchTerms[peralatan.id] || "").toLowerCase())
+                              )
+                              .map((nama) => (
+                                <CommandItem
+                                  key={nama}
+                                  onSelect={() => {
+                                    updatePeralatan(peralatan.id, "nama", nama);
+                                    setOpenPeralatanPopoverId(null);
+                                    setPeralatanSearchTerms(prev => {
+                                      const newState = { ...prev };
+                                      delete newState[peralatan.id];
+                                      return newState;
+                                    });
+                                  }}
+                                >
+                                  {nama}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label>Jumlah</Label>
@@ -1415,21 +1538,63 @@ export const DrainaseForm = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="koordinator">Koordinator</Label>
-              <Select
-                value={currentKegiatan.koordinator[0] || ""} // Assuming single selection
-                onValueChange={handleKoordinatorChange}
+              <Popover 
+                open={koordinatorPopoverOpen} 
+                onOpenChange={(isOpen) => {
+                  setKoordinatorPopoverOpen(isOpen);
+                  if (!isOpen) {
+                    setKoordinatorSearchTerm(""); // Reset search term when popover closes
+                  }
+                }}
               >
-                <SelectTrigger id="koordinator">
-                  <SelectValue placeholder="Pilih koordinator" />
-                </SelectTrigger>
-                <SelectContent>
-                  {koordinatorOptions.map((koordinator) => (
-                    <SelectItem key={koordinator} value={koordinator}>
-                      {koordinator}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={koordinatorPopoverOpen}
+                    className="w-full justify-between"
+                  >
+                    {currentKegiatan.koordinator.length > 0
+                      ? currentKegiatan.koordinator.join(", ")
+                      : "Pilih koordinator..."}
+                    <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput
+                      placeholder="Cari koordinator..."
+                      value={koordinatorSearchTerm}
+                      onValueChange={setKoordinatorSearchTerm}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        {koordinatorOptions
+                          .filter((koordinator) =>
+                            koordinator.toLowerCase().includes(koordinatorSearchTerm.toLowerCase())
+                          )
+                          .map((koordinator) => (
+                            <CommandItem
+                              key={koordinator}
+                              onSelect={() => toggleKoordinator(koordinator)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  currentKegiatan.koordinator.includes(koordinator)
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {koordinator}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             {formData.reportType === "harian" && (
               <div className="space-y-2">
