@@ -391,3 +391,5 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+};
