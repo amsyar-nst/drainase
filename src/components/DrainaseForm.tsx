@@ -43,7 +43,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 const predefinedSedimenOptions = [
   "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
   "Padat & Batu", "Padat & Sampah", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
-  "Batu/ Padat & Cair"
+  "Batu/ Padat & Cair", "Sampah" // Added "Sampah" here
 ];
 
 export const DrainaseForm = () => {
