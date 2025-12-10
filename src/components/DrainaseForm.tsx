@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 
@@ -1287,17 +1287,23 @@ export const DrainaseForm = () => {
                       onOpenChange={(isOpen) => setOpenMaterialPopoverId(isOpen ? material.id : null)}
                     >
                       <PopoverTrigger asChild>
-                        <Input
-                          type="text"
-                          placeholder="Pilih atau ketik"
-                          value={material.jenis}
-                          onChange={(e) => {
-                            updateMaterial(material.id, "jenis", e.target.value);
-                          }}
-                        />
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openMaterialPopoverId === material.id}
+                          className="w-full justify-between"
+                        >
+                          {material.jenis || "Pilih atau ketik material..."}
+                          <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
                       </PopoverTrigger>
                       <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                         <Command>
+                          <CommandInput
+                            placeholder="Cari material..."
+                            value={material.jenis}
+                            onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
+                          />
                           <CommandList>
                             <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis material baru.</CommandEmpty>
                             <CommandGroup>
@@ -1388,17 +1394,23 @@ export const DrainaseForm = () => {
                     onOpenChange={(isOpen) => setOpenPeralatanPopoverId(isOpen ? peralatan.id : null)}
                   >
                     <PopoverTrigger asChild>
-                      <Input
-                        type="text"
-                        placeholder="Pilih atau ketik"
-                        value={peralatan.nama}
-                        onChange={(e) => {
-                          updatePeralatan(peralatan.id, "nama", e.target.value);
-                        }}
-                      />
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openPeralatanPopoverId === peralatan.id}
+                        className="w-full justify-between"
+                      >
+                        {peralatan.nama || "Pilih atau ketik peralatan..."}
+                        <List className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                       <Command>
+                        <CommandInput
+                          placeholder="Cari peralatan..."
+                          value={peralatan.nama}
+                          onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
+                        />
                         <CommandList>
                           <CommandEmpty>Tidak ditemukan. Anda dapat mengetik nama peralatan baru.</CommandEmpty>
                           <CommandGroup>
