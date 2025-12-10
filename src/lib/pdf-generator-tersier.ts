@@ -98,21 +98,17 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           border-collapse: collapse;
         }
 
-        table th {
-          background-color: #f0f0f0;
-          padding: 4px 3px;
-          text-align: center;
-          font-weight: bold;
-          border: 1px solid #000;
-          font-size: 6pt;
-          vertical-align: middle;
-        }
-
-        table td {
+        table th, table td {
           padding: 3px;
           border: 1px solid #000;
           font-size: 6pt;
-          vertical-align: top;
+          vertical-align: middle; /* Changed to middle for better alignment */
+          text-align: center; /* Default text align for all cells */
+        }
+
+        table th {
+          background-color: #f0f0f0;
+          font-weight: bold;
         }
 
         .photo-cell {
@@ -144,12 +140,14 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           margin: 0;
           padding: 0;
           line-height: 1.1;
+          text-align: center; /* Ensure list items are centered */
         }
 
         .center {
           text-align: center;
         }
 
+        /* Column Widths - Adjusted for better fit */
         .no-col { width: 20px; }
         .hari-tanggal-col { width: 70px; }
         .lokasi-col { width: 100px; }
@@ -189,21 +187,25 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       <table>
         <thead>
           <tr>
-            <th rowspan="2" class="no-col">No</th>
-            <th rowspan="2" class="hari-tanggal-col">Hari/Tanggal</th>
-            <th rowspan="2" class="lokasi-col">Lokasi</th>
-            <th rowspan="2" class="photo-cell">Sebelum<br/>(Foto Kondisi Eksisting)</th>
-            <th rowspan="2" class="photo-cell">Sesudah<br/>(Foto Kondisi Eksisting)</th>
-            <th rowspan="2" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
-            <th colspan="2">Alat yang dibutuhkan</th>
-            <th colspan="2">Orang<br/>Kebutuhan Tenaga<br/>Kerja</th>
-            <th colspan="2">Rencana<br/>Dimensi yang dikerjakan</th>
-            <th colspan="2">Realisasi<br/>Dimensi yang dikerjakan</th>
-            <th rowspan="2" class="sisa-target-col">Sisa Target<br/>Penyelesaian<br/>Pekerjaan<br/>(hari)</th>
-            <th rowspan="2" class="penanggungjawab-col">Penanggungjawab<br/>Lapangan<br/>(Koordinator)</th>
-            <th rowspan="2" class="keterangan-col">Keterangan</th>
+            <th rowspan="3" class="no-col">No</th>
+            <th rowspan="3" class="hari-tanggal-col">Hari/Tanggal</th>
+            <th rowspan="3" class="lokasi-col">Lokasi</th>
+            <th colspan="2">Foto Dokumentasi</th>
+            <th rowspan="3" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
+            <th colspan="2" rowspan="2">Alat yang dibutuhkan</th>
+            <th colspan="2" rowspan="2">Orang<br/>Kebutuhan Tenaga<br/>Kerja</th>
+            <th colspan="2" rowspan="2">Rencana<br/>Dimensi yang dikerjakan</th>
+            <th colspan="2" rowspan="2">Realisasi<br/>Dimensi yang dikerjakan</th>
+            <th rowspan="3" class="sisa-target-col">Sisa Target<br/>Penyelesaian<br/>Pekerjaan<br/>(hari)</th>
+            <th rowspan="3" class="penanggungjawab-col">Penanggungjawab<br/>Lapangan<br/>(Koordinator)</th>
+            <th rowspan="3" class="keterangan-col">Keterangan</th>
           </tr>
           <tr>
+            <th colspan="2">Foto Kondisi Eksisting</th>
+          </tr>
+          <tr>
+            <th class="photo-cell">Sebelum</th>
+            <th class="photo-cell">Sesudah</th>
             <th class="alat-jenis-col">Jenis</th>
             <th class="alat-jumlah-col">Jumlah</th>
             <th class="upt-col">UPT</th>
