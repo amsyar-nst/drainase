@@ -178,10 +178,13 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       </style>
     </head>
     <body>
-      <div class="period">Bulan : ${data.periode}</div>
       <div class="header">
-        <div class="office">Form Laporan Pemeliharaan Drainase Tersier (Drainase Lingkungan) oleh P3SU dibantu oleh UPT Dinas SDABMBK Kota Medan</div>
+        <div class="office">UPT OPERASIONAL PEMELIHARAAN JALAN DAN DRAINASE MEDAN KOTA</div>
+        <div class="address">Jl. Garu I No.101, Kelurahan Sitirejo III, Kecamatan Medan Amplas</div>
+        <div class="report-title">Form Laporan Pemeliharaan Drainase Tersier (Drainase Lingkungan) oleh P3SU dibantu oleh UPT Dinas SDABMBK Kota Medan</div>
       </div>
+
+      <div class="period">Bulan : ${data.periode}</div>
 
       <table>
         <thead>
