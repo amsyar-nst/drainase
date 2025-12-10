@@ -124,6 +124,9 @@ export const DrainaseForm = () => {
   const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
 
+  // State for individual activity date input string
+  const [activityDateInputStrings, setActivityDateInputStrings] = useState<string[]>([]);
+
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
@@ -141,9 +144,18 @@ export const DrainaseForm = () => {
       setSelectedKecamatan(currentKecamatan);
       const selected = kecamatanKelurahanData.find((k) => k.kecamatan === currentKecamatan);
       setKelurahanOptions(selected?.kelurahan || []);
+
+      // Update activity date input string for the current activity
+      const newActivityDateInputStrings = [...activityDateInputStrings];
+      newActivityDateInputStrings[currentKegiatanIndex] = currentKegiatan.hariTanggal 
+        ? format(currentKegiatan.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) 
+        : "";
+      setActivityDateInputStrings(newActivityDateInputStrings);
+
     } else {
       setSelectedKecamatan("");
       setKelurahanOptions([]);
+      setActivityDateInputStrings([]);
     }
   }, [formData.kegiatans, currentKegiatanIndex]);
 
@@ -332,8 +344,10 @@ export const DrainaseForm = () => {
 
       if (kegiatansWithDetails.length > 0) {
         setCurrentKegiatanIndex(0); 
+        setActivityDateInputStrings(kegiatansWithDetails.map(k => k.hariTanggal ? format(k.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""));
       } else {
         setCurrentKegiatanIndex(0);
+        setActivityDateInputStrings([""]);
       }
 
       toast.success('Laporan berhasil dimuat');
@@ -402,12 +416,15 @@ export const DrainaseForm = () => {
     };
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
+    setActivityDateInputStrings([...activityDateInputStrings, format(newKegiatan.hariTanggal!, "dd/MM/yyyy", { locale: idLocale })]);
   };
 
   const removeKegiatan = (index: number) => {
     if (formData.kegiatans.length > 1) {
       const newKegiatans = formData.kegiatans.filter((_, i) => i !== index);
       setFormData({ ...formData, kegiatans: newKegiatans });
+      const newActivityDateInputStrings = activityDateInputStrings.filter((_, i) => i !== index);
+      setActivityDateInputStrings(newActivityDateInputStrings);
       if (currentKegiatanIndex >= newKegiatans.length) {
         setCurrentKegiatanIndex(newKegiatans.length - 1);
       }
@@ -814,6 +831,36 @@ export const DrainaseForm = () => {
     }
   };
 
+  const handleActivityDateInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const value = e.target.value;
+    const newActivityDateInputStrings = [...activityDateInputStrings];
+    newActivityDateInputStrings[index] = value;
+    setActivityDateInputStrings(newActivityDateInputStrings);
+
+    if (value === "") {
+      updateCurrentKegiatan({ hariTanggal: null });
+    } else {
+      const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
+      if (isValid(parsedDate)) {
+        updateCurrentKegiatan({ hariTanggal: parsedDate });
+      }
+    }
+  };
+
+  const handleActivityDateSelect = (date: Date | undefined, index: number) => {
+    if (date) {
+      updateCurrentKegiatan({ hariTanggal: date });
+      const newActivityDateInputStrings = [...activityDateInputStrings];
+      newActivityDateInputStrings[index] = format(date, "dd/MM/yyyy", { locale: idLocale });
+      setActivityDateInputStrings(newActivityDateInputStrings);
+    } else {
+      updateCurrentKegiatan({ hariTanggal: null });
+      const newActivityDateInputStrings = [...activityDateInputStrings];
+      newActivityDateInputStrings[index] = "";
+      setActivityDateInputStrings(newActivityDateInputStrings);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -889,9 +936,9 @@ export const DrainaseForm = () => {
             </Select>
           </div>
 
-          {/* Tanggal */}
+          {/* Tanggal Laporan Utama (Always visible) */}
           <div className="space-y-2">
-            <Label htmlFor="tanggal">Tanggal</Label>
+            <Label htmlFor="tanggal">Tanggal Laporan Utama</Label>
             <div className="relative flex items-center">
               <Input
                 id="tanggal"
@@ -924,6 +971,44 @@ export const DrainaseForm = () => {
               </Popover>
             </div>
           </div>
+
+          {/* Hari/Tanggal Kegiatan (Only for Tersier) */}
+          {formData.reportType === "tersier" && (
+            <div className="space-y-2">
+              <Label htmlFor="hari-tanggal-kegiatan">Hari/Tanggal Kegiatan</Label>
+              <div className="relative flex items-center">
+                <Input
+                  id="hari-tanggal-kegiatan"
+                  value={activityDateInputStrings[currentKegiatanIndex] || ""}
+                  onChange={(e) => handleActivityDateInputChange(e, currentKegiatanIndex)}
+                  placeholder="dd/MM/yyyy"
+                  className={cn(
+                    "w-full justify-start text-left font-normal pr-10",
+                    !currentKegiatan.hariTanggal && "text-muted-foreground"
+                  )}
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={currentKegiatan.hariTanggal || undefined}
+                      onSelect={(date) => handleActivityDateSelect(date, currentKegiatanIndex)}
+                      initialFocus
+                      locale={idLocale}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
 
           {/* Lokasi */}
           <div className="grid gap-4 md:grid-cols-2">
