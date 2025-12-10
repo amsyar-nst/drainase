@@ -18,14 +18,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   currentKegiatan,
   updateCurrentKegiatan,
 }) => {
-  // State to control which popover is open
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
-  // State to manage search terms for each operasional item
-  const [operasionalSearchTerms, setOperasionalSearchTerms] = useState<Record<string, string>>({});
-
-  const handleOperasionalSearchChange = (operasionalId: string, value: string) => {
-    setOperasionalSearchTerms(prev => ({ ...prev, [operasionalId]: value }));
-  };
 
   const addOperasionalAlatBerat = () => {
     const newOperasional: OperasionalAlatBerat = {
@@ -53,11 +46,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       if (openPopoverId === id) {
         setOpenPopoverId(null);
       }
-      setOperasionalSearchTerms(prev => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
-      });
     }
   };
 
@@ -79,22 +67,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             <Label>Jenis Alat Berat</Label>
             <Popover
               open={openPopoverId === operasional.id}
-              onOpenChange={(isOpen) => {
-                setOpenPopoverId(isOpen ? operasional.id : null);
-                if (isOpen) {
-                  setOperasionalSearchTerms(prev => ({ ...prev, [operasional.id]: operasional.jenis }));
-                } else {
-                  const currentSearchTerm = operasionalSearchTerms[operasional.id];
-                  if (currentSearchTerm !== undefined && currentSearchTerm !== operasional.jenis) {
-                    updateOperasionalAlatBerat(operasional.id, "jenis", currentSearchTerm);
-                  }
-                  setOperasionalSearchTerms(prev => {
-                    const newState = { ...prev };
-                    delete newState[operasional.id];
-                    return newState;
-                  });
-                }
-              }}
+              onOpenChange={(isOpen) => setOpenPopoverId(isOpen ? operasional.id : null)}
             >
               <PopoverTrigger asChild>
                 <Button
@@ -111,15 +84,15 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 <Command>
                   <CommandInput
                     placeholder="Cari jenis alat berat..."
-                    value={operasionalSearchTerms[operasional.id] || ""}
-                    onValueChange={(value) => handleOperasionalSearchChange(operasional.id, value)}
+                    value={operasional.jenis}
+                    onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
                   />
                   <CommandList>
                     <CommandEmpty>Tidak ditemukan. Anda dapat mengetik jenis alat berat baru.</CommandEmpty>
                     <CommandGroup>
                       {alatBeratOptions
                         .filter((jenis) =>
-                          jenis.toLowerCase().includes((operasionalSearchTerms[operasional.id] || "").toLowerCase())
+                          jenis.toLowerCase().includes(operasional.jenis.toLowerCase())
                         )
                         .map((jenis) => (
                           <CommandItem
