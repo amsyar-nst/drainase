@@ -30,6 +30,10 @@ const App = () => {
               <Route path="/drainase/new" element={<Index />} />
               <Route path="/drainase/edit/:id" element={<Index />} />
               
+              {/* Tersier-specific routes */}
+              <Route path="/tersier/new" element={<Index />} /> {/* Index is the DrainaseForm */}
+              <Route path="/tersier/edit/:id" element={<Index />} /> {/* Index is the DrainaseForm */}
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

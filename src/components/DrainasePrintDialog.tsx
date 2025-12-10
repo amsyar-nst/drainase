@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan"; // Removed Alat
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan"; // Import LaporanDrainase
 import { generatePDF } from "@/lib/pdf-generator"; // For harian
 import { generatePDFBulanan } from "@/lib/pdf-generator-bulanan"; // For bulanan
 import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
@@ -29,6 +29,7 @@ interface DrainasePrintDialogProps {
   filterPeriod: string | null; // Optional filter for bulanan reports
 }
 
+// Use KegiatanDrainase directly as it now contains all necessary fields
 interface KegiatanItemForPrint extends KegiatanDrainase {
   tanggalKegiatan: string; // Added this property for display in the dialog
   laporanTanggal: Date; // The specific date of the parent report for this activity

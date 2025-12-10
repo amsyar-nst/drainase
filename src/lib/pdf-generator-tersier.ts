@@ -35,9 +35,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
     data.kegiatans.map(async (kegiatan) => ({
       ...kegiatan,
       foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))),
-      foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))),
       foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))),
-      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))),
     }))
   );
 
@@ -46,7 +44,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Laporan Drainase Tersier - ${data.periode}</title>
+      <title>Form Laporan Pemeliharaan Drainase Tersier - ${data.periode}</title>
       <style>
         @page {
           size: A3 landscape;
@@ -92,6 +90,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           margin-bottom: 10px;
           font-size: 8pt;
           font-weight: bold;
+          text-align: left;
         }
 
         table {
@@ -117,7 +116,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-cell {
-          width: 100px;
+          width: 80px; /* Adjusted width for single image */
           text-align: center;
           padding: 2px;
         }
@@ -130,8 +129,8 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-container img {
-          width: 45px;
-          height: 34px;
+          width: 70px; /* Larger width for single image */
+          height: 50px; /* Larger height for single image */
           object-fit: cover;
           border: 1px solid #ccc;
         }
@@ -152,32 +151,20 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .no-col { width: 20px; }
-        .date-col { width: 70px; }
-        .location-col { width: 150px; }
-        .jenis-saluran-col { width: 50px; }
-        .jenis-sedimen-col { width: 50px; }
-        .uraian-kegiatan-col { width: 80px; }
-        .panjang-col { width: 40px; }
-        .volume-col { width: 40px; }
-        .material-jenis-col { width: 130px; }
-        .material-jumlah-col { width: 30px; }
-        .material-satuan-col { width: 30px; }
-        .material-keterangan-col { width: 50px; }
-        .peralatan-jenis-col { width: 130px; }
-        .peralatan-jumlah-col { width: 30px; }
-        .peralatan-satuan-col { width: 30px; }
-        .op-jenis-col { width: 100px; }
-        .op-jumlah-col { width: 30px; }
-        .op-fuel-col { width: 30px; }
-        .op-fuel-satuan-col { width: 30px; }
-        .op-keterangan-col { width: 60px; }
-        .koordinator-col { width: 70px; }
-        .phl-col { width: 30px; }
-        .keterangan-akhir-col { width: 60px; }
-        .tersier-personil-col { width: 30px; }
-        .tersier-dimensi-col { width: 40px; }
-        .tersier-target-col { width: 40px; }
-        .tersier-alat-col { width: 80px; }
+        .hari-tanggal-col { width: 70px; }
+        .lokasi-col { width: 100px; }
+        .jenis-sedimen-col { width: 60px; }
+        .alat-jenis-col { width: 60px; }
+        .alat-jumlah-col { width: 30px; }
+        .upt-col { width: 30px; }
+        .p3su-col { width: 30px; }
+        .rencana-panjang-col { width: 40px; }
+        .rencana-volume-col { width: 40px; }
+        .realisasi-panjang-col { width: 40px; }
+        .realisasi-volume-col { width: 40px; }
+        .sisa-target-col { width: 40px; }
+        .penanggungjawab-col { width: 80px; }
+        .keterangan-col { width: 100px; }
 
         @media print {
           body {
@@ -191,67 +178,45 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       </style>
     </head>
     <body>
+      <div class="period">Bulan : ${data.periode}</div>
       <div class="header">
-        <div class="office">LAPORAN PELAKSANAAN PEKERJAAN PEMELIHARAAN DRAINASE TERSIER</div>
-        <div class="office">UPT OPJD MEDAN KOTA</div>
-        <div class="address">DINAS SUMBER DAYA AIR BINA MARGA DAN BINA KONSTRUKSI KOTA MEDAN</div>
-        <div class="address">SUMBER DAYA AIR</div>
+        <div class="office">Form Laporan Pemeliharaan Drainase Tersier (Drainase Lingkungan) oleh P3SU dibantu oleh UPT Dinas SDABMBK Kota Medan</div>
       </div>
-
-      <div class="period">Periode : ${data.periode}</div>
 
       <table>
         <thead>
           <tr>
-            <th rowspan="3" class="no-col">NO</th>
-            <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
-            <th rowspan="3" class="location-col">LOKASI</th>
-            <th colspan="4">FOTO DOKUMENTASI</th>
-            <th rowspan="3" class="jenis-saluran-col">JENIS SALURAN<br/>(TERBUKA/<br/>TERTUTUP)</th>
-            <th rowspan="3" class="jenis-sedimen-col">JENIS SEDIMEN<br/>(BATU/PADAT/<br/>CAIR)</th>
-            <th rowspan="3" class="uraian-kegiatan-col">URAIAN KEGIATAN</th>
-            <th colspan="2">VOLUME</th>
-            <th colspan="4">BAHAN MATERIAL</th>
-            <th colspan="3">PERALATAN</th>
-            <th colspan="9">OPERASIONAL ALAT BERAT</th>
-            <th colspan="2">KEBUTUHAN TENAGA KERJA</th>
-            <th colspan="2">RENCANA DIMENSI</th>
-            <th colspan="2">REALISASI DIMENSI</th>
-            <th rowspan="3" class="tersier-target-col">SISA TARGET<br/>PENYELESAIAN<br/>PEKERJAAN<br/>(HARI)</th>
-            <th rowspan="3" class="keterangan-akhir-col">KETERANGAN</th>
+            <th rowspan="3" class="no-col">No</th>
+            <th rowspan="3" class="hari-tanggal-col">Hari/Tanggal</th>
+            <th rowspan="3" class="lokasi-col">Lokasi</th>
+            <th colspan="2">Sebelum (Photo 0%)</th>
+            <th colspan="2">Sesudah (Photo 100%)</th>
+            <th rowspan="3" class="jenis-sedimen-col">Jenis Sedimen<br/>(Keras, Sedang,Cair)</th>
+            <th colspan="2">Alat yang dibutuhkan</th>
+            <th colspan="2">Orang<br/>Kebutuhan Tenaga<br/>Kerja</th>
+            <th colspan="2">Rencana<br/>Dimensi yang dikerjakan</th>
+            <th colspan="2">Realisasi<br/>Dimensi yang dikerjakan</th>
+            <th rowspan="3" class="sisa-target-col">Sisa Target<br/>Penyelesaian<br/>Pekerjaan<br/>(hari)</th>
+            <th rowspan="3" class="penanggungjawab-col">Penanggungjawab<br/>Lapangan<br/>(Koordinator)</th>
+            <th rowspan="3" class="keterangan-col">Keterangan</th>
           </tr>
           <tr>
-            <th rowspan="2" class="photo-cell">0%</th>
-            <th rowspan="2" class="photo-cell">50%</th>
-            <th rowspan="2" class="photo-cell">100%</th>
-            <th rowspan="2" class="photo-cell">SKET</th>
-            <th rowspan="2" class="panjang-col">PANJANG<br/>(M)</th>
-            <th rowspan="2" class="volume-col">(M³)</th>
-            <th rowspan="2" class="material-jenis-col">JENIS</th>
-            <th rowspan="2" class="material-jumlah-col">JUMLAH</th>
-            <th rowspan="2" class="material-satuan-col">SATUAN</th>
-            <th rowspan="2" class="material-keterangan-col">KETERANGAN</th>
-            <th rowspan="2" class="peralatan-jenis-col">JENIS</th>
-            <th rowspan="2" class="peralatan-jumlah-col">JUMLAH</th>
-            <th rowspan="2" class="peralatan-satuan-col">SATUAN</th>
-            <th rowspan="2" class="op-jenis-col">JENIS</th>
-            <th rowspan="2" class="op-jumlah-col">JUMLAH</th>
-            <th colspan="6">JENIS BAHAN BAKAR</th>
-            <th rowspan="2" class="op-keterangan-col">KETERANGAN</th>
-            <th rowspan="2" class="tersier-personil-col">UPT</th>
-            <th rowspan="2" class="tersier-personil-col">P3SU</th>
-            <th rowspan="2" class="tersier-dimensi-col">PANJANG<br/>(M)</th>
-            <th rowspan="2" class="tersier-dimensi-col">VOLUME<br/>(M³)</th>
-            <th rowspan="2" class="tersier-dimensi-col">PANJANG<br/>(M)</th>
-            <th rowspan="2" class="tersier-dimensi-col">VOLUME<br/>(M³)</th>
+            <th colspan="2">Foto Kondisi Eksisting</th>
+            <th colspan="2">Foto Kondisi Eksisting</th>
+            <th rowspan="2" class="alat-jenis-col">Jenis</th>
+            <th rowspan="2" class="alat-jumlah-col">Jumlah</th>
+            <th rowspan="2" class="upt-col">UPT</th>
+            <th rowspan="2" class="p3su-col">P3SU</th>
+            <th rowspan="2" class="rencana-panjang-col">Panjang<br/>(m)</th>
+            <th rowspan="2" class="rencana-volume-col">Volume<br/>(m³)</th>
+            <th rowspan="2" class="realisasi-panjang-col">Panjang<br/>(m)</th>
+            <th rowspan="2" class="realisasi-volume-col">Volume<br/>(m³)</th>
           </tr>
           <tr>
-            <th class="op-fuel-col">DEXLITE</th>
-            <th class="op-fuel-satuan-col">SATUAN</th>
-            <th class="op-fuel-col">PERTALITE</th>
-            <th class="op-fuel-satuan-col">SATUAN</th>
-            <th class="op-fuel-col">BIO SOLAR</th>
-            <th class="op-fuel-satuan-col">SATUAN</th>
+            <th class="photo-cell"></th>
+            <th class="photo-cell"></th>
+            <th class="photo-cell"></th>
+            <th class="photo-cell"></th>
           </tr>
         </thead>
         <tbody>
@@ -260,59 +225,17 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
               <td class="center">${index + 1}</td>
               <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
               <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
-              <td class="photo-cell">
+              <td class="photo-cell" colspan="2">
                 <div class="photo-container">
                   ${kegiatan.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
                 </div>
               </td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.foto50Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 50%" />` : '').join('')}
-                </div>
-              </td>
-              <td class="photo-cell">
+              <td class="photo-cell" colspan="2">
                 <div class="photo-container">
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
                 </div>
               </td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
-                </div>
-              </td>
-              <td class="center">${kegiatan.jenisSaluran || '-'}</td>
               <td class="center">${kegiatan.jenisSedimen || '-'}</td>
-              <td>${kegiatan.aktifitasPenanganan}</td>
-              <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
-              <td class="center">${kegiatan.volumeGalian || '-'}</td>
-              <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jenis}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.satuan}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.keterangan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
               <td>
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
@@ -327,76 +250,6 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
                   `).join('')}
                 </ul>
               </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.satuan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.jenis}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.dexliteJumlah || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.dexliteSatuan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.pertaliteJumlah || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.pertaliteSatuan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.bioSolarJumlah || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.bioSolarSatuan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>
-                <ul class="equipment-list">
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.keterangan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
               <td class="center">${kegiatan.jumlahUPT || '-'}</td>
               <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
               <td class="center">${kegiatan.rencanaPanjang || '-'}</td>
@@ -404,6 +257,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
               <td class="center">${kegiatan.realisasiPanjang || '-'}</td>
               <td class="center">${kegiatan.realisasiVolume || '-'}</td>
               <td class="center">${kegiatan.sisaTargetHari || '-'}</td>
+              <td>${kegiatan.koordinator.join(', ')}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}
