@@ -27,17 +27,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { DrainasePrintDialog } from "@/components/DrainasePrintDialog"; // Perbaikan: Menggunakan named import
+import { DrainasePrintDialog } from "@/components/DrainasePrintDialog";
 
 interface LaporanItem {
   id: string;
-  periode: string; // Changed from tanggal
+  periode: string;
   created_at: string;
   kegiatan_count: number;
   report_type: "harian" | "bulanan" | "tersier";
 }
 
-// Define a type for the period data
 interface PeriodData {
   periode: string;
 }
@@ -47,16 +46,13 @@ const LaporanList = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   
-  // States for the new DrainasePrintDialog
   const [isDrainasePrintDialogOpen, setIsDrainasePrintDialogOpen] = useState(false);
   const [laporanIdsToPrint, setLaporanIdsToPrint] = useState<string[]>([]);
   const [currentPrintReportType, setCurrentPrintReportType] = useState<"harian" | "bulanan" | "tersier">("harian");
 
-  // New states for period filtering
   const [uniquePeriods, setUniquePeriods] = useState<string[]>([]);
   const [selectedFilterPeriod, setSelectedFilterPeriod] = useState<string | null>(null);
 
-  // State for monthly print confirmation
   const [showMonthlyPrintConfirm, setShowMonthlyPrintConfirm] = useState(false);
 
   const navigate = useNavigate();
@@ -64,11 +60,10 @@ const LaporanList = () => {
   const fetchLaporans = async (filterPeriod: string | null = null) => {
     setLoading(true);
     try {
-      // 1. Fetch main laporan data
       let laporanQuery = supabase
         .from("laporan_drainase")
         .select("*")
-        .order("created_at", { ascending: false }); // Order by created_at as tanggal is removed
+        .order("created_at", { ascending: false });
 
       if (filterPeriod) {
         laporanQuery = laporanQuery.eq("periode", filterPeriod);
@@ -84,7 +79,6 @@ const LaporanList = () => {
         return;
       }
 
-      // 2. Fetch all periods and deduplicate client-side for the filter dropdown
       const { data: allPeriodsData, error: allPeriodsError } = await supabase
         .from("laporan_drainase")
         .select("periode")
@@ -97,11 +91,9 @@ const LaporanList = () => {
         return;
       }
 
-      // Deduplicate periods client-side
       const uniquePeriodsSet = new Set((allPeriodsData || []).map((p: PeriodData) => p.periode as string));
       setUniquePeriods(Array.from(uniquePeriodsSet));
 
-      // 3. Fetch kegiatan count for each laporan
       const laporansWithCount = await Promise.all(
         (laporanData || []).map(async (laporan) => {
           const { count, error: countError } = await supabase
@@ -139,7 +131,6 @@ const LaporanList = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Delete kegiatan first (cascade should handle materials and peralatan)
       const { error: kegiatanError } = await supabase
         .from("kegiatan_drainase")
         .delete()
@@ -147,7 +138,6 @@ const LaporanList = () => {
 
       if (kegiatanError) throw kegiatanError;
 
-      // Delete laporan
       const { error: laporanError } = await supabase
         .from("laporan_drainase")
         .delete()
@@ -211,7 +201,6 @@ const LaporanList = () => {
                 Buat Laporan Baru
               </Button>
 
-              {/* New Periode Filter Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 w-full sm:w-auto">
@@ -233,7 +222,6 @@ const LaporanList = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Simplified Print Button */}
               <Button 
                 variant="outline" 
                 className="gap-2 w-full sm:w-auto"
@@ -259,25 +247,17 @@ const LaporanList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">Periode</TableHead> {/* Changed from Tanggal */}
-                      <TableHead className="min-w-[100px]">Jenis Laporan</TableHead>
-                      <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
-                      <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
-                      <TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
+                      <TableHead className="min-w-[120px]">Periode</TableHead><TableHead className="min-w-[100px]">Jenis Laporan</TableHead><TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead><TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead><TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {laporans.map((laporan) => (
                       <TableRow key={laporan.id}>
                         <TableCell className="font-medium">
-                          {laporan.periode} {/* Display periode */}
-                        </TableCell>
-                        <TableCell className="capitalize">{laporan.report_type}</TableCell>
-                        <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell>
-                        <TableCell className="hidden md:table-cell">
+                          {laporan.periode}
+                        </TableCell><TableCell className="capitalize">{laporan.report_type}</TableCell><TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell><TableCell className="hidden md:table-cell">
                           {format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
-                        </TableCell>
-                        <TableCell className="text-right">
+                        </TableCell><TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="outline"
@@ -338,7 +318,6 @@ const LaporanList = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Confirmation Dialog for Monthly Print */}
         <AlertDialog open={showMonthlyPrintConfirm} onOpenChange={setShowMonthlyPrintConfirm}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -356,7 +335,6 @@ const LaporanList = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* New DrainasePrintDialog */}
         <DrainasePrintDialog
           isOpen={isDrainasePrintDialogOpen}
           onClose={() => setIsDrainasePrintDialogOpen(false)}
