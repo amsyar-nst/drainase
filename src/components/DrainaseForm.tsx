@@ -1394,6 +1394,7 @@ export const DrainaseForm = () => {
                     <SelectValue placeholder="Pilih jenis saluran" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">-</SelectItem> {/* Default option added here */}
                     <SelectItem value="Terbuka">Terbuka</SelectItem>
                     <SelectItem value="Tertutup">Tertutup</SelectItem>
                     <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
