@@ -137,12 +137,12 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
           border: 1px solid #ccc;
         }
 
-        ul {
+        .material-list, .equipment-list, .koordinator-list { /* Added .koordinator-list */
           margin: 0;
           padding: 0; /* Removed padding-left */
           list-style: none; /* Changed to none */
         }
-        li {
+        .material-list li, .equipment-list li, .koordinator-list li { /* Added .koordinator-list li */
           margin: 0;
           padding: 0;
           line-height: 1.1;
@@ -381,7 +381,13 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
                   `).join('')}
                 </ul>
               </td>
-              <td>${kegiatan.koordinator.join(', ')}</td>
+              <td>
+                <ul class="koordinator-list">
+                  ${kegiatan.koordinator.map(koordinator => `
+                    <li>${koordinator}</li>
+                  `).join('')}
+                </ul>
+              </td>
               <td class="center">${kegiatan.jumlahPHL || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>

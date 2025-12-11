@@ -1,6 +1,10 @@
-import { LaporanDrainase } from "@/types/laporan";
+import { LaporanDrainase, Material } from "@/types/laporan";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+
+// Delimiter used for aggregating multiple entries in the form
+const AGGREGATION_DELIMITER = '; ';
+const MATERIAL_DELIMITER = ';;'; // A distinct delimiter for materials
 
 export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
 
@@ -40,8 +44,49 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
       foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))), // Map over array
       foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))), // Map over array
       foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))), // Map over array
+      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))), // Map over array
     }))
   );
+
+  // Helper to render content with separators
+  const renderContentWithSeparators = (content: string | string[], isMaterialList: boolean = false) => {
+    if (!content) return '-';
+    let items: string[] = [];
+    if (Array.isArray(content)) {
+      items = content.filter(Boolean);
+    } else {
+      items = content.split(isMaterialList ? MATERIAL_DELIMITER : AGGREGATION_DELIMITER).filter(Boolean);
+    }
+
+    if (items.length === 0) return '-';
+
+    return items.map((item, idx) => `
+      ${idx > 0 ? '<hr style="border-top: 1px dashed #ccc; margin: 2px 0;" />' : ''}
+      <span>${item}</span>
+    `).join('');
+  };
+
+  // Helper to render material list with separators
+  const renderMaterialListWithSeparators = (materials: Material[]) => {
+    if (!materials || materials.length === 0) return { jenis: '-', jumlah: '-', satuan: '-' };
+
+    const jenisList: string[] = [];
+    const jumlahList: string[] = [];
+    const satuanList: string[] = [];
+
+    materials.forEach(m => {
+      jenisList.push(m.jenis || '-');
+      jumlahList.push(m.jumlah || '-');
+      satuanList.push(m.satuan || '-');
+    });
+
+    return {
+      jenis: renderContentWithSeparators(jenisList, true),
+      jumlah: renderContentWithSeparators(jumlahList, true),
+      satuan: renderContentWithSeparators(satuanList, true),
+    };
+  };
+
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -120,7 +165,6 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         }
 
         .photo-cell {
-          /* width: 100px; */ /* Removed fixed width */
           text-align: center;
           padding: 2px;
         }
@@ -196,7 +240,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="no-col">No</th>
             <th rowspan="2" class="date-col">Hari/ Tanggal</th>
             <th rowspan="2" class="location-col">Lokasi</th>
-            <th colspan="3">Foto Dokumentasi</th>
+            <th colspan="4">Foto Dokumentasi</th> <!-- Changed colspan to 4 for Foto Sket -->
             <th rowspan="2" class="jenis-col">Jenis Saluran<br/>(Terbuka/ Tertutup)</th>
             <th rowspan="2" class="jenis-col">Jenis Sedimen<br/>(Batu/ Padat/Cair)</th>
             <th rowspan="2">Aktifitas Penanganan</th>
@@ -213,6 +257,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="photo-cell">0%</th>
             <th class="photo-cell">50%</th>
             <th class="photo-cell">100%</th>
+            <th class="photo-cell">Sket</th> <!-- New header for Foto Sket -->
             <th class="material-jenis-col">Jenis</th>
             <th class="material-jumlah-col">Jlh.</th>
             <th class="material-satuan-col">Sat.</th>
@@ -223,7 +268,9 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           </tr>
         </thead>
         <tbody>
-          ${kegiatansWithImages.map((kegiatan, index) => `
+          ${kegiatansWithImages.map((kegiatan, index) => {
+            const materials = renderMaterialListWithSeparators(kegiatan.materials);
+            return `
             <tr>
               <td class="center">${index + 1}</td>
               <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
@@ -243,34 +290,21 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
                 </div>
               </td>
-              <td class="center">${kegiatan.jenisSaluran || '-'}</td>
-              <td class="center">${kegiatan.jenisSedimen || '-'}</td>
-              <td>${kegiatan.aktifitasPenanganan}</td>
+              <td class="photo-cell">
+                <div class="photo-container">
+                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
+                </div>
+              </td>
+              <td>${renderContentWithSeparators(kegiatan.jenisSaluran)}</td>
+              <td>${renderContentWithSeparators(kegiatan.jenisSedimen)}</td>
+              <td>${renderContentWithSeparators(kegiatan.aktifitasPenanganan)}</td>
               <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
               <td class="center">${kegiatan.lebarRataRata || '-'}</td>
               <td class="center">${kegiatan.rataRataSedimen || '-'}</td>
               <td class="center">${kegiatan.volumeGalian || '-'}</td>
-              <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jenis}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.satuan}</li>
-                  `).join('')}
-                </ul>
-              </td>
+              <td>${materials.jenis}</td>
+              <td class="center">${materials.jumlah}</td>
+              <td class="center">${materials.satuan}</td>
               <td>
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
@@ -301,7 +335,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
               <td class="center">${kegiatan.jumlahPHL || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
-          `).join('')}
+          `}).join('')}
         </tbody>
       </table>
 
