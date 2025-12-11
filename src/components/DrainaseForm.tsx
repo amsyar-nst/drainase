@@ -127,6 +127,12 @@ export const DrainaseForm = () => {
   // State for custom inputs for Operasional Alat Berat
   const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
 
+  // New states for dragging
+  const [isFoto0Dragging, setIsFoto0Dragging] = useState(false);
+  const [isFoto50Dragging, setIsFoto50Dragging] = useState(false);
+  const [isFoto100Dragging, setIsFoto100Dragging] = useState(false);
+  const [isFotoSketDragging, setIsFotoSketDragging] = useState(false);
+
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
 
@@ -199,6 +205,49 @@ export const DrainaseForm = () => {
     currentKegiatanIndex,
     formData.reportType,
   ]);
+
+  // Helper to process files from drop/paste
+  const processAndAddFiles = (files: FileList, field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket') => {
+    const newFiles = Array.from(files);
+    if (newFiles.length > 0) {
+      updateCurrentKegiatan({ [field]: [...currentKegiatan[field], ...newFiles] });
+    }
+  };
+
+  // Generic drag and paste handlers factory
+  const createDragAndPasteHandlers = (setDraggingState: React.Dispatch<React.SetStateAction<boolean>>, field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket') => ({
+    onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingState(true);
+    },
+    onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingState(false);
+    },
+    onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingState(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        processAndAddFiles(e.dataTransfer.files, field);
+        e.dataTransfer.clearData();
+      }
+    },
+    onPaste: (e: React.ClipboardEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+        processAndAddFiles(e.clipboardData.files, field);
+      }
+    }
+  });
+
+  // Create handlers for each field
+  const foto0Handlers = createDragAndPasteHandlers(setIsFoto0Dragging, 'foto0');
+  const foto50Handlers = createDragAndPasteHandlers(setIsFoto50Dragging, 'foto50');
+  const foto100Handlers = createDragAndPasteHandlers(setIsFoto100Dragging, 'foto100');
+  const fotoSketHandlers = createDragAndPasteHandlers(setIsFotoSketDragging, 'fotoSket');
 
 
   const loadLaporan = async (laporanId: string) => {
@@ -1026,7 +1075,13 @@ export const DrainaseForm = () => {
           {formData.reportType !== "tersier" ? (
             <div className="grid gap-4 md:grid-cols-4">
               {/* Foto 0% */}
-              <div className="space-y-2">
+              <div 
+                className={cn(
+                  "space-y-2 border-2 border-dashed rounded-md p-4 transition-colors",
+                  isFoto0Dragging ? "border-primary-foreground" : "border-gray-300"
+                )}
+                {...foto0Handlers}
+              >
                 <Label htmlFor="foto-0">Foto 0%</Label>
                 <Input
                   id="foto-0"
@@ -1068,7 +1123,13 @@ export const DrainaseForm = () => {
                 </div>
               </div>
               {/* Foto 50% */}
-              <div className="space-y-2">
+              <div 
+                className={cn(
+                  "space-y-2 border-2 border-dashed rounded-md p-4 transition-colors",
+                  isFoto50Dragging ? "border-primary-foreground" : "border-gray-300"
+                )}
+                {...foto50Handlers}
+              >
                 <Label htmlFor="foto-50">Foto 50%</Label>
                 <Input
                   id="foto-50"
@@ -1110,7 +1171,13 @@ export const DrainaseForm = () => {
                 </div>
               </div>
               {/* Foto 100% */}
-              <div className="space-y-2">
+              <div 
+                className={cn(
+                  "space-y-2 border-2 border-dashed rounded-md p-4 transition-colors",
+                  isFoto100Dragging ? "border-primary-foreground" : "border-gray-300"
+                )}
+                {...foto100Handlers}
+              >
                 <Label htmlFor="foto-100">Foto 100%</Label>
                 <Input
                   id="foto-100"
@@ -1152,7 +1219,13 @@ export const DrainaseForm = () => {
                 </div>
               </div>
               {/* Foto Sket */}
-              <div className="space-y-2">
+              <div 
+                className={cn(
+                  "space-y-2 border-2 border-dashed rounded-md p-4 transition-colors",
+                  isFotoSketDragging ? "border-primary-foreground" : "border-gray-300"
+                )}
+                {...fotoSketHandlers}
+              >
                 <Label htmlFor="foto-sket">Gambar Sket</Label>
                 <Input
                   id="foto-sket"
@@ -1209,7 +1282,13 @@ export const DrainaseForm = () => {
             // Tersier specific photo inputs (Foto 0% and Foto 100%)
             <div className="grid gap-4 md:grid-cols-2">
               {/* Foto 0% (Sebelum) */}
-              <div className="space-y-2">
+              <div 
+                className={cn(
+                  "space-y-2 border-2 border-dashed rounded-md p-4 transition-colors",
+                  isFoto0Dragging ? "border-primary-foreground" : "border-gray-300"
+                )}
+                {...foto0Handlers}
+              >
                 <Label htmlFor="foto-0-tersier">Foto 0% (Sebelum)</Label>
                 <Input
                   id="foto-0-tersier"
@@ -1251,7 +1330,13 @@ export const DrainaseForm = () => {
                 </div>
               </div>
               {/* Foto 100% (Sesudah) */}
-              <div className="space-y-2">
+              <div 
+                className={cn(
+                  "space-y-2 border-2 border-dashed rounded-md p-4 transition-colors",
+                  isFoto100Dragging ? "border-primary-foreground" : "border-gray-300"
+                )}
+                {...foto100Handlers}
+              >
                 <Label htmlFor="foto-100-tersier">Foto 100% (Sesudah)</Label>
                 <Input
                   id="foto-100-tersier"
