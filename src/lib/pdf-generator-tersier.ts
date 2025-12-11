@@ -150,8 +150,6 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         .no-col { width: 20px; }
         .date-col { width: 70px; }
         .location-col { width: 120px; }
-        .alat-col { width: 80px; }
-        .keterangan-col { width: 80px; }
 
         @media print {
           body {
@@ -181,11 +179,6 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="2" class="date-col">HARI/<br/>TANGGAL</th>
             <th rowspan="2" class="location-col">LOKASI</th>
             <th colspan="2" class="photo-main-header-col">FOTO KONDISI EKSISTING</th>
-            <th rowspan="2" class="alat-col">ALAT YANG DIBUTUHKAN</th>
-            <th rowspan="2">TARGET</th>
-            <th rowspan="2">REALISASI</th>
-            <th rowspan="2">JUMLAH PERSONIL</th>
-            <th rowspan="2" class="keterangan-col">KETERANGAN</th>
           </tr>
           <tr>
             <th class="photo-sub-header-col">Sebelum</th>
@@ -208,15 +201,6 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
                 </div>
               </td>
-              <td>
-                <ul>
-                  ${kegiatan.alatYangDibutuhkan?.map(alat => `<li>${alat}</li>`).join('') || '-'}
-                </ul>
-              </td>
-              <td class="center">${kegiatan.rencanaPanjang || '-'} ${kegiatan.rencanaVolume || '-'}</td>
-              <td class="center">${kegiatan.realisasiPanjang || '-'} ${kegiatan.realisasiVolume || '-'}</td>
-              <td class="center">${kegiatan.jumlahUPT || '-'} ${kegiatan.jumlahP3SU || '-'} ${kegiatan.jumlahPHL || '-'}</td>
-              <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}
         </tbody>
