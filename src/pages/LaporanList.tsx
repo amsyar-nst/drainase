@@ -272,15 +272,11 @@ const LaporanList = () => {
                   <TableBody>
                     {laporans.map((laporan) => (
                       <TableRow key={laporan.id}>
-                        <TableCell className="font-medium">
-                          {format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}
-                        </TableCell>
+                        <TableCell className="font-medium">{format(new Date(laporan.tanggal), "dd MMMM yyyy", { locale: idLocale })}</TableCell>
                         <TableCell className="capitalize">{laporan.report_type}</TableCell> {/* Display report type */}
                         <TableCell className="hidden md:table-cell">{laporan.periode}</TableCell>
                         <TableCell className="hidden md:table-cell">{laporan.kegiatan_count} kegiatan</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}
-                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{format(new Date(laporan.created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
