@@ -1,10 +1,6 @@
-import { LaporanDrainase, KegiatanDrainase, Material } from "@/types/laporan"; // Updated import
+import { LaporanDrainase, KegiatanDrainase } from "@/types/laporan"; // Updated import
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-
-// Delimiter used for aggregating multiple entries in the form
-const AGGREGATION_DELIMITER = '; ';
-const MATERIAL_DELIMITER = ';;'; // A distinct delimiter for materials
 
 export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
   // Convert images to base64
@@ -43,51 +39,8 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
       foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))),
       foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))),
       foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))),
-      fotoSketBase64: await Promise.all(kegiatan.fotoSket.map(f => getBase64(f))),
     }))
   );
-
-  // Helper to render content with separators
-  const renderContentWithSeparators = (content: string | string[], isMaterialList: boolean = false) => {
-    if (!content) return '-';
-    let items: string[] = [];
-    if (Array.isArray(content)) {
-      items = content.filter(Boolean);
-    } else {
-      items = content.split(isMaterialList ? MATERIAL_DELIMITER : AGGREGATION_DELIMITER).filter(Boolean);
-    }
-
-    if (items.length === 0) return '-';
-
-    return items.map((item, idx) => `
-      ${idx > 0 ? '<hr style="border-top: 1px dashed #ccc; margin: 2px 0;" />' : ''}
-      <span>${item}</span>
-    `).join('');
-  };
-
-  // Helper to render material list with separators
-  const renderMaterialListWithSeparators = (materials: Material[]) => {
-    if (!materials || materials.length === 0) return { jenis: '-', jumlah: '-', satuan: '-', keterangan: '-' };
-
-    const jenisList: string[] = [];
-    const jumlahList: string[] = [];
-    const satuanList: string[] = [];
-    const keteranganList: string[] = [];
-
-    materials.forEach(m => {
-      jenisList.push(m.jenis || '-');
-      jumlahList.push(m.jumlah || '-');
-      satuanList.push(m.satuan || '-');
-      keteranganList.push(m.keterangan || '-');
-    });
-
-    return {
-      jenis: renderContentWithSeparators(jenisList, true),
-      jumlah: renderContentWithSeparators(jumlahList, true),
-      satuan: renderContentWithSeparators(satuanList, true),
-      keterangan: renderContentWithSeparators(keteranganList, true),
-    };
-  };
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -184,12 +137,12 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
           border: 1px solid #ccc;
         }
 
-        .material-list, .equipment-list, .koordinator-list { /* Added .koordinator-list */
+        ul {
           margin: 0;
           padding: 0; /* Removed padding-left */
           list-style: none; /* Changed to none */
         }
-        .material-list li, .equipment-list li, .koordinator-list li { /* Added .koordinator-list li */
+        li {
           margin: 0;
           padding: 0;
           line-height: 1.1;
@@ -250,7 +203,7 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="3" class="no-col">NO</th>
             <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
             <th rowspan="3" class="location-col">LOKASI</th>
-            <th colspan="4">FOTO DOKUMENTASI</th> <!-- Changed colspan to 4 for Foto Sket -->
+            <th colspan="3">FOTO DOKUMENTASI</th> <!-- Changed colspan to 3 -->
             <th rowspan="3" class="jenis-saluran-col">JENIS SALURAN<br/>(TERBUKA/<br/>TERTUTUP)</th>
             <th rowspan="3" class="jenis-sedimen-col">JENIS SEDIMEN<br/>(BATU/PADAT/<br/>CAIR)</th>
             <th rowspan="3" class="uraian-kegiatan-col">URAIAN KEGIATAN</th>
@@ -265,7 +218,6 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="2" class="photo-cell">0%</th>
             <th rowspan="2" class="photo-cell">50%</th>
             <th rowspan="2" class="photo-cell">100%</th>
-            <th rowspan="2" class="photo-cell">Sket</th> <!-- New header for Foto Sket -->
             <th rowspan="2" class="panjang-col">PANJANG<br/>(M)</th>
             <th rowspan="2" class="volume-col">(M³)</th>
             <th rowspan="2" class="material-jenis-col">JENIS</th>
@@ -292,9 +244,7 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
           </tr>
         </thead>
         <tbody>
-          ${kegiatansWithImages.map((kegiatan, index) => {
-            const materials = renderMaterialListWithSeparators(kegiatan.materials);
-            return `
+          ${kegiatansWithImages.map((kegiatan, index) => `
             <tr>
               <td class="center">${index + 1}</td>
               <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
@@ -314,27 +264,43 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
                   ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
                 </div>
               </td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.fotoSketBase64.map(base64 => base64 ? `<img src="${base64}" alt="Foto Sket" />` : '').join('')}
-                </div>
-              </td>
-              <td>${renderContentWithSeparators(kegiatan.jenisSaluran)}</td>
-              <td>${renderContentWithSeparators(kegiatan.jenisSedimen)}</td>
-              <td>${renderContentWithSeparators(kegiatan.aktifitasPenanganan)}</td>
+              <td class="center">${kegiatan.jenisSaluran || '-'}</td>
+              <td class="center">${kegiatan.jenisSedimen || '-'}</td>
+              <td>${kegiatan.aktifitasPenanganan}</td>
               <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
               <td class="center">${kegiatan.volumeGalian || '-'}</td>
-              <td>${materials.jenis}</td>
-              <td class="center">${materials.jumlah}</td>
-              <td class="center">${materials.satuan}</td>
-              <td>${materials.keterangan}</td>
+              <td>
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.jenis}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td class="center">
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.jumlah}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td class="center">
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.satuan}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td>
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.keterangan || '-'}</li>
+                  `).join('')}
+                </ul>
+              </td>
               <td>
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.nama}</li>
-                  `).join('')}
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.jenis}</li>
                   `).join('')}
                 </ul>
               </td>
@@ -342,9 +308,6 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.jumlah}</li>
-                  `).join('')}
-                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
-                    <li>${op.jumlah}</li>
                   `).join('')}
                 </ul>
               </td>
@@ -418,17 +381,11 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
                   `).join('')}
                 </ul>
               </td>
-              <td>
-                <ul class="koordinator-list">
-                  ${kegiatan.koordinator.map(koordinator => `
-                    <li>${koordinator}</li>
-                  `).join('')}
-                </ul>
-              </td>
+              <td>${kegiatan.koordinator.join(', ')}</td>
               <td class="center">${kegiatan.jumlahPHL || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
-          `}).join('')}
+          `).join('')}
         </tbody>
       </table>
 
