@@ -135,7 +135,7 @@ export const alatBeratOptions = [
   "Dump Truck",
   "Crane",
   "Wheel Loader",
-  "Skid Steer Loader",
+  "Skid Loader", // Changed from "Skid Steer Loader"
   "Asphalt Finisher",
   "Exc. Mini", 
   "Trado Mini"  
