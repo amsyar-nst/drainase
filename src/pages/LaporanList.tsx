@@ -261,12 +261,7 @@ const LaporanList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">Tanggal</TableHead>
-                      <TableHead className="min-w-[100px]">Jenis Laporan</TableHead> {/* New column */}
-                      <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
-                      <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
-                      <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
-                      <TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
+                      <TableHead className="min-w-[120px]">Tanggal</TableHead><TableHead className="min-w-[100px]">Jenis Laporan</TableHead><TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead><TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead><TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead><TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
