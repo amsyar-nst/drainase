@@ -164,8 +164,9 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
         .material-jumlah-col { width: 30px; }
         .material-satuan-col { width: 30px; }
         .material-keterangan-col { width: 50px; }
-        .peralatan-jenis-col { width: 160px; } /* Adjusted width */
-        .peralatan-jumlah-col { width: 40px; } /* Adjusted width */
+        .peralatan-jenis-col { width: 130px; } /* Increased width */
+        .peralatan-jumlah-col { width: 30px; }
+        .peralatan-satuan-col { width: 30px; }
         .op-jenis-col { width: 100px; } /* Increased width */
         .op-jumlah-col { width: 30px; }
         .op-fuel-col { width: 30px; } /* For dexlite, pertalite, bio solar jumlah */
@@ -202,13 +203,13 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="3" class="no-col">NO</th>
             <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
             <th rowspan="3" class="location-col">LOKASI</th>
-            <th colspan="3">FOTO DOKUMENTASI</th>
+            <th colspan="3">FOTO DOKUMENTASI</th> <!-- Changed colspan to 3 -->
             <th rowspan="3" class="jenis-saluran-col">JENIS SALURAN<br/>(TERBUKA/<br/>TERTUTUP)</th>
             <th rowspan="3" class="jenis-sedimen-col">JENIS SEDIMEN<br/>(BATU/PADAT/<br/>CAIR)</th>
             <th rowspan="3" class="uraian-kegiatan-col">URAIAN KEGIATAN</th>
             <th colspan="2">VOLUME</th>
             <th colspan="4">BAHAN MATERIAL</th>
-            <th colspan="2">PERALATAN</th> <!-- colspan changed to 2 -->
+            <th colspan="3">PERALATAN</th>
             <th colspan="9">OPERASIONAL ALAT BERAT</th>
             <th colspan="2">JUMLAH PERSONIL</th>
             <th rowspan="3" class="keterangan-akhir-col">KETERANGAN</th>
@@ -225,6 +226,7 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="2" class="material-keterangan-col">KETERANGAN</th>
             <th rowspan="2" class="peralatan-jenis-col">JENIS</th>
             <th rowspan="2" class="peralatan-jumlah-col">JUMLAH</th>
+            <th rowspan="2" class="peralatan-satuan-col">SATUAN</th>
             <th rowspan="2" class="op-jenis-col">JENIS</th>
             <th rowspan="2" class="op-jumlah-col">JUMLAH</th>
             <th colspan="6">JENIS BAHAN BAKAR</th>
@@ -306,6 +308,13 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.jumlah}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td class="center">
+                <ul class="equipment-list">
+                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                    <li>${peralatan.satuan || '-'}</li>
                   `).join('')}
                 </ul>
               </td>

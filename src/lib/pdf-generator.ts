@@ -12,7 +12,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         return;
       }
       if (typeof file === 'string') {
-        // If it's a string, assume it's a URL and fetch its content to convert to base64
+        // If it's a URL, fetch its content to convert to base64
         try {
           const response = await fetch(file);
           if (!response.ok) throw new Error(`Failed to fetch image from URL: ${file}`);
@@ -220,7 +220,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
             <th colspan="4">Material / Bahan</th>
-            <th colspan="3">Peralatan & Alat Berat</th>
+            <th colspan="2">Peralatan & Alat Berat</th> <!-- colspan changed to 2 -->
             <th colspan="2">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
@@ -232,9 +232,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="number-col">Jlh.</th>
             <th class="number-col">Sat.</th>
             <th class="keterangan-col">Ket. Material</th>
-            <th style="width: 80px;">Jenis</th>
-            <th class="number-col">Jlh.</th>
-            <th class="number-col">Sat.</th>
+            <th style="width: 100px;">Jenis</th> <!-- Adjusted width -->
+            <th class="number-col" style="width: 60px;">Jlh.</th> <!-- Adjusted width -->
             <th style="width: 70px;">Koordinator</th>
             <th class="number-col">Jml PHL</th>
           </tr>
@@ -306,13 +305,6 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.satuan || '-'}</li>
                   `).join('')}
                 </ul>
               </td>
