@@ -1442,55 +1442,99 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Aktifitas & Measurements (Conditional for Harian/Bulanan) */}
+          {/* Aktifitas Penanganan (Conditional for Harian/Bulanan) */}
           {formData.reportType !== "tersier" && (
-            <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
+              <Input
+                id="aktifitas"
+                value={currentKegiatan.aktifitasPenanganan}
+                onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
+                placeholder="Contoh: Pembersihan dan Pengerukan"
+              />
+            </div>
+          )}
+
+          {/* Rencana/Realisasi Panjang/Volume (Conditional for Harian/Tersier) */}
+          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
+                <Label htmlFor="rencana-panjang">Rencana Panjang (M)</Label>
                 <Input
-                  id="aktifitas"
-                  value={currentKegiatan.aktifitasPenanganan}
-                  onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
-                  placeholder="Contoh: Pembersihan dan Pengerukan"
+                  id="rencana-panjang"
+                  value={currentKegiatan.rencanaPanjang || ""}
+                  onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
+                  placeholder="0"
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
-                  <Input
-                    id="panjang"
-                    value={currentKegiatan.panjangPenanganan}
-                    onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
-                  <Input
-                    id="lebar"
-                    value={currentKegiatan.lebarRataRata}
-                    onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
-                  <Input
-                    id="sedimen"
-                    value={currentKegiatan.rataRataSedimen}
-                    onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="volume">Volume Galian (M³)</Label>
-                  <Input
-                    id="volume"
-                    value={currentKegiatan.volumeGalian}
-                    onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="rencana-volume">Rencana Volume (M³)</Label>
+                <Input
+                  id="rencana-volume"
+                  value={currentKegiatan.rencanaVolume || ""}
+                  onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="realisasi-panjang">Realisasi Panjang (M)</Label>
+                <Input
+                  id="realisasi-panjang"
+                  value={currentKegiatan.realisasiPanjang || ""}
+                  onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="realisasi-volume">Realisasi Volume (M³)</Label>
+                <Input
+                  id="realisasi-volume"
+                  value={currentKegiatan.realisasiVolume || ""}
+                  onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Measurements (Panjang, Lebar, Sedimen, Volume) (Conditional for Harian/Bulanan) */}
+          {formData.reportType !== "tersier" && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
+                <Input
+                  id="panjang"
+                  value={currentKegiatan.panjangPenanganan}
+                  onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
+                <Input
+                  id="lebar"
+                  value={currentKegiatan.lebarRataRata}
+                  onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
+                <Input
+                  id="sedimen"
+                  value={currentKegiatan.rataRataSedimen}
+                  onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="volume">Volume Galian (M³)</Label>
+                <Input
+                  id="volume"
+                  value={currentKegiatan.volumeGalian}
+                  onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
+                  placeholder="0"
+                />
               </div>
             </div>
           )}
@@ -1601,48 +1645,6 @@ export const DrainaseForm = () => {
               operasionalCustomInputs={operasionalCustomInputs}
               setOperasionalCustomInputs={setOperasionalCustomInputs}
             />
-          )}
-
-          {/* Rencana/Realisasi Panjang/Volume (Conditional for Harian/Tersier) */}
-          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="rencana-panjang">Rencana Panjang (M)</Label>
-                <Input
-                  id="rencana-panjang"
-                  value={currentKegiatan.rencanaPanjang || ""}
-                  onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rencana-volume">Rencana Volume (M³)</Label>
-                <Input
-                  id="rencana-volume"
-                  value={currentKegiatan.rencanaVolume || ""}
-                  onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="realisasi-panjang">Realisasi Panjang (M)</Label>
-                <Input
-                  id="realisasi-panjang"
-                  value={currentKegiatan.realisasiPanjang || ""}
-                  onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="realisasi-volume">Realisasi Volume (M³)</Label>
-                <Input
-                  id="realisasi-volume"
-                  value={currentKegiatan.realisasiVolume || ""}
-                  onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
           )}
 
           {/* Tersier Specific Fields (sisaTarget, jumlahUPT, jumlahP3SU) */}
