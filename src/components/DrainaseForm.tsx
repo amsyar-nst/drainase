@@ -1391,10 +1391,9 @@ export const DrainaseForm = () => {
                   onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
                 >
                   <SelectTrigger id="jenis-saluran">
-                    <SelectValue placeholder="Pilih jenis saluran" />
+                    <SelectValue placeholder="-" /> {/* Placeholder changed to "-" */}
                   </SelectTrigger>
                   <SelectContent>
-                    {/* Removed SelectItem with empty value to fix the error */}
                     <SelectItem value="Terbuka">Terbuka</SelectItem>
                     <SelectItem value="Tertutup">Tertutup</SelectItem>
                     <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
