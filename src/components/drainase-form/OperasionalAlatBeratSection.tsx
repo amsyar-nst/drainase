@@ -116,12 +116,12 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
         <div key={operasional.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
           {/* Jenis Alat Berat */}
           <div className="space-y-2 md:col-span-3">
-            <Label>Jenis Alat Berat</Label>
+            <Label htmlFor={`operasional-${operasional.id}-jenis`}>Jenis Alat Berat</Label>
             <Select
               value={alatBeratOptions.includes(operasional.jenis) ? operasional.jenis : "custom"}
               onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger id={`operasional-${operasional.id}-jenis`}>
                 <SelectValue placeholder="Pilih jenis alat berat" />
               </SelectTrigger>
               <SelectContent>
@@ -135,6 +135,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             </Select>
             {operasional.jenis === "custom" ? (
               <Input
+                id={`operasional-${operasional.id}-custom-jenis`}
                 type="text"
                 placeholder="Masukkan jenis alat berat manual"
                 value={operasionalCustomInputs[operasional.id] || ""}
@@ -145,8 +146,9 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           </div>
           {/* Jumlah */}
           <div className="space-y-2 md:col-span-1">
-            <Label>Jumlah</Label>
+            <Label htmlFor={`operasional-${operasional.id}-jumlah`}>Jumlah</Label>
             <Input
+              id={`operasional-${operasional.id}-jumlah`}
               type="text"
               placeholder="0"
               value={operasional.jumlah === 0 ? "" : operasional.jumlah.toString()}
@@ -161,8 +163,9 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           </div>
           {/* Dexlite Jumlah */}
           <div className="space-y-2 md:col-span-1">
-            <Label>Dexlite</Label>
+            <Label htmlFor={`operasional-${operasional.id}-dexlite-jumlah`}>Dexlite</Label>
             <Input
+              id={`operasional-${operasional.id}-dexlite-jumlah`}
               type="text"
               placeholder="Jumlah (L)"
               value={operasional.dexliteJumlah}
@@ -171,8 +174,9 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           </div>
           {/* Pertalite Jumlah */}
           <div className="space-y-2 md:col-span-1">
-            <Label>Pertalite</Label>
+            <Label htmlFor={`operasional-${operasional.id}-pertalite-jumlah`}>Pertalite</Label>
             <Input
+              id={`operasional-${operasional.id}-pertalite-jumlah`}
               type="text"
               placeholder="Jumlah (L)"
               value={operasional.pertaliteJumlah}
@@ -181,8 +185,9 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           </div>
           {/* Bio Solar Jumlah */}
           <div className="space-y-2 md:col-span-1">
-            <Label>Bio Solar</Label>
+            <Label htmlFor={`operasional-${operasional.id}-bio-solar-jumlah`}>Bio Solar</Label>
             <Input
+              id={`operasional-${operasional.id}-bio-solar-jumlah`}
               type="text"
               placeholder="Jumlah (L)"
               value={operasional.bioSolarJumlah}
@@ -191,8 +196,9 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
           </div>
           {/* Keterangan */}
           <div className="space-y-2 md:col-span-3">
-            <Label>Keterangan</Label>
+            <Label htmlFor={`operasional-${operasional.id}-keterangan`}>Keterangan</Label>
             <Textarea
+              id={`operasional-${operasional.id}-keterangan`}
               placeholder="Catatan tambahan"
               value={operasional.keterangan}
               onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}

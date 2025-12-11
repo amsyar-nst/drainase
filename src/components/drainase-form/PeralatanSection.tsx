@@ -102,12 +102,12 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
       {currentKegiatan.peralatans.map((peralatan) => (
         <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
           <div className="space-y-2 md:col-span-2">
-            <Label>Nama Peralatan</Label>
+            <Label htmlFor={`peralatan-${peralatan.id}-nama`}>Nama Peralatan</Label>
             <Select
               value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
               onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger id={`peralatan-${peralatan.id}-nama`}>
                 <SelectValue placeholder="Pilih peralatan" />
               </SelectTrigger>
               <SelectContent>
@@ -121,6 +121,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
             </Select>
             {peralatan.nama === "custom" ? (
               <Input
+                id={`peralatan-${peralatan.id}-custom-nama`}
                 type="text"
                 placeholder="Masukkan nama peralatan manual"
                 value={peralatanCustomInputs[peralatan.id] || ""}
@@ -130,8 +131,9 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
             ) : null}
           </div>
           <div className="space-y-2">
-            <Label>Jumlah</Label>
+            <Label htmlFor={`peralatan-${peralatan.id}-jumlah`}>Jumlah</Label>
             <Input
+              id={`peralatan-${peralatan.id}-jumlah`}
               type="number"
               min="1"
               value={peralatan.jumlah}
@@ -139,12 +141,12 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <Label>Satuan</Label>
+            <Label htmlFor={`peralatan-${peralatan.id}-satuan`}>Satuan</Label>
             <Select
               value={peralatan.satuan}
               onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger id={`peralatan-${peralatan.id}-satuan`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

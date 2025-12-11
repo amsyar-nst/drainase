@@ -458,10 +458,10 @@ export const DrainaseForm = () => {
       lebarRataRata: "",
       rataRataSedimen: "",
       volumeGalian: "",
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
-      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }],
+      materials: [{ id: Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
+      peralatans: [{ id: Date.now().toString() + '-per', nama: "", jumlah: 1, satuan: "Unit" }],
       operasionalAlatBerats: [{
-        id: "1",
+        id: Date.now().toString() + '-op',
         jenis: "",
         jumlah: 0,
         dexliteJumlah: "",
@@ -989,10 +989,10 @@ export const DrainaseForm = () => {
           {/* Hari/Tanggal Kegiatan (Only for Harian and Tersier) */}
           {(formData.reportType === "harian" || formData.reportType === "tersier") && (
             <div className="space-y-2">
-              <Label htmlFor="hari-tanggal-kegiatan">Hari/Tanggal Kegiatan</Label>
+              <Label htmlFor={`hari-tanggal-kegiatan-${currentKegiatan.id}`}>Hari/Tanggal Kegiatan</Label>
               <div className="relative flex items-center">
                 <Input
-                  id="hari-tanggal-kegiatan"
+                  id={`hari-tanggal-kegiatan-${currentKegiatan.id}`}
                   value={activityDateInputStrings[currentKegiatanIndex] || ""}
                   onChange={(e) => handleActivityDateInputChange(e, currentKegiatanIndex)}
                   placeholder="dd/MM/yyyy"
@@ -1027,18 +1027,18 @@ export const DrainaseForm = () => {
           {/* Lokasi */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="nama-jalan">Nama Jalan</Label>
+              <Label htmlFor={`nama-jalan-${currentKegiatan.id}`}>Nama Jalan</Label>
               <Input
-                id="nama-jalan"
+                id={`nama-jalan-${currentKegiatan.id}`}
                 value={currentKegiatan.namaJalan}
                 onChange={(e) => updateCurrentKegiatan({ namaJalan: e.target.value })}
                 placeholder="Masukkan nama jalan"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="kecamatan">Kecamatan</Label>
+              <Label htmlFor={`kecamatan-${currentKegiatan.id}`}>Kecamatan</Label>
               <Select value={currentKegiatan.kecamatan} onValueChange={handleKecamatanChange}>
-                <SelectTrigger id="kecamatan">
+                <SelectTrigger id={`kecamatan-${currentKegiatan.id}`}>
                   <SelectValue placeholder="Pilih kecamatan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1051,13 +1051,13 @@ export const DrainaseForm = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="kelurahan">Kelurahan</Label>
+              <Label htmlFor={`kelurahan-${currentKegiatan.id}`}>Kelurahan</Label>
               <Select
                 value={currentKegiatan.kelurahan}
                 onValueChange={handleKelurahanChange}
                 disabled={!kelurahanOptions.length}
               >
-                <SelectTrigger id="kelurahan">
+                <SelectTrigger id={`kelurahan-${currentKegiatan.id}`}>
                   <SelectValue placeholder="Pilih kelurahan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1082,9 +1082,9 @@ export const DrainaseForm = () => {
                 )}
                 {...foto0Handlers}
               >
-                <Label htmlFor="foto-0">Foto 0%</Label>
+                <Label htmlFor={`foto-0-${currentKegiatan.id}`}>Foto 0%</Label>
                 <Input
-                  id="foto-0"
+                  id={`foto-0-${currentKegiatan.id}`}
                   type="file"
                   accept="image/*"
                   multiple
@@ -1130,9 +1130,9 @@ export const DrainaseForm = () => {
                 )}
                 {...foto50Handlers}
               >
-                <Label htmlFor="foto-50">Foto 50%</Label>
+                <Label htmlFor={`foto-50-${currentKegiatan.id}`}>Foto 50%</Label>
                 <Input
-                  id="foto-50"
+                  id={`foto-50-${currentKegiatan.id}`}
                   type="file"
                   accept="image/*"
                   multiple
@@ -1178,9 +1178,9 @@ export const DrainaseForm = () => {
                 )}
                 {...foto100Handlers}
               >
-                <Label htmlFor="foto-100">Foto 100%</Label>
+                <Label htmlFor={`foto-100-${currentKegiatan.id}`}>Foto 100%</Label>
                 <Input
-                  id="foto-100"
+                  id={`foto-100-${currentKegiatan.id}`}
                   type="file"
                   accept="image/*"
                   multiple
@@ -1226,9 +1226,9 @@ export const DrainaseForm = () => {
                 )}
                 {...fotoSketHandlers}
               >
-                <Label htmlFor="foto-sket">Gambar Sket</Label>
+                <Label htmlFor={`foto-sket-${currentKegiatan.id}`}>Gambar Sket</Label>
                 <Input
-                  id="foto-sket"
+                  id={`foto-sket-${currentKegiatan.id}`}
                   type="file"
                   accept="image/*,application/pdf"
                   multiple
@@ -1289,9 +1289,9 @@ export const DrainaseForm = () => {
                 )}
                 {...foto0Handlers}
               >
-                <Label htmlFor="foto-0-tersier">Foto 0% (Sebelum)</Label>
+                <Label htmlFor={`foto-0-tersier-${currentKegiatan.id}`}>Foto 0% (Sebelum)</Label>
                 <Input
-                  id="foto-0-tersier"
+                  id={`foto-0-tersier-${currentKegiatan.id}`}
                   type="file"
                   accept="image/*"
                   multiple
@@ -1337,9 +1337,9 @@ export const DrainaseForm = () => {
                 )}
                 {...foto100Handlers}
               >
-                <Label htmlFor="foto-100-tersier">Foto 100% (Sesudah)</Label>
+                <Label htmlFor={`foto-100-tersier-${currentKegiatan.id}`}>Foto 100% (Sesudah)</Label>
                 <Input
-                  id="foto-100-tersier"
+                  id={`foto-100-tersier-${currentKegiatan.id}`}
                   type="file"
                   accept="image/*"
                   multiple
@@ -1385,12 +1385,12 @@ export const DrainaseForm = () => {
           {formData.reportType !== "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="jenis-saluran">Jenis Saluran</Label>
+                <Label htmlFor={`jenis-saluran-${currentKegiatan.id}`}>Jenis Saluran</Label>
                 <Select
                   value={currentKegiatan.jenisSaluran}
                   onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
                 >
-                  <SelectTrigger id="jenis-saluran">
+                  <SelectTrigger id={`jenis-saluran-${currentKegiatan.id}`}>
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1401,7 +1401,7 @@ export const DrainaseForm = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="jenis-sedimen">Jenis Sedimen</Label>
+                <Label htmlFor={`jenis-sedimen-${currentKegiatan.id}`}>Jenis Sedimen</Label>
                 <Select
                   value={selectedSedimenOption}
                   onValueChange={(value) => {
@@ -1414,7 +1414,7 @@ export const DrainaseForm = () => {
                     }
                   }}
                 >
-                  <SelectTrigger id="jenis-sedimen">
+                  <SelectTrigger id={`jenis-sedimen-${currentKegiatan.id}`}>
                     <SelectValue placeholder="Pilih jenis sedimen" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1428,6 +1428,7 @@ export const DrainaseForm = () => {
                 </Select>
                 {selectedSedimenOption === "custom" && (
                   <Input
+                    id={`custom-jenis-sedimen-${currentKegiatan.id}`}
                     type="text"
                     placeholder="Masukkan jenis sedimen manual"
                     value={customSedimen}
@@ -1445,9 +1446,9 @@ export const DrainaseForm = () => {
           {/* Aktifitas Penanganan (Conditional for Harian/Bulanan) */}
           {formData.reportType !== "tersier" && (
             <div className="space-y-2">
-              <Label htmlFor="aktifitas">Aktifitas Penanganan</Label>
+              <Label htmlFor={`aktifitas-${currentKegiatan.id}`}>Aktifitas Penanganan</Label>
               <Input
-                id="aktifitas"
+                id={`aktifitas-${currentKegiatan.id}`}
                 value={currentKegiatan.aktifitasPenanganan}
                 onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
                 placeholder="Contoh: Pembersihan dan Pengerukan"
@@ -1459,36 +1460,36 @@ export const DrainaseForm = () => {
           {(formData.reportType === "harian" || formData.reportType === "tersier") && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="rencana-panjang">Rencana Panjang (M)</Label>
+                <Label htmlFor={`rencana-panjang-${currentKegiatan.id}`}>Rencana Panjang (M)</Label>
                 <Input
-                  id="rencana-panjang"
+                  id={`rencana-panjang-${currentKegiatan.id}`}
                   value={currentKegiatan.rencanaPanjang || ""}
                   onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
                   placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rencana-volume">Rencana Volume (M³)</Label>
+                <Label htmlFor={`rencana-volume-${currentKegiatan.id}`}>Rencana Volume (M³)</Label>
                 <Input
-                  id="rencana-volume"
+                  id={`rencana-volume-${currentKegiatan.id}`}
                   value={currentKegiatan.rencanaVolume || ""}
                   onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
                   placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="realisasi-panjang">Realisasi Panjang (M)</Label>
+                <Label htmlFor={`realisasi-panjang-${currentKegiatan.id}`}>Realisasi Panjang (M)</Label>
                 <Input
-                  id="realisasi-panjang"
+                  id={`realisasi-panjang-${currentKegiatan.id}`}
                   value={currentKegiatan.realisasiPanjang || ""}
                   onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
                   placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="realisasi-volume">Realisasi Volume (M³)</Label>
+                <Label htmlFor={`realisasi-volume-${currentKegiatan.id}`}>Realisasi Volume (M³)</Label>
                 <Input
-                  id="realisasi-volume"
+                  id={`realisasi-volume-${currentKegiatan.id}`}
                   value={currentKegiatan.realisasiVolume || ""}
                   onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
                   placeholder="0"
@@ -1501,36 +1502,36 @@ export const DrainaseForm = () => {
           {formData.reportType !== "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="panjang">Panjang Penanganan (M)</Label>
+                <Label htmlFor={`panjang-${currentKegiatan.id}`}>Panjang Penanganan (M)</Label>
                 <Input
-                  id="panjang"
+                  id={`panjang-${currentKegiatan.id}`}
                   value={currentKegiatan.panjangPenanganan}
                   onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
                   placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lebar">Lebar Rata-rata (M)</Label>
+                <Label htmlFor={`lebar-${currentKegiatan.id}`}>Lebar Rata-rata (M)</Label>
                 <Input
-                  id="lebar"
+                  id={`lebar-${currentKegiatan.id}`}
                   value={currentKegiatan.lebarRataRata}
                   onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
                   placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sedimen">Tinggi Rata-rata Sedimen (M)</Label>
+                <Label htmlFor={`sedimen-${currentKegiatan.id}`}>Tinggi Rata-rata Sedimen (M)</Label>
                 <Input
-                  id="sedimen"
+                  id={`sedimen-${currentKegiatan.id}`}
                   value={currentKegiatan.rataRataSedimen}
                   onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
                   placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="volume">Volume Galian (M³)</Label>
+                <Label htmlFor={`volume-${currentKegiatan.id}`}>Volume Galian (M³)</Label>
                 <Input
-                  id="volume"
+                  id={`volume-${currentKegiatan.id}`}
                   value={currentKegiatan.volumeGalian}
                   onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
                   placeholder="0"
@@ -1546,12 +1547,12 @@ export const DrainaseForm = () => {
               {currentKegiatan.materials.map((material) => (
                 <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
                   <div className="space-y-2">
-                    <Label>Jenis Material</Label>
+                    <Label htmlFor={`material-${material.id}-jenis`}>Jenis Material</Label>
                     <Select
                       value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
                       onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id={`material-${material.id}-jenis`}>
                         <SelectValue placeholder="Pilih material" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1565,6 +1566,7 @@ export const DrainaseForm = () => {
                     </Select>
                     {material.jenis === "custom" ? (
                       <Input
+                        id={`material-${material.id}-custom-jenis`}
                         type="text"
                         placeholder="Masukkan jenis material manual"
                         value={materialCustomInputs[material.id] || ""}
@@ -1574,20 +1576,21 @@ export const DrainaseForm = () => {
                     ) : null}
                   </div>
                   <div className="space-y-2">
-                    <Label>Jumlah</Label>
+                    <Label htmlFor={`material-${material.id}-jumlah`}>Jumlah</Label>
                     <Input
+                      id={`material-${material.id}-jumlah`}
                       value={material.jumlah}
                       onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
                       placeholder="0"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Satuan</Label>
+                    <Label htmlFor={`material-${material.id}-satuan`}>Satuan</Label>
                     <Select
                       value={material.satuan}
                       onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id={`material-${material.id}-satuan`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1600,8 +1603,9 @@ export const DrainaseForm = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Keterangan</Label>
+                    <Label htmlFor={`material-${material.id}-keterangan`}>Keterangan</Label>
                     <Input
+                      id={`material-${material.id}-keterangan`}
                       value={material.keterangan || ""}
                       onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
                       placeholder="Catatan material (opsional)"
@@ -1651,18 +1655,18 @@ export const DrainaseForm = () => {
           {formData.reportType === "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="sisa-target">Sisa Target</Label>
+                <Label htmlFor={`sisa-target-${currentKegiatan.id}`}>Sisa Target</Label>
                 <Input
-                  id="sisa-target"
+                  id={`sisa-target-${currentKegiatan.id}`}
                   value={currentKegiatan.sisaTarget || ""}
                   onChange={(e) => updateCurrentKegiatan({ sisaTarget: e.target.value })}
                   placeholder="Sisa target"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="jumlah-upt">Jumlah Personil UPT</Label>
+                <Label htmlFor={`jumlah-upt-${currentKegiatan.id}`}>Jumlah Personil UPT</Label>
                 <Input
-                  id="jumlah-upt"
+                  id={`jumlah-upt-${currentKegiatan.id}`}
                   type="text"
                   placeholder="0"
                   value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString() || ""}
@@ -1676,9 +1680,9 @@ export const DrainaseForm = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="jumlah-p3su">Jumlah Personil P3SU</Label>
+                <Label htmlFor={`jumlah-p3su-${currentKegiatan.id}`}>Jumlah Personil P3SU</Label>
                 <Input
-                  id="jumlah-p3su"
+                  id={`jumlah-p3su-${currentKegiatan.id}`}
                   type="text"
                   placeholder="0"
                   value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString() || ""}
@@ -1697,16 +1701,16 @@ export const DrainaseForm = () => {
           {/* Koordinator & Jumlah PHL (Jumlah PHL always visible) */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="koordinator">Koordinator</Label>
-              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-md p-2">
+              <Label htmlFor={`koordinator-section-${currentKegiatan.id}`}>Koordinator</Label>
+              <div id={`koordinator-section-${currentKegiatan.id}`} className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-md p-2">
                 {koordinatorOptions.map((koordinator) => (
                   <div key={koordinator} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`koordinator-${koordinator}`}
+                      id={`koordinator-${currentKegiatan.id}-${koordinator.replace(/\s/g, '-')}`}
                       checked={currentKegiatan.koordinator.includes(koordinator)}
                       onCheckedChange={() => toggleKoordinator(koordinator)}
                     />
-                    <Label htmlFor={`koordinator-${koordinator}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    <Label htmlFor={`koordinator-${currentKegiatan.id}-${koordinator.replace(/\s/g, '-')}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {koordinator}
                     </Label>
                   </div>
@@ -1714,9 +1718,9 @@ export const DrainaseForm = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
+              <Label htmlFor={`jumlah-phl-${currentKegiatan.id}`}>Jumlah PHL</Label>
               <Input
-                id="jumlah-phl"
+                id={`jumlah-phl-${currentKegiatan.id}`}
                 type="text"
                 placeholder="0"
                 value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
@@ -1733,9 +1737,9 @@ export const DrainaseForm = () => {
 
           {/* Keterangan */}
           <div className="space-y-2">
-            <Label htmlFor="keterangan">Keterangan</Label>
+            <Label htmlFor={`keterangan-${currentKegiatan.id}`}>Keterangan</Label>
             <Textarea
-              id="keterangan"
+              id={`keterangan-${currentKegiatan.id}`}
               value={currentKegiatan.keterangan}
               onChange={(e) => updateCurrentKegiatan({ keterangan: e.target.value })}
               placeholder="Catatan tambahan (opsional)"
