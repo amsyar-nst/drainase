@@ -33,7 +33,6 @@ import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlat
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions, alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
-import { generatePDFTersier } from "@/lib/pdf-generator-tersier"; // Import tersier PDF generator
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
@@ -644,6 +643,11 @@ export const DrainaseForm = () => {
   };
 
   const handlePrintPreview = async () => {
+    if (formData.reportType === "tersier") {
+      toast.error("Generator PDF untuk laporan Tersier tidak tersedia.");
+      return;
+    }
+
     // For preview, we can use the current date as a placeholder if hariTanggal is null
     const tempLaporanDate = currentKegiatan.hariTanggal || new Date(); 
     const laporanForPdf: LaporanDrainase = {
@@ -656,11 +660,9 @@ export const DrainaseForm = () => {
     };
     try {
       let blob: Blob;
-      if (formData.reportType === "tersier") {
-        blob = await generatePDFTersier(laporanForPdf, false);
-      } else {
-        blob = await generatePDF(laporanForPdf, false);
-      }
+      // Only generate Harian or Bulanan PDF
+      blob = await generatePDF(laporanForPdf, false);
+      
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
       setShowPreviewDialog(true);
@@ -672,6 +674,11 @@ export const DrainaseForm = () => {
   };
 
   const handlePrintDownload = async () => {
+    if (formData.reportType === "tersier") {
+      toast.error("Generator PDF untuk laporan Tersier tidak tersedia.");
+      return;
+    }
+
     // For download, we can use the current date as a placeholder if hariTanggal is null
     const tempLaporanDate = currentKegiatan.hariTanggal || new Date();
     const laporanForPdf: LaporanDrainase = {
@@ -683,11 +690,9 @@ export const DrainaseForm = () => {
       })),
     };
     try {
-      if (formData.reportType === "tersier") {
-        await generatePDFTersier(laporanForPdf, true);
-      } else {
-        await generatePDF(laporanForPdf, true);
-      }
+      // Only generate Harian or Bulanan PDF
+      await generatePDF(laporanForPdf, true);
+      
       toast.success("Laporan berhasil diunduh.");
     } catch (error) {
       console.error("Download error:", error);
@@ -1833,6 +1838,7 @@ export const DrainaseForm = () => {
               onClick={handlePrintPreview} 
               variant="outline" 
               className="flex-1 min-w-[150px]"
+              disabled={formData.reportType === "tersier"} // Disable if tersier
             >
               <Eye className="mr-2 h-4 w-4" />
               Preview PDF {formData.reportType === "tersier" ? "Tersier" : "Harian"}
@@ -1841,6 +1847,7 @@ export const DrainaseForm = () => {
               onClick={handlePrintDownload} 
               variant="default" 
               className="flex-1 min-w-[150px]"
+              disabled={formData.reportType === "tersier"} // Disable if tersier
             >
               <Download className="mr-2 h-4 w-4" />
               Download PDF {formData.reportType === "tersier" ? "Tersier" : "Harian"}

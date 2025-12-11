@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { generatePDF } from "@/lib/pdf-generator";
 import { generatePDFBulanan } from "@/lib/pdf-generator-bulanan";
-import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
 import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -286,7 +285,9 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       } else if (reportType === "bulanan") {
         await generatePDFBulanan(laporanToPrint, true);
       } else if (reportType === "tersier") {
-        await generatePDFTersier(laporanToPrint, true);
+        // If tersier PDF generator is removed, show a toast message
+        toast.error("Generator PDF untuk laporan Tersier tidak tersedia.");
+        return;
       }
       
       toast.success("Laporan PDF berhasil dibuat.");
@@ -310,6 +311,11 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             {reportType === "bulanan" && (
               <p className="text-red-500 text-xs mt-1">
                 Catatan: Laporan bulanan akan menggabungkan semua kegiatan yang dipilih dalam satu dokumen.
+              </p>
+            )}
+            {reportType === "tersier" && (
+              <p className="text-red-500 text-xs mt-1">
+                Catatan: Generator PDF untuk laporan Tersier saat ini tidak tersedia.
               </p>
             )}
           </DialogDescription>
@@ -375,7 +381,7 @@ export const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             <X className="mr-2 h-4 w-4" />
             Batal
           </Button>
-          <Button onClick={handlePrintSelected} disabled={selectedKegiatanIds.size === 0 || isPrinting}>
+          <Button onClick={handlePrintSelected} disabled={selectedKegiatanIds.size === 0 || isPrinting || reportType === "tersier"}>
             {isPrinting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
