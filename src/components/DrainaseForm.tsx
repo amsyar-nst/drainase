@@ -530,9 +530,6 @@ export const DrainaseForm = () => {
     });
   };
 
-  // Removed addPeralatan, removePeralatan, updatePeralatan, updatePeralatanCustomInput from here
-  // as they are now handled by PeralatanSection component
-
   const toggleKoordinator = (koordinatorName: string) => {
     const currentCoordinators = currentKegiatan.koordinator;
     if (currentCoordinators.includes(koordinatorName)) {
@@ -732,7 +729,6 @@ export const DrainaseForm = () => {
             jumlah_upt: kegiatan.jumlahUPT,
             jumlah_p3su: kegiatan.jumlahP3SU,
             sisa_target: kegiatan.sisaTarget,
-            // alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan, // Removed
             rencana_panjang: kegiatan.rencanaPanjang,
             rencana_volume: kegiatan.rencanaVolume,
             realisasi_panjang: kegiatan.realisasiPanjang,
@@ -1502,76 +1498,116 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Peralatan Section (Always visible, but title changes for Tersier) */}
-          <PeralatanSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-            peralatanCustomInputs={peralatanCustomInputs}
-            setPeralatanCustomInputs={setPeralatanCustomInputs}
-          />
-
-          {/* Operasional Alat Berat Section (Always visible, but title changes for Tersier) */}
-          <OperasionalAlatBeratSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-            operasionalCustomInputs={operasionalCustomInputs}
-            setOperasionalCustomInputs={setOperasionalCustomInputs}
-          />
-
-          {/* Tersier Specific Fields (now simplified) */}
-          {formData.reportType === "tersier" && (
-            <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="rencana-panjang">Rencana Panjang (M)</Label>
-                  <Input
-                    id="rencana-panjang"
-                    value={currentKegiatan.rencanaPanjang || ""}
-                    onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rencana-volume">Rencana Volume (M³)</Label>
-                  <Input
-                    id="rencana-volume"
-                    value={currentKegiatan.rencanaVolume || ""}
-                    onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="realisasi-panjang">Realisasi Panjang (M)</Label>
-                  <Input
-                    id="realisasi-panjang"
-                    value={currentKegiatan.realisasiPanjang || ""}
-                    onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="realisasi-volume">Realisasi Volume (M³)</Label>
-                  <Input
-                    id="realisasi-volume"
-                    value={currentKegiatan.realisasiVolume || ""}
-                    onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sisa-target">Sisa Target</Label>
-                  <Input
-                    id="sisa-target"
-                    value={currentKegiatan.sisaTarget || ""}
-                    onChange={(e) => updateCurrentKegiatan({ sisaTarget: e.target.value })}
-                    placeholder="Sisa target"
-                  />
-                </div>
-              </div>
-            </>
+          {/* Peralatan Section (Conditional for Harian/Tersier) */}
+          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
+            <PeralatanSection
+              currentKegiatan={currentKegiatan}
+              updateCurrentKegiatan={updateCurrentKegiatan}
+              peralatanCustomInputs={peralatanCustomInputs}
+              setPeralatanCustomInputs={setPeralatanCustomInputs}
+            />
           )}
 
-          {/* Koordinator & PHL (Always visible, but PHL is conditional for Tersier) */}
+          {/* Operasional Alat Berat Section (Conditional for Harian/Tersier) */}
+          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
+            <OperasionalAlatBeratSection
+              currentKegiatan={currentKegiatan}
+              updateCurrentKegiatan={updateCurrentKegiatan}
+              operasionalCustomInputs={operasionalCustomInputs}
+              setOperasionalCustomInputs={setOperasionalCustomInputs}
+            />
+          )}
+
+          {/* Rencana/Realisasi Panjang/Volume (Conditional for Harian/Tersier) */}
+          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="rencana-panjang">Rencana Panjang (M)</Label>
+                <Input
+                  id="rencana-panjang"
+                  value={currentKegiatan.rencanaPanjang || ""}
+                  onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rencana-volume">Rencana Volume (M³)</Label>
+                <Input
+                  id="rencana-volume"
+                  value={currentKegiatan.rencanaVolume || ""}
+                  onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="realisasi-panjang">Realisasi Panjang (M)</Label>
+                <Input
+                  id="realisasi-panjang"
+                  value={currentKegiatan.realisasiPanjang || ""}
+                  onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="realisasi-volume">Realisasi Volume (M³)</Label>
+                <Input
+                  id="realisasi-volume"
+                  value={currentKegiatan.realisasiVolume || ""}
+                  onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tersier Specific Fields (sisaTarget, jumlahUPT, jumlahP3SU) */}
+          {formData.reportType === "tersier" && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="sisa-target">Sisa Target</Label>
+                <Input
+                  id="sisa-target"
+                  value={currentKegiatan.sisaTarget || ""}
+                  onChange={(e) => updateCurrentKegiatan({ sisaTarget: e.target.value })}
+                  placeholder="Sisa target"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-upt">Jumlah Personil UPT</Label>
+                <Input
+                  id="jumlah-upt"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString() || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jumlah-p3su">Jumlah Personil P3SU</Label>
+                <Input
+                  id="jumlah-p3su"
+                  type="text"
+                  placeholder="0"
+                  value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString() || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d{0,2}$/.test(value)) {
+                      updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) });
+                    }
+                  }}
+                  maxLength={2}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Koordinator & Jumlah PHL (Jumlah PHL always visible) */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="koordinator">Koordinator</Label>
@@ -1590,75 +1626,22 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {formData.reportType !== "tersier" ? (
-              <div className="space-y-2">
-                <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
-                <Input
-                  id="jumlah-phl"
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="jumlah-upt">Jumlah Personil UPT</Label>
-                  <Input
-                    id="jumlah-upt"
-                    type="text"
-                    placeholder="0"
-                    value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString() || ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || /^\d{0,2}$/.test(value)) {
-                        updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) });
-                      }
-                    }}
-                    maxLength={2}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="jumlah-p3su">Jumlah Personil P3SU</Label>
-                  <Input
-                    id="jumlah-p3su"
-                    type="text"
-                    placeholder="0"
-                    value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString() || ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || /^\d{0,2}$/.test(value)) {
-                        updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) });
-                      }
-                    }}
-                    maxLength={2}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="jumlah-phl-tersier">Jumlah PHL</Label>
-                  <Input
-                    id="jumlah-phl-tersier"
-                    type="text"
-                    placeholder="0"
-                    value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || /^\d{0,2}$/.test(value)) {
-                        updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
-                      }
-                    }}
-                    maxLength={2}
-                  />
-                </div>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="jumlah-phl">Jumlah PHL</Label>
+              <Input
+                id="jumlah-phl"
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
+                  }
+                }}
+                maxLength={2}
+              />
+            </div>
           </div>
 
           {/* Keterangan */}
