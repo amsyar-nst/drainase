@@ -188,7 +188,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         .material-satuan-col { width: 60px; } /* Adjusted width */
 
         /* Adjusted widths for combined Peralatan & Alat Berat */
-        .peralatan-jenis-col { width: 100px; } 
+        .peralatan-jenis-col { /* width: 100px; */ } /* Removed fixed width */
         .peralatan-jumlah-col { width: 60px; }
 
         @media print {

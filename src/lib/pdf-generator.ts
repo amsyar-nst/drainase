@@ -99,6 +99,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         table {
           width: 100%;
           border-collapse: collapse;
+          table-layout: auto; /* Added for automatic column width */
         }
 
         table th {
@@ -119,7 +120,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         }
 
         .photo-cell {
-          width: 100px; /* Adjusted width to accommodate multiple small images */
+          /* width: 100px; */ /* Removed fixed width */
           text-align: center;
           padding: 2px;
         }
@@ -153,43 +154,20 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           text-align: center;
         }
 
-        .no-col {
-          width: 20px;
-          text-align: center;
+        /* Removed all fixed width definitions for columns */
+        .no-col, .date-col, .location-col, .jenis-col, .number-col, .personil-col,
+        .material-jenis-col, .material-jumlah-col, .material-satuan-col,
+        .peralatan-jenis-col, .peralatan-jumlah-col, .keterangan-col {
+          /* width properties removed */
+          text-align: center; /* Keep text alignment */
+        }
+        .location-col, .personil-col {
+          text-align: left; /* Adjust specific text alignment if needed */
+        }
+        .keterangan-col {
+          text-align: left;
         }
 
-        .date-col {
-          width: 70px;
-        }
-
-        .location-col {
-          width: 120px;
-        }
-
-        .jenis-col {
-          width: 50px;
-          text-align: center;
-        }
-
-        .number-col {
-          width: 40px;
-          text-align: center;
-        }
-
-        .personil-col {
-          width: 80px;
-        }
-
-        /* Removed .keterangan-col as it's no longer needed for material */
-        /* If 'Ket' column at the end needs a specific width, define it separately */
-
-        .material-jenis-col { width: 100px; } /* Adjusted width */
-        .material-jumlah-col { width: 60px; } /* Adjusted width */
-        .material-satuan-col { width: 60px; } /* Adjusted width */
-
-        /* Adjusted widths for combined Peralatan & Alat Berat */
-        .peralatan-jenis-col { /* width: 100px; */ } /* Removed fixed width */
-        .peralatan-jumlah-col { width: 60px; }
 
         @media print {
           body {
@@ -221,7 +199,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th colspan="3">Foto Dokumentasi</th>
             <th rowspan="2" class="jenis-col">Jenis Saluran<br/>(Terbuka/ Tertutup)</th>
             <th rowspan="2" class="jenis-col">Jenis Sedimen<br/>(Batu/ Padat/Cair)</th>
-            <th rowspan="2" style="width: 80px;">Aktifitas Penanganan</th>
+            <th rowspan="2">Aktifitas Penanganan</th>
             <th rowspan="2" class="number-col">Panjang Penanganan<br/>(meter)</th>
             <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
             <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
@@ -240,7 +218,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="material-satuan-col">Sat.</th>
             <th class="peralatan-jenis-col">Jenis</th>
             <th class="peralatan-jumlah-col">Jlh.</th>
-            <th style="width: 70px;">Koordinator</th>
+            <th>Koordinator</th>
             <th class="number-col">Jml PHL</th>
           </tr>
         </thead>
