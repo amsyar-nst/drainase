@@ -31,7 +31,7 @@ import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check,
 import { cn } from "@/lib/utils";
 import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions, alatBeratOptions } from "@/data/kecamatan-kelurahan";
-import { toast } from "sonner";
+import { toast }ner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
@@ -1391,9 +1391,10 @@ export const DrainaseForm = () => {
                   onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
                 >
                   <SelectTrigger id="jenis-saluran">
-                    <SelectValue placeholder="-" /> {/* Placeholder changed to "-" */}
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">-</SelectItem> {/* Added empty value for '-' option */}
                     <SelectItem value="Terbuka">Terbuka</SelectItem>
                     <SelectItem value="Tertutup">Tertutup</SelectItem>
                     <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
