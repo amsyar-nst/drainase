@@ -139,13 +139,13 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           border: 1px solid #ccc;
         }
 
-        .material-list, .equipment-list {
+        .material-list, .equipment-list, .koordinator-list { /* Added .koordinator-list */
           margin: 0;
           padding: 0;
           list-style: none;
         }
 
-        .material-list li, .equipment-list li {
+        .material-list li, .equipment-list li, .koordinator-list li { /* Added .koordinator-list li */
           margin-bottom: 2px;
           font-size: 6pt;
         }
@@ -291,7 +291,13 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                   `).join('')}
                 </ul>
               </td>
-              <td>${kegiatan.koordinator.join(', ')}</td>
+              <td>
+                <ul class="koordinator-list">
+                  ${kegiatan.koordinator.map(koordinator => `
+                    <li>${koordinator}</li>
+                  `).join('')}
+                </ul>
+              </td>
               <td class="center">${kegiatan.jumlahPHL || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
