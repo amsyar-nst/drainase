@@ -1394,7 +1394,7 @@ export const DrainaseForm = () => {
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">-</SelectItem> {/* Added empty value for '-' option */}
+                    {/* Removed SelectItem with empty value to fix Radix UI error */}
                     <SelectItem value="Terbuka">Terbuka</SelectItem>
                     <SelectItem value="Tertutup">Tertutup</SelectItem>
                     <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
