@@ -155,7 +155,9 @@ export const peralatanOptions = [
   "Angkong",
   "Linggis",
   "Rambu Kerucut",
-  "Parang"
+  "Parang",
+  "Sapu Lidi",
+  "Garukan Pjg Sampah"
 ];
 
 export const materialOptions = [
