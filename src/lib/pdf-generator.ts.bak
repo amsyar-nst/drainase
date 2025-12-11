@@ -180,12 +180,9 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           width: 80px;
         }
 
-        /* Removed .keterangan-col as it's no longer needed for material */
-        /* If 'Ket' column at the end needs a specific width, define it separately */
-
-        .material-jenis-col { width: 100px; } /* Adjusted width */
-        .material-jumlah-col { width: 60px; } /* Adjusted width */
-        .material-satuan-col { width: 60px; } /* Adjusted width */
+        .keterangan-col {
+          width: 60px;
+        }
 
         @media print {
           body {
@@ -222,8 +219,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
             <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
-            <th colspan="3">Material / Bahan</th> <!-- colspan changed to 3 -->
-            <th colspan="2">Peralatan & Alat Berat</th>
+            <th colspan="4">Material / Bahan</th>
+            <th colspan="2">Peralatan & Alat Berat</th> <!-- colspan changed to 2 -->
             <th colspan="2">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
           </tr>
@@ -231,11 +228,12 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="photo-cell">0%</th>
             <th class="photo-cell">50%</th>
             <th class="photo-cell">100%</th>
-            <th class="material-jenis-col">Jenis</th>
-            <th class="material-jumlah-col">Jlh.</th>
-            <th class="material-satuan-col">Sat.</th>
-            <th style="width: 100px;">Jenis</th>
-            <th class="number-col" style="width: 60px;">Jlh.</th>
+            <th style="width: 80px;">Jenis</th>
+            <th class="number-col">Jlh.</th>
+            <th class="number-col">Sat.</th>
+            <th class="keterangan-col">Ket. Material</th>
+            <th style="width: 100px;">Jenis</th> <!-- Adjusted width -->
+            <th class="number-col" style="width: 60px;">Jlh.</th> <!-- Adjusted width -->
             <th style="width: 70px;">Koordinator</th>
             <th class="number-col">Jml PHL</th>
           </tr>
@@ -286,6 +284,13 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                 <ul class="material-list">
                   ${kegiatan.materials.filter(m => m.jenis).map(material => `
                     <li>${material.satuan}</li>
+                  `).join('')}
+                </ul>
+              </td>
+              <td>
+                <ul class="material-list">
+                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
+                    <li>${material.keterangan || '-'}</li>
                   `).join('')}
                 </ul>
               </td>
