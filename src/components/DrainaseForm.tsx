@@ -382,7 +382,7 @@ export const DrainaseForm = () => {
             foto50Url: ensureArray(kegiatan.foto_50_url),
             foto100Url: ensureArray(kegiatan.foto_100_url),
             fotoSketUrl: ensureArray(kegiatan.foto_sket_url),
-            jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "-",
+            jenisSaluran: (kegiatan.jenis_saluran || "-") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "-",
             jenisSedimen: (kegiatan.jenis_sedimen || "") as string,
             aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
             panjangPenanganan: kegiatan.panjang_penanganan || "",
