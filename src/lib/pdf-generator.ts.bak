@@ -187,6 +187,10 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         .material-jumlah-col { width: 60px; } /* Adjusted width */
         .material-satuan-col { width: 60px; } /* Adjusted width */
 
+        /* Adjusted widths for combined Peralatan & Alat Berat */
+        .peralatan-jenis-col { width: 100px; } 
+        .peralatan-jumlah-col { width: 60px; }
+
         @media print {
           body {
             padding: 0;
@@ -222,7 +226,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th rowspan="2" class="number-col">Lebar Rata-Rata Saluran<br/>(meter)</th>
             <th rowspan="2" class="number-col">Rata-Rata Sedimen<br/>(meter)</th>
             <th rowspan="2" class="number-col">Volume Galian<br/>(meter³)</th>
-            <th colspan="3">Material / Bahan</th> <!-- colspan changed to 3 -->
+            <th colspan="3">Material / Bahan</th>
             <th colspan="2">Peralatan & Alat Berat</th>
             <th colspan="2">Personil UPT</th>
             <th rowspan="2" class="keterangan-col">Ket</th>
@@ -234,8 +238,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
             <th class="material-jenis-col">Jenis</th>
             <th class="material-jumlah-col">Jlh.</th>
             <th class="material-satuan-col">Sat.</th>
-            <th style="width: 100px;">Jenis</th>
-            <th class="number-col" style="width: 60px;">Jlh.</th>
+            <th class="peralatan-jenis-col">Jenis</th>
+            <th class="peralatan-jumlah-col">Jlh.</th>
             <th style="width: 70px;">Koordinator</th>
             <th class="number-col">Jml PHL</th>
           </tr>
@@ -294,12 +298,18 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.nama}</li>
                   `).join('')}
+                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
+                    <li>${op.jenis}</li>
+                  `).join('')}
                 </ul>
               </td>
               <td class="center">
                 <ul class="equipment-list">
                   ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
                     <li>${peralatan.jumlah}</li>
+                  `).join('')}
+                  ${kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(op => `
+                    <li>${op.jumlah}</li>
                   `).join('')}
                 </ul>
               </td>
