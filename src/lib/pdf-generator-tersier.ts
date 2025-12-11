@@ -103,9 +103,15 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           font-size: 7pt;
           vertical-align: top;
         }
-        /* Removed photo-main-header-col as it's no longer needed */
+        .photo-main-header-col {
+          width: 100px; /* Total width for both photo columns */
+          text-align: center;
+          padding: 4px 3px;
+          border: 1px solid #000;
+          vertical-align: middle;
+        }
         .photo-sub-header-col {
-          width: 50px; /* Each photo column takes half the width */
+          width: 50px; /* Half of photo-main-header-col */
           text-align: center;
           padding: 4px 3px;
           border: 1px solid #000;
@@ -144,9 +150,6 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         .no-col { width: 20px; }
         .date-col { width: 70px; }
         .location-col { width: 120px; }
-        .target-col { width: 50px; }
-        .realisasi-col { width: 50px; }
-        .personil-col { width: 50px; }
         .alat-col { width: 80px; }
         .keterangan-col { width: 80px; }
 
@@ -174,30 +177,19 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       <table>
         <thead>
           <tr>
-            <th rowspan="3" class="no-col">NO</th>
-            <th rowspan="3" class="date-col">HARI/<br/>TANGGAL</th>
-            <th rowspan="3" class="location-col">LOKASI</th>
-            <!-- Photo headers -->
-            <th class="photo-sub-header-col">Sebelum</th>
-            <th class="photo-sub-header-col">Sesudah</th>
-            <th rowspan="3" class="alat-col">ALAT YANG DIBUTUHKAN</th>
-            <th colspan="2" rowspan="2">TARGET</th>
-            <th colspan="2" rowspan="2">REALISASI</th>
-            <th colspan="3" rowspan="2">JUMLAH PERSONIL</th>
-            <th rowspan="3" class="keterangan-col">KETERANGAN</th>
+            <th rowspan="2" class="no-col">NO</th>
+            <th rowspan="2" class="date-col">HARI/<br/>TANGGAL</th>
+            <th rowspan="2" class="location-col">LOKASI</th>
+            <th colspan="2" class="photo-main-header-col">FOTO KONDISI EKSISTING</th>
+            <th rowspan="2" class="alat-col">ALAT YANG DIBUTUHKAN</th>
+            <th rowspan="2">TARGET</th>
+            <th rowspan="2">REALISASI</th>
+            <th rowspan="2">JUMLAH PERSONIL</th>
+            <th rowspan="2" class="keterangan-col">KETERANGAN</th>
           </tr>
           <tr>
-            <!-- Second row for photo headers -->
-            <th class="photo-sub-header-col">Foto Kondisi Eksisting</th>
-            <th class="photo-sub-header-col">Foto Kondisi Eksisting</th>
-            <!-- Sub-headers for TARGET, REALISASI, JUMLAH PERSONIL -->
-            <th class="target-col">PANJANG<br/>(M)</th>
-            <th class="target-col">VOLUME<br/>(M³)</th>
-            <th class="realisasi-col">PANJANG<br/>(M)</th>
-            <th class="realisasi-col">VOLUME<br/>(M³)</th>
-            <th class="personil-col">UPT</th>
-            <th class="personil-col">P3SU</th>
-            <th class="personil-col">PHL</th>
+            <th class="photo-sub-header-col">Sebelum</th>
+            <th class="photo-sub-header-col">Sesudah</th>
           </tr>
         </thead>
         <tbody>
@@ -221,13 +213,9 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
                   ${kegiatan.alatYangDibutuhkan?.map(alat => `<li>${alat}</li>`).join('') || '-'}
                 </ul>
               </td>
-              <td class="center">${kegiatan.rencanaPanjang || '-'}</td>
-              <td class="center">${kegiatan.rencanaVolume || '-'}</td>
-              <td class="center">${kegiatan.realisasiPanjang || '-'}</td>
-              <td class="center">${kegiatan.realisasiVolume || '-'}</td>
-              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
-              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
-              <td class="center">${kegiatan.jumlahPHL || '-'}</td>
+              <td class="center">${kegiatan.rencanaPanjang || '-'} ${kegiatan.rencanaVolume || '-'}</td>
+              <td class="center">${kegiatan.realisasiPanjang || '-'} ${kegiatan.realisasiVolume || '-'}</td>
+              <td class="center">${kegiatan.jumlahUPT || '-'} ${kegiatan.jumlahP3SU || '-'} ${kegiatan.jumlahPHL || '-'}</td>
               <td>${kegiatan.keterangan || ''}</td>
             </tr>
           `).join('')}
