@@ -41,7 +41,7 @@ export type Database = {
           jumlah_upt: number | null
           jumlah_p3su: number | null
           sisa_target: string | null
-          alat_yang_dibutuhkan: string[] | null
+          alat_yang_dibutuhkan: string[] | null // This will be removed
           rencana_panjang: string | null
           rencana_volume: string | null
           realisasi_panjang: string | null
@@ -73,7 +73,7 @@ export type Database = {
           jumlah_upt?: number | null
           jumlah_p3su?: number | null
           sisa_target?: string | null
-          alat_yang_dibutuhkan?: string[] | null
+          alat_yang_dibutuhkan?: string[] | null // This will be removed
           rencana_panjang?: string | null
           rencana_volume?: string | null
           realisasi_panjang?: string | null
@@ -105,7 +105,7 @@ export type Database = {
           jumlah_upt?: number | null
           jumlah_p3su?: number | null
           sisa_target?: string | null
-          alat_yang_dibutuhkan?: string[] | null
+          alat_yang_dibutuhkan?: string[] | null // This will be removed
           rencana_panjang?: string | null
           rencana_volume?: string | null
           realisasi_panjang?: string | null

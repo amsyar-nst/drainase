@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
+import { PeralatanSection } from "./drainase-form/PeralatanSection"; // Import the new component
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -64,7 +65,7 @@ export const DrainaseForm = () => {
       foto0Url: [],
       foto50Url: [],
       foto100Url: [],
-      fotoSket: [], // Keep fotoSket in type, but not used for tersier input
+      fotoSket: [],
       fotoSketUrl: [],
       jenisSaluran: "",
       jenisSedimen: "",
@@ -91,11 +92,10 @@ export const DrainaseForm = () => {
       jumlahPHL: 0,
       keterangan: "",
       hariTanggal: new Date(),
-      // Tersier specific fields
+      // Tersier specific fields (now simplified based on request)
       jumlahUPT: 0,
       jumlahP3SU: 0,
       sisaTarget: "",
-      alatYangDibutuhkan: [],
       rencanaPanjang: "",
       rencanaVolume: "",
       realisasiPanjang: "",
@@ -115,8 +115,6 @@ export const DrainaseForm = () => {
   const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
   const [customSedimen, setCustomSedimen] = useState("");
 
-  // Removed dateInputString and related state/handlers for "Tanggal Laporan Utama"
-
   const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
   const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
 
@@ -126,7 +124,7 @@ export const DrainaseForm = () => {
   // States for custom inputs for Material and Peralatan
   const [materialCustomInputs, setMaterialCustomInputs] = useState<Record<string, string>>({});
   const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({});
-  // State for custom inputs for Operasional Alat Berat (moved here)
+  // State for custom inputs for Operasional Alat Berat
   const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
 
 
@@ -160,8 +158,6 @@ export const DrainaseForm = () => {
       setActivityDateInputStrings([]);
     }
   }, [formData.kegiatans, currentKegiatanIndex]);
-
-  // Removed useEffect for formData.tanggal
 
   useEffect(() => {
     if (currentKegiatan.jenisSedimen) {
@@ -332,7 +328,7 @@ export const DrainaseForm = () => {
             foto0: ensureArray(kegiatan.foto_0_url),
             foto50: ensureArray(kegiatan.foto_50_url),
             foto100: ensureArray(kegiatan.foto_100_url),
-            fotoSket: ensureArray(kegiatan.foto_sket_url), // Keep fotoSket for loading, but not for tersier input
+            fotoSket: ensureArray(kegiatan.foto_sket_url),
             foto0Url: ensureArray(kegiatan.foto_0_url),
             foto50Url: ensureArray(kegiatan.foto_50_url),
             foto100Url: ensureArray(kegiatan.foto_100_url),
@@ -355,7 +351,6 @@ export const DrainaseForm = () => {
             jumlahUPT: kegiatan.jumlah_upt || 0,
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
             sisaTarget: kegiatan.sisa_target || "",
-            alatYangDibutuhkan: ensureArray(kegiatan.alat_yang_dibutuhkan),
             rencanaPanjang: kegiatan.rencana_panjang || "",
             rencanaVolume: kegiatan.rencana_volume || "",
             realisasiPanjang: kegiatan.realisasi_panjang || "",
@@ -436,7 +431,6 @@ export const DrainaseForm = () => {
       jumlahUPT: 0,
       jumlahP3SU: 0,
       sisaTarget: "",
-      alatYangDibutuhkan: [],
       rencanaPanjang: "",
       rencanaVolume: "",
       realisasiPanjang: "",
@@ -536,64 +530,8 @@ export const DrainaseForm = () => {
     });
   };
 
-  const addPeralatan = () => {
-    const newPeralatan: Peralatan = {
-      id: Date.now().toString(),
-      nama: "",
-      jumlah: 1,
-      satuan: "Unit",
-    };
-    updateCurrentKegiatan({
-      peralatans: [...currentKegiatan.peralatans, newPeralatan],
-    });
-  };
-
-  const removePeralatan = (id: string) => {
-    if (currentKegiatan.peralatans.length > 1) {
-      updateCurrentKegiatan({
-        peralatans: currentKegiatan.peralatans.filter((p) => p.id !== id),
-      });
-      setPeralatanCustomInputs((prev) => {
-        const newInputs = { ...prev };
-        delete newInputs[id];
-        return newInputs;
-      });
-    }
-  };
-
-  const updatePeralatan = (id: string, field: keyof Peralatan, value: string | number) => {
-    updateCurrentKegiatan({
-      peralatans: currentKegiatan.peralatans.map((p) => {
-        if (p.id === id) {
-          const updatedPeralatan = { ...p, [field]: value };
-          if (field === "nama") {
-            if (value === "custom") {
-              updatedPeralatan.nama = "custom"; // Keep 'custom' in peralatan.nama
-              setPeralatanCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input to empty
-            } else {
-              setPeralatanCustomInputs((prev) => {
-                const newInputs = { ...prev };
-                delete newInputs[id];
-                return newInputs;
-              });
-            }
-          }
-          return updatedPeralatan;
-        }
-        return p;
-      }),
-    });
-  };
-
-  const updatePeralatanCustomInput = (id: string, value: string) => {
-    setPeralatanCustomInputs((prev) => ({ ...prev, [id]: value }));
-    // Also update the actual peralatan.nama in formData
-    updateCurrentKegiatan({
-      peralatans: currentKegiatan.peralatans.map((p) =>
-        p.id === id ? { ...p, nama: value } : p
-      ),
-    });
-  };
+  // Removed addPeralatan, removePeralatan, updatePeralatan, updatePeralatanCustomInput from here
+  // as they are now handled by PeralatanSection component
 
   const toggleKoordinator = (koordinatorName: string) => {
     const currentCoordinators = currentKegiatan.koordinator;
@@ -756,6 +694,7 @@ export const DrainaseForm = () => {
         let foto100Urls: string[] = [];
         let fotoSketUrls: string[] = [];
 
+        // Handle photo uploads based on report type
         if (formData.reportType === "tersier") {
           foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
           foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
@@ -789,11 +728,11 @@ export const DrainaseForm = () => {
             jumlah_phl: kegiatan.jumlahPHL,
             keterangan: kegiatan.keterangan,
             hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
-            // Tersier specific fields
+            // Tersier specific fields (now simplified)
             jumlah_upt: kegiatan.jumlahUPT,
             jumlah_p3su: kegiatan.jumlahP3SU,
             sisa_target: kegiatan.sisaTarget,
-            alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan,
+            // alat_yang_dibutuhkan: kegiatan.alatYangDibutuhkan, // Removed
             rencana_panjang: kegiatan.rencanaPanjang,
             rencana_volume: kegiatan.rencanaVolume,
             realisasi_panjang: kegiatan.realisasiPanjang,
@@ -804,22 +743,26 @@ export const DrainaseForm = () => {
 
         if (kegiatanError) throw kegiatanError;
 
-        const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.jenis || m.satuan).map(m => ({
-          kegiatan_id: kegiatanData!.id,
-          jenis: m.jenis === "custom" ? materialCustomInputs[m.id] || "" : m.jenis,
-          jumlah: m.jumlah,
-          satuan: m.satuan,
-          keterangan: m.keterangan,
-        }));
+        // Save materials only for non-tersier reports
+        if (formData.reportType !== "tersier") {
+          const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.jenis || m.satuan).map(m => ({
+            kegiatan_id: kegiatanData!.id,
+            jenis: m.jenis === "custom" ? materialCustomInputs[m.id] || "" : m.jenis,
+            jumlah: m.jumlah,
+            satuan: m.satuan,
+            keterangan: m.keterangan,
+          }));
 
-        if (materialsToInsert.length > 0) {
-          const { error: materialsError } = await supabase
-            .from('material_kegiatan')
-            .insert(materialsToInsert);
+          if (materialsToInsert.length > 0) {
+            const { error: materialsError } = await supabase
+              .from('material_kegiatan')
+              .insert(materialsToInsert);
 
-          if (materialsError) throw materialsError;
+            if (materialsError) throw materialsError;
+          }
         }
 
+        // Save peralatans and operasionalAlatBerats for all report types
         const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
           kegiatan_id: kegiatanData!.id,
           nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
@@ -866,8 +809,6 @@ export const DrainaseForm = () => {
       setIsSaving(false);
     }
   };
-
-  // Removed handleDateInputChange and handleDateSelect
 
   const handleActivityDateInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
@@ -1561,125 +1502,25 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Peralatan (Conditional for Harian/Bulanan) */}
-          {formData.reportType !== "tersier" && (
-            <div className="space-y-4">
-              <Label>Peralatan yang Digunakan</Label>
-              {currentKegiatan.peralatans.map((peralatan) => (
-                <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Nama Peralatan</Label>
-                    <Select
-                      value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
-                      onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih peralatan" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {peralatanOptions.map((nama) => (
-                          <SelectItem key={nama} value={nama}>
-                            {nama}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="custom">Lainnya</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {peralatan.nama === "custom" ? (
-                      <Input
-                        type="text"
-                        placeholder="Masukkan nama peralatan manual"
-                        value={peralatanCustomInputs[peralatan.id] || ""}
-                        onChange={(e) => updatePeralatanCustomInput(peralatan.id, e.target.value)}
-                        className="mt-2"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Jumlah</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={peralatan.jumlah}
-                      onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Satuan</Label>
-                    <Select
-                      value={peralatan.satuan}
-                      onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {satuanOptions.map((satuan) => (
-                          <SelectItem key={satuan} value={satuan}>
-                            {satuan}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => removePeralatan(peralatan.id)}
-                    disabled={currentKegiatan.peralatans.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={addPeralatan}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Peralatan
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Peralatan Section (Always visible, but title changes for Tersier) */}
+          <PeralatanSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+            peralatanCustomInputs={peralatanCustomInputs}
+            setPeralatanCustomInputs={setPeralatanCustomInputs}
+          />
 
-          {/* Operasional Alat Berat Section (Conditional for Harian/Bulanan) */}
-          {formData.reportType !== "tersier" && (
-            <OperasionalAlatBeratSection
-              currentKegiatan={currentKegiatan}
-              updateCurrentKegiatan={updateCurrentKegiatan}
-              operasionalCustomInputs={operasionalCustomInputs}
-              setOperasionalCustomInputs={setOperasionalCustomInputs}
-            />
-          )}
+          {/* Operasional Alat Berat Section (Always visible, but title changes for Tersier) */}
+          <OperasionalAlatBeratSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+            operasionalCustomInputs={operasionalCustomInputs}
+            setOperasionalCustomInputs={setOperasionalCustomInputs}
+          />
 
-          {/* Tersier Specific Fields */}
+          {/* Tersier Specific Fields (now simplified) */}
           {formData.reportType === "tersier" && (
             <>
-              <div className="space-y-4">
-                <Label>Alat yang Dibutuhkan</Label>
-                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-md p-2">
-                  {peralatanOptions.map((alat) => (
-                    <div key={alat} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`alat-${alat}`}
-                        checked={currentKegiatan.alatYangDibutuhkan?.includes(alat)}
-                        onCheckedChange={(checked) => {
-                          const currentAlat = currentKegiatan.alatYangDibutuhkan || [];
-                          if (checked) {
-                            updateCurrentKegiatan({ alatYangDibutuhkan: [...currentAlat, alat] });
-                          } else {
-                            updateCurrentKegiatan({ alatYangDibutuhkan: currentAlat.filter((a) => a !== alat) });
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`alat-${alat}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {alat}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="rencana-panjang">Rencana Panjang (M)</Label>

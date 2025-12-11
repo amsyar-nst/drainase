@@ -53,11 +53,11 @@ export interface KegiatanDrainase {
   jumlahPHL: number;
   keterangan: string;
   hariTanggal?: Date | null;
-  // Tersier specific fields
+  // Tersier specific fields (now simplified based on request)
   jumlahUPT?: number;
   jumlahP3SU?: number;
   sisaTarget?: string;
-  alatYangDibutuhkan?: string[];
+  // alatYangDibutuhkan?: string[]; // Removed as per request
   rencanaPanjang?: string;
   rencanaVolume?: string;
   realisasiPanjang?: string;
