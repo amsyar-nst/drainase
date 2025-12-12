@@ -14,7 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      aktifitas_penanganan_detail: {
+      kegiatan_drainase: {
         Row: {
           aktifitas_penanganan: string | null
           created_at: string
@@ -25,49 +25,6 @@ export type Database = {
           id: string
           jenis_saluran: string | null
           jenis_sedimen: string | null
-          kegiatan_id: string
-          updated_at: string
-        }
-        Insert: {
-          aktifitas_penanganan?: string | null
-          created_at?: string
-          foto_0_url?: string[] | null
-          foto_100_url?: string[] | null
-          foto_50_url?: string[] | null
-          foto_sket_url?: string[] | null
-          id?: string
-          jenis_saluran?: string | null
-          jenis_sedimen?: string | null
-          kegiatan_id: string
-          updated_at?: string
-        }
-        Update: {
-          aktifitas_penanganan?: string | null
-          created_at?: string
-          foto_0_url?: string[] | null
-          foto_100_url?: string[] | null
-          foto_50_url?: string[] | null
-          foto_sket_url?: string[] | null
-          id?: string
-          jenis_saluran?: string | null
-          jenis_sedimen?: string | null
-          kegiatan_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "aktifitas_penanganan_detail_kegiatan_id_fkey",
-            columns: ["kegiatan_id"],
-            isOneToOne: false,
-            referencedRelation: "kegiatan_drainase",
-            referencedColumns: ["id"],
-          },
-        ]
-      }
-      kegiatan_drainase: {
-        Row: {
-          created_at: string
-          id: string
           jumlah_phl: number | null
           jumlah_upt: number | null
           jumlah_p3su: number | null
@@ -91,8 +48,15 @@ export type Database = {
           sisa_target: string | null
         }
         Insert: {
+          aktifitas_penanganan?: string | null
           created_at?: string
+          foto_0_url?: string[] | null
+          foto_100_url?: string[] | null
+          foto_50_url?: string[] | null
+          foto_sket_url?: string[] | null
           id?: string
+          jenis_saluran?: string | null
+          jenis_sedimen?: string | null
           jumlah_phl?: number | null
           jumlah_upt?: number | null
           jumlah_p3su?: number | null
@@ -116,8 +80,15 @@ export type Database = {
           sisa_target?: string | null
         }
         Update: {
+          aktifitas_penanganan?: string | null
           created_at?: string
+          foto_0_url?: string[] | null
+          foto_100_url?: string[] | null
+          foto_50_url?: string[] | null
+          foto_sket_url?: string[] | null
           id?: string
+          jenis_saluran?: string | null
+          jenis_sedimen?: string | null
           jumlah_phl?: number | null
           jumlah_upt?: number | null
           jumlah_p3su?: number | null
@@ -229,7 +200,7 @@ export type Database = {
           tanggal: string
           updated_at: string
           report_type: string | null
-          user_id: string | null
+          user_id: string | null // Added user_id
         }
         Insert: {
           created_at?: string
@@ -238,7 +209,7 @@ export type Database = {
           tanggal: string
           updated_at?: string
           report_type?: string | null
-          user_id?: string | null
+          user_id?: string | null // Added user_id
         }
         Update: {
           created_at?: string
@@ -247,7 +218,7 @@ export type Database = {
           tanggal?: string
           updated_at?: string
           report_type?: string | null
-          user_id?: string | null
+          user_id?: string | null // Added user_id
         }
         Relationships: [
           {
@@ -282,38 +253,38 @@ export type Database = {
       }
       material_kegiatan: {
         Row: {
-          aktifitas_detail_id: string | null
           created_at: string
           id: string
           jenis: string
           jumlah: string
-          keterangan: string | null
+          kegiatan_id: string
           satuan: string
+          keterangan: string | null
         }
         Insert: {
-          aktifitas_detail_id?: string | null
           created_at?: string
           id?: string
           jenis: string
           jumlah: string
-          keterangan?: string | null
+          kegiatan_id: string
           satuan: string
+          keterangan?: string | null
         }
         Update: {
-          aktifitas_detail_id?: string | null
           created_at?: string
           id?: string
           jenis?: string
           jumlah?: string
-          keterangan?: string | null
+          kegiatan_id?: string
           satuan?: string
+          keterangan?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "material_kegiatan_aktifitas_detail_id_fkey",
-            columns: ["aktifitas_detail_id"],
+            foreignKeyName: "material_kegiatan_kegiatan_id_fkey",
+            columns: ["kegiatan_id"],
             isOneToOne: false,
-            referencedRelation: "aktifitas_penanganan_detail",
+            referencedRelation: "kegiatan_drainase",
             referencedColumns: ["id"],
           },
         ]
