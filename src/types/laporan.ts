@@ -4,6 +4,7 @@ export interface Material {
   jumlah: string;
   satuan: string;
   keterangan?: string;
+  aktifitas_detail_id?: string; // New FK to aktifitas_penanganan_detail
 }
 
 export interface Peralatan {
@@ -26,27 +27,33 @@ export interface OperasionalAlatBerat {
   keterangan: string;
 }
 
+// New interface for Aktifitas Penanganan Detail
+export interface AktifitasPenangananDetail {
+  id: string;
+  kegiatanId?: string; // Foreign key to KegiatanDrainase
+  jenisSaluran: "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "";
+  jenisSedimen: string;
+  aktifitasPenanganan: string;
+  foto0: (File | string | null)[];
+  foto50: (File | string | null)[];
+  foto100: (File | string | null)[];
+  fotoSket: (File | string | null)[];
+  foto0Url?: string[]; // For URLs from DB
+  foto50Url?: string[]; // For URLs from DB
+  foto100Url?: string[]; // For URLs from DB
+  fotoSketUrl?: string[]; // For URLs from DB
+  materials: Material[]; // Materials are now nested under AktifitasPenangananDetail
+}
+
 export interface KegiatanDrainase {
   id: string;
   namaJalan: string;
   kecamatan: string;
   kelurahan: string;
-  foto0: (File | string | null)[];
-  foto50: (File | string | null)[];
-  foto100: (File | string | null)[];
-  foto0Url?: string[];
-  foto50Url?: string[];
-  foto100Url?: string[];
-  fotoSket: (File | string | null)[];
-  fotoSketUrl?: string[];
-  jenisSaluran: "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "";
-  jenisSedimen: string;
-  aktifitasPenanganan: string;
   panjangPenanganan: string;
   lebarRataRata: string;
   rataRataSedimen: string;
   volumeGalian: string;
-  materials: Material[];
   peralatans: Peralatan[];
   operasionalAlatBerats: OperasionalAlatBerat[];
   koordinator: string[];
@@ -62,11 +69,14 @@ export interface KegiatanDrainase {
   realisasiPanjang?: string;
   realisasiVolume?: string;
   sisaTargetHari?: string;
+
+  // Aktifitas Penanganan Details are now an array within KegiatanDrainase
+  aktifitasPenangananDetails: AktifitasPenangananDetail[];
 }
 
 export interface LaporanDrainase {
   tanggal: Date | null;
   periode: string;
-  reportType: "harian" | "bulanan" | "tersier"; // Re-added "tersier"
+  reportType: "harian" | "bulanan" | "tersier";
   kegiatans: KegiatanDrainase[];
 }

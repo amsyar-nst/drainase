@@ -20,8 +20,8 @@ interface PenangananDetailSectionProps {
   detail: PenangananDetailFormState;
   index: number;
   updateDetail: (index: number, updates: Partial<PenangananDetailFormState>) => void;
-  removeDetail: (index: number) => void; // Still keep for type compatibility, but won't be used
-  isRemovable: boolean; // Still keep for type compatibility, but won't be used
+  removeDetail: (index: number) => void;
+  isRemovable: boolean;
   reportType: "harian" | "bulanan" | "tersier";
   onPreviewPhoto: (url: string) => void;
 }
@@ -36,8 +36,8 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
   detail,
   index,
   updateDetail,
-  // removeDetail, // Removed from destructuring
-  // isRemovable, // Removed from destructuring
+  removeDetail,
+  isRemovable,
   reportType,
   onPreviewPhoto,
 }) => {
@@ -56,7 +56,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
     } else {
       updateDetail(index, { selectedSedimenOption: "", customSedimen: "" });
     }
-  }, [detail.jenisSedimen]); // Only re-run if detail.jenisSedimen changes
+  }, [detail.jenisSedimen, index, updateDetail]);
 
   // Helper to process files from drop/paste
   const processAndAddFiles = (files: FileList, field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket') => {
@@ -125,58 +125,63 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
 
   const removeMaterial = (materialId: string) => {
     if (detail.materials.length > 1) {
-      updateDetail(index, {
-        materials: detail.materials.filter((m) => m.id !== materialId),
-      });
+      const newMaterials = detail.materials.filter((m) => m.id !== materialId);
       const newCustomInputs = { ...detail.materialCustomInputs };
       delete newCustomInputs[materialId];
-      updateDetail(index, { materialCustomInputs: newCustomInputs });
+      updateDetail(index, { materials: newMaterials, materialCustomInputs: newCustomInputs });
     }
   };
 
   const updateMaterial = (materialId: string, field: keyof Material, value: string) => {
-    updateDetail(index, {
-      materials: detail.materials.map((m) => {
-        if (m.id === materialId) {
-          const updatedMaterial = { ...m, [field]: value };
-          if (field === "jenis") {
-            if (value === "custom") {
-              updatedMaterial.jenis = "custom";
-              const newCustomInputs = { ...detail.materialCustomInputs, [materialId]: "" };
-              updateDetail(index, { materialCustomInputs: newCustomInputs });
-            } else {
-              const newCustomInputs = { ...detail.materialCustomInputs };
-              delete newCustomInputs[materialId];
-              updateDetail(index, { materialCustomInputs: newCustomInputs });
-              const normalizedJenis = value.toLowerCase().trim();
-              const defaultUnit = materialDefaultUnits[normalizedJenis];
-              if (defaultUnit) {
-                updatedMaterial.satuan = defaultUnit;
-              }
+    const newMaterials = detail.materials.map((m) => {
+      if (m.id === materialId) {
+        const updatedMaterial = { ...m, [field]: value };
+        if (field === "jenis") {
+          if (value === "custom") {
+            updatedMaterial.jenis = "custom";
+            const newCustomInputs = { ...detail.materialCustomInputs, [materialId]: "" };
+            updateDetail(index, { materialCustomInputs: newCustomInputs });
+          } else {
+            const newCustomInputs = { ...detail.materialCustomInputs };
+            delete newCustomInputs[materialId];
+            updateDetail(index, { materialCustomInputs: newCustomInputs });
+            const normalizedJenis = value.toLowerCase().trim();
+            const defaultUnit = materialDefaultUnits[normalizedJenis];
+            if (defaultUnit) {
+              updatedMaterial.satuan = defaultUnit;
             }
           }
-          return updatedMaterial;
         }
-        return m;
-      }),
+        return updatedMaterial;
+      }
+      return m;
     });
+    updateDetail(index, { materials: newMaterials });
   };
 
   const updateMaterialCustomInput = (materialId: string, value: string) => {
     const newCustomInputs = { ...detail.materialCustomInputs, [materialId]: value };
-    updateDetail(index, { materialCustomInputs: newCustomInputs });
-    updateDetail(index, {
-      materials: detail.materials.map((m) =>
-        m.id === materialId ? { ...m, jenis: value } : m
-      ),
-    });
+    const newMaterials = detail.materials.map((m) =>
+      m.id === materialId ? { ...m, jenis: value } : m
+    );
+    updateDetail(index, { materialCustomInputs: newCustomInputs, materials: newMaterials });
   };
 
   return (
     <div className="space-y-6 border p-4 rounded-lg bg-muted/10">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Aktifitas Penanganan</h3> {/* Removed index + 1 */}
-        {/* Removed "Hapus Aktifitas" button */}
+        <h3 className="text-lg font-semibold">Aktifitas Penanganan {index + 1}</h3>
+        {isRemovable && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => removeDetail(index)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Hapus Aktifitas
+          </Button>
+        )}
       </div>
 
       {/* Photos */}
