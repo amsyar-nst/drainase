@@ -20,8 +20,8 @@ interface PenangananDetailSectionProps {
   detail: PenangananDetailFormState;
   index: number;
   updateDetail: (index: number, updates: Partial<PenangananDetailFormState>) => void;
-  removeDetail: (index: number) => void;
-  isRemovable: boolean;
+  removeDetail: (index: number) => void; // Still keep for type compatibility, but won't be used
+  isRemovable: boolean; // Still keep for type compatibility, but won't be used
   reportType: "harian" | "bulanan" | "tersier";
   onPreviewPhoto: (url: string) => void;
 }
@@ -36,8 +36,8 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
   detail,
   index,
   updateDetail,
-  removeDetail,
-  isRemovable,
+  // removeDetail, // Removed from destructuring
+  // isRemovable, // Removed from destructuring
   reportType,
   onPreviewPhoto,
 }) => {
@@ -175,18 +175,8 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
   return (
     <div className="space-y-6 border p-4 rounded-lg bg-muted/10">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Aktifitas Penanganan {index + 1}</h3>
-        {isRemovable && (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() => removeDetail(index)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Hapus Aktifitas
-          </Button>
-        )}
+        <h3 className="text-lg font-semibold">Aktifitas Penanganan</h3> {/* Removed index + 1 */}
+        {/* Removed "Hapus Aktifitas" button */}
       </div>
 
       {/* Photos */}

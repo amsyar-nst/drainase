@@ -153,14 +153,13 @@ export const peralatanOptions = [
   "Sendok Semen",
   "Ember",
   "Pahat",
-  "Angkong",
+  "Angkong", // Hanya satu "Angkong"
   "Linggis",
   "Rambu Kerucut",
   "Parang",
   "Sapu Lidi",
   "Garukan Pjg Sampah",
   "Raskam",
-  "Angkong",
   "Ember Kecil",
   "Kakak Tua"
 ];

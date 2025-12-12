@@ -116,6 +116,7 @@ export const DrainaseForm = () => {
   });
 
   // State to hold the repeatable penanganan details for the current activity
+  // Changed to always hold a single detail object
   const [currentPenangananDetails, setCurrentPenangananDetails] = useState<PenangananDetailFormState[]>([createNewPenangananDetail()]);
 
   const [currentKegiatanIndex, setCurrentKegiatanIndex] = useState(0);
@@ -148,20 +149,23 @@ export const DrainaseForm = () => {
   const aggregateKegiatanData = useCallback((kegiatan: KegiatanDrainase, details: PenangananDetailFormState[]): KegiatanDrainase => {
     const aggregated: KegiatanDrainase = { ...kegiatan };
 
-    if (details.length > 0) {
-      // Aggregate photos
-      aggregated.foto0 = details.flatMap(d => d.foto0);
-      aggregated.foto50 = details.flatMap(d => d.foto50);
-      aggregated.foto100 = details.flatMap(d => d.foto100);
-      aggregated.fotoSket = details.flatMap(d => d.fotoSket);
+    // Since we now assume only one PenangananDetailFormState per KegiatanDrainase
+    const detail = details[0]; 
 
-      // Aggregate text fields (join with separator)
-      aggregated.jenisSaluran = Array.from(new Set(details.map(d => d.jenisSaluran))).filter(Boolean).join(' & ') as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "";
-      aggregated.jenisSedimen = Array.from(new Set(details.map(d => d.jenisSedimen))).filter(Boolean).join(', ');
-      aggregated.aktifitasPenanganan = details.map(d => d.aktifitasPenanganan).filter(Boolean).join('; ');
+    if (detail) {
+      // Aggregate photos
+      aggregated.foto0 = detail.foto0;
+      aggregated.foto50 = detail.foto50;
+      aggregated.foto100 = detail.foto100;
+      aggregated.fotoSket = detail.fotoSket;
+
+      // Aggregate text fields
+      aggregated.jenisSaluran = detail.jenisSaluran;
+      aggregated.jenisSedimen = detail.jenisSedimen;
+      aggregated.aktifitasPenanganan = detail.aktifitasPenanganan;
 
       // Aggregate materials
-      aggregated.materials = details.flatMap(d => d.materials.filter(m => m.jenis || m.jumlah));
+      aggregated.materials = detail.materials.filter(m => m.jenis || m.jumlah);
     } else {
       // If no details, ensure fields are empty
       aggregated.foto0 = []; aggregated.foto50 = []; aggregated.foto100 = []; aggregated.fotoSket = [];
@@ -172,7 +176,7 @@ export const DrainaseForm = () => {
     // Apply custom input values for materials, peralatans, operasionalAlatBerats
     aggregated.materials = aggregated.materials.map(m => ({
       ...m,
-      jenis: m.jenis === "custom" ? (details.find(d => d.materials.some(dm => dm.id === m.id))?.materialCustomInputs[m.id] || "") : m.jenis,
+      jenis: m.jenis === "custom" ? (detail?.materialCustomInputs[m.id] || "") : m.jenis,
     }));
     aggregated.peralatans = aggregated.peralatans.map(p => ({
       ...p,
@@ -218,7 +222,6 @@ export const DrainaseForm = () => {
       setKelurahanOptions(selected?.kelurahan || []);
 
       // De-aggregate data from currentKec into a single PenangananDetailFormState
-      // This is the limitation: multiple saved activities will appear as one editable block
       const deaggregatedDetail: PenangananDetailFormState = {
         id: "detail-loaded-" + currentKec.id, // Use a unique ID
         foto0: currentKec.foto0Url || [],
@@ -244,7 +247,7 @@ export const DrainaseForm = () => {
       });
       deaggregatedDetail.materialCustomInputs = initialMaterialCustomInputs;
 
-      setCurrentPenangananDetails([deaggregatedDetail]);
+      setCurrentPenangananDetails([deaggregatedDetail]); // Always set as a single element array
 
       // Update activity date input string
       setActivityDateInputString(
@@ -559,20 +562,13 @@ export const DrainaseForm = () => {
   };
 
   const updatePenangananDetail = useCallback((index: number, updates: Partial<PenangananDetailFormState>) => {
+    // Since we only have one detail, we always update the first element
     setCurrentPenangananDetails(prevDetails =>
-      prevDetails.map((detail, i) => (i === index ? { ...detail, ...updates } : detail))
+      prevDetails.map((detail, i) => (i === 0 ? { ...detail, ...updates } : detail))
     );
   }, []);
 
-  const addPenangananDetail = () => {
-    setCurrentPenangananDetails(prevDetails => [...prevDetails, createNewPenangananDetail()]);
-  };
-
-  const removePenangananDetail = (indexToRemove: number) => {
-    if (currentPenangananDetails.length > 1) {
-      setCurrentPenangananDetails(prevDetails => prevDetails.filter((_, i) => i !== indexToRemove));
-    }
-  };
+  // Removed addPenangananDetail and removePenangananDetail functions as they are no longer needed
 
   const toggleKoordinator = (koordinatorName: string) => {
     const currentCoordinators = currentKegiatan.koordinator;
@@ -1211,28 +1207,22 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Repeatable Penanganan Details Section */}
+          {/* Single Penanganan Detail Section */}
           {(formData.reportType === "harian" || formData.reportType === "bulanan") && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
-              {currentPenangananDetails.map((detail, index) => (
-                <PenangananDetailSection
-                  key={detail.id}
-                  detail={detail}
-                  index={index}
-                  updateDetail={updatePenangananDetail}
-                  removeDetail={removePenangananDetail}
-                  isRemovable={currentPenangananDetails.length > 1}
-                  reportType={formData.reportType}
-                  onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
-                />
-              ))}
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" onClick={addPenangananDetail}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Aktifitas Penanganan
-                </Button>
-              </div>
+              {/* Always render a single PenangananDetailSection */}
+              <PenangananDetailSection
+                key={currentPenangananDetails[0].id} // Use the ID of the single detail
+                detail={currentPenangananDetails[0]}
+                index={0} // Always index 0
+                updateDetail={updatePenangananDetail}
+                removeDetail={() => {}} // No remove functionality
+                isRemovable={false} // Not removable
+                reportType={formData.reportType}
+                onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
+              />
+              {/* Removed "Tambah Aktifitas Penanganan" button */}
             </div>
           )}
 
