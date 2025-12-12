@@ -44,6 +44,109 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
     }))
   );
 
+  // Pre-process the tbody content to avoid complex nested template literals
+  const tbodyContent = kegiatansWithImages.map((kegiatan, kegiatanIndex) => {
+    const combinedEquipment = [
+      ...kegiatan.peralatans.filter(p => p.nama).map(p => ({
+        jenis: p.nama,
+        jumlah: p.jumlah,
+        satuan: p.satuan || '-',
+      })),
+      ...kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(o => ({
+        jenis: o.jenis,
+        jumlah: o.jumlah,
+        satuan: 'Unit', // Default to 'Unit' for heavy equipment operational count
+      })),
+    ];
+
+    return kegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => `
+      <tr>
+        ${detailIndex === 0 ? `
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatanIndex + 1}</td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
+        ` : ''}
+        <td class="photo-cell">
+          <div class="photo-container">
+            ${detail.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
+          </div>
+        </td>
+        <td class="photo-cell">
+          <div class="photo-container">
+            ${detail.foto50Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 50%" />` : '').join('')}
+          </div>
+        </td>
+        <td class="photo-cell">
+          <div class="photo-container">
+            ${detail.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
+          </div>
+        </td>
+        <td class="center">${detail.jenisSaluran || '-'}</td>
+        <td class="center">${detail.jenisSedimen || '-'}</td>
+        <td>${detail.aktifitasPenanganan}</td>
+        <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
+        <td class="center">${kegiatan.lebarRataRata || '-'}</td>
+        <td class="center">${kegiatan.rataRataSedimen || '-'}</td>
+        <td class="center">${kegiatan.volumeGalian || '-'}</td>
+        <td>
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.jenis}</li>
+            `).join('')}
+          </ul>
+        </td>
+        <td class="center">
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.jumlah}</li>
+            `).join('')}
+          </ul>
+        </td>
+        <td class="center">
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.satuan}</li>
+            `).join('')}
+          </ul>
+        </td>
+        <td>
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.keterangan || '-'}</li>
+            `).join('')}
+          </ul>
+        </td>
+        ${detailIndex === 0 ? `
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+            <ul class="equipment-list">
+              ${combinedEquipment.map(item => `
+                <li>${item.jenis}</li>
+              `).join('')}
+            </ul>
+          </td>
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+            <ul class="equipment-list">
+              ${combinedEquipment.map(item => `
+                <li>${item.jumlah}</li>
+              `).join('')}
+            </ul>
+          </td>
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+            <ul class="equipment-list">
+              ${combinedEquipment.map(item => `
+                <li>${item.satuan || '-'}</li>
+              `).join('')}
+            </ul>
+          </td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.koordinator.join(', ')}</td>
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahPHL || '-'}</td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.keterangan || ''}</td>
+        ` : ''}
+      </tr>
+    `).join('')
+  }).join('');
+
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -241,93 +344,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           </tr>
         </thead>
         <tbody>
-          ${kegiatansWithImages.map((kegiatan, kegiatanIndex) => `
-            ${kegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => `
-              <tr>
-                ${detailIndex === 0 ? `
-                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatanIndex + 1}</td>
-                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
-                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
-                ` : ''}
-                <td class="photo-cell">
-                  <div class="photo-container">
-                    ${detail.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
-                  </div>
-                </td>
-                <td class="photo-cell">
-                  <div class="photo-container">
-                    ${detail.foto50Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 50%" />` : '').join('')}
-                  </div>
-                </td>
-                <td class="photo-cell">
-                  <div class="photo-container">
-                    ${detail.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
-                  </div>
-                </td>
-                <td class="center">${detail.jenisSaluran || '-'}</td>
-                <td class="center">${detail.jenisSedimen || '-'}</td>
-                <td>${detail.aktifitasPenanganan}</td>
-                <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
-                <td class="center">${kegiatan.lebarRataRata || '-'}</td>
-                <td class="center">${kegiatan.rataRataSedimen || '-'}</td>
-                <td class="center">${kegiatan.volumeGalian || '-'}</td>
-                <td>
-                  <ul class="material-list">
-                    ${detail.materials.filter(m => m.jenis).map(material => `
-                      <li>${material.jenis}</li>
-                    `).join('')}
-                  </ul>
-                </td>
-                <td class="center">
-                  <ul class="material-list">
-                    ${detail.materials.filter(m => m.jenis).map(material => `
-                      <li>${material.jumlah}</li>
-                    `).join('')}
-                  </ul>
-                </td>
-                <td class="center">
-                  <ul class="material-list">
-                    ${detail.materials.filter(m => m.jenis).map(material => `
-                      <li>${material.satuan}</li>
-                    `).join('')}
-                  </ul>
-                </td>
-                <td>
-                  <ul class="material-list">
-                    ${detail.materials.filter(m => m.jenis).map(material => `
-                      <li>${material.keterangan || '-'}</li>
-                    `).join('')}
-                  </ul>
-                </td>
-                ${detailIndex === 0 ? `
-                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">
-                    <ul class="equipment-list">
-                      ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                        <li>${peralatan.nama}</li>
-                      `).join('')}
-                    </ul>
-                  </td>
-                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">
-                    <ul class="equipment-list">
-                      ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                        <li>${peralatan.jumlah}</li>
-                      `).join('')}
-                    </ul>
-                  </td>
-                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">
-                    <ul class="equipment-list">
-                      ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                        <li>${peralatan.satuan || '-'}</li>
-                      `).join('')}
-                    </ul>
-                  </td>
-                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.koordinator.join(', ')}</td>
-                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahPHL || '-'}</td>
-                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.keterangan || ''}</td>
-                ` : ''}
-              </tr>
-            `).join('')}
-          `).join('')}
+          ${tbodyContent}
         </tbody>
       </table>
 
