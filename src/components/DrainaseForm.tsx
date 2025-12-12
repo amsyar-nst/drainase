@@ -144,6 +144,65 @@ export const DrainaseForm = () => {
     currentKegiatan.hariTanggal ? format(currentKegiatan.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
   );
 
+  // Helper function to aggregate penanganan details and custom inputs into a KegiatanDrainase object
+  const aggregateKegiatanData = useCallback((kegiatan: KegiatanDrainase, details: PenangananDetailFormState[]): KegiatanDrainase => {
+    const aggregated: KegiatanDrainase = { ...kegiatan };
+
+    if (details.length > 0) {
+      // Aggregate photos
+      aggregated.foto0 = details.flatMap(d => d.foto0);
+      aggregated.foto50 = details.flatMap(d => d.foto50);
+      aggregated.foto100 = details.flatMap(d => d.foto100);
+      aggregated.fotoSket = details.flatMap(d => d.fotoSket);
+
+      // Aggregate text fields (join with separator)
+      aggregated.jenisSaluran = Array.from(new Set(details.map(d => d.jenisSaluran))).filter(Boolean).join(' & ') as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "";
+      aggregated.jenisSedimen = Array.from(new Set(details.map(d => d.jenisSedimen))).filter(Boolean).join(', ');
+      aggregated.aktifitasPenanganan = details.map(d => d.aktifitasPenanganan).filter(Boolean).join('; ');
+
+      // Aggregate materials
+      aggregated.materials = details.flatMap(d => d.materials.filter(m => m.jenis || m.jumlah));
+    } else {
+      // If no details, ensure fields are empty
+      aggregated.foto0 = []; aggregated.foto50 = []; aggregated.foto100 = []; aggregated.fotoSket = [];
+      aggregated.jenisSaluran = ""; aggregated.jenisSedimen = ""; aggregated.aktifitasPenanganan = "";
+      aggregated.materials = [];
+    }
+
+    // Apply custom input values for materials, peralatans, operasionalAlatBerats
+    aggregated.materials = aggregated.materials.map(m => ({
+      ...m,
+      jenis: m.jenis === "custom" ? (details.find(d => d.materials.some(dm => dm.id === m.id))?.materialCustomInputs[m.id] || "") : m.jenis,
+    }));
+    aggregated.peralatans = aggregated.peralatans.map(p => ({
+      ...p,
+      nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
+    }));
+    aggregated.operasionalAlatBerats = aggregated.operasionalAlatBerats.map(o => ({
+      ...o,
+      jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
+    }));
+
+    return aggregated;
+  }, [peralatanCustomInputs, operasionalCustomInputs]);
+
+  // Function to commit the current activity's state (penanganan details, custom inputs) back to formData.kegiatans
+  const commitCurrentKegiatanState = useCallback(() => {
+    const newKegiatans = [...formData.kegiatans];
+    const currentKec = newKegiatans[currentKegiatanIndex];
+
+    if (!currentKec) return;
+
+    // Aggregate penanganan details and custom inputs into the currentKec object
+    const aggregatedKegiatan = aggregateKegiatanData(currentKec, currentPenangananDetails);
+    
+    // Update the currentKec in the newKegiatans array with the aggregated data
+    newKegiatans[currentKegiatanIndex] = { ...currentKec, ...aggregatedKegiatan };
+
+    setFormData(prev => ({ ...prev, kegiatans: newKegiatans }));
+  }, [formData.kegiatans, currentKegiatanIndex, currentPenangananDetails, aggregateKegiatanData]);
+
+
   useEffect(() => {
     if (id) {
       loadLaporan(id);
@@ -427,7 +486,14 @@ export const DrainaseForm = () => {
     setFormData({ ...formData, kegiatans: newKegiatans });
   };
 
+  const handleSetCurrentKegiatanIndex = (index: number) => {
+    // Commit changes of the *previous* activity before switching
+    commitCurrentKegiatanState();
+    setCurrentKegiatanIndex(index);
+  };
+
   const addKegiatan = () => {
+    commitCurrentKegiatanState(); // Commit current activity before adding new
     const newKegiatan: KegiatanDrainase = {
       id: "kegiatan-" + Date.now().toString(),
       namaJalan: "",
@@ -436,7 +502,7 @@ export const DrainaseForm = () => {
       foto0: [], foto50: [], foto100: [], fotoSket: [],
       foto0Url: [], foto50Url: [], foto100Url: [], fotoSketUrl: [],
       jenisSaluran: "", jenisSedimen: "", aktifitasPenanganan: "",
-      materials: [],
+      materials: [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "M³", keterangan: "" }], // Default material
       panjangPenanganan: "",
       lebarRataRata: "",
       rataRataSedimen: "",
@@ -469,6 +535,8 @@ export const DrainaseForm = () => {
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
     setCurrentPenangananDetails([createNewPenangananDetail()]); // Reset penanganan details for new activity
+    setPeralatanCustomInputs({}); // Reset custom inputs for new activity
+    setOperasionalCustomInputs({}); // Reset custom inputs for new activity
   };
 
   const removeKegiatan = (index: number) => {
@@ -542,18 +610,20 @@ export const DrainaseForm = () => {
   };
 
   const handlePrintPreview = async () => {
+    // Commit current state before generating PDF
+    commitCurrentKegiatanState();
+
     // Aggregate current form data for PDF generation
-    const aggregatedKegiatan = aggregateKegiatanData(currentKegiatan, currentPenangananDetails);
     const laporanForPdf: LaporanDrainase = {
-      tanggal: formData.tanggal || aggregatedKegiatan.hariTanggal || new Date(), // Use main date, or activity date, or current date
+      tanggal: formData.tanggal || currentKegiatan.hariTanggal || new Date(), // Use main date, or activity date, or current date
       periode: formData.periode,
       reportType: formData.reportType,
-      kegiatans: [aggregatedKegiatan], // Only current activity for preview
+      kegiatans: [aggregateKegiatanData(currentKegiatan, currentPenangananDetails)], // Only current activity for preview
     };
 
     try {
       let blob: Blob;
-      if (formData.reportType === "tersier") {
+      if (laporanForPdf.reportType === "tersier") {
         blob = await generatePDFTersier(laporanForPdf, false);
       } else {
         blob = await generatePDF(laporanForPdf, false);
@@ -569,17 +639,19 @@ export const DrainaseForm = () => {
   };
 
   const handlePrintDownload = async () => {
+    // Commit current state before generating PDF
+    commitCurrentKegiatanState();
+
     // Aggregate current form data for PDF generation
-    const aggregatedKegiatan = aggregateKegiatanData(currentKegiatan, currentPenangananDetails);
     const laporanForPdf: LaporanDrainase = {
-      tanggal: formData.tanggal || aggregatedKegiatan.hariTanggal || new Date(), // Use main date, or activity date, or current date
+      tanggal: formData.tanggal || currentKegiatan.hariTanggal || new Date(), // Use main date, or activity date, or current date
       periode: formData.periode,
       reportType: formData.reportType,
-      kegiatans: [aggregatedKegiatan], // Only current activity for download
+      kegiatans: [aggregateKegiatanData(currentKegiatan, currentPenangananDetails)], // Only current activity for download
     };
 
     try {
-      if (formData.reportType === "tersier") {
+      if (laporanForPdf.reportType === "tersier") {
         await generatePDFTersier(laporanForPdf, true);
       } else {
         await generatePDF(laporanForPdf, true);
@@ -591,49 +663,23 @@ export const DrainaseForm = () => {
     }
   };
 
-  const aggregateKegiatanData = (kegiatan: KegiatanDrainase, details: PenangananDetailFormState[]): KegiatanDrainase => {
-    const aggregated: KegiatanDrainase = { ...kegiatan };
-
-    if (details.length > 0) {
-      // Aggregate photos
-      aggregated.foto0 = details.flatMap(d => d.foto0);
-      aggregated.foto50 = details.flatMap(d => d.foto50);
-      aggregated.foto100 = details.flatMap(d => d.foto100);
-      aggregated.fotoSket = details.flatMap(d => d.fotoSket);
-
-      // Aggregate text fields (join with separator)
-      aggregated.jenisSaluran = Array.from(new Set(details.map(d => d.jenisSaluran))).filter(Boolean).join(' & ') as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "";
-      aggregated.jenisSedimen = Array.from(new Set(details.map(d => d.jenisSedimen))).filter(Boolean).join(', ');
-      aggregated.aktifitasPenanganan = details.map(d => d.aktifitasPenanganan).filter(Boolean).join('; ');
-
-      // Aggregate materials
-      aggregated.materials = details.flatMap(d => d.materials.filter(m => m.jenis || m.jumlah));
-    } else {
-      // If no details, ensure fields are empty
-      aggregated.foto0 = []; aggregated.foto50 = []; aggregated.foto100 = []; aggregated.fotoSket = [];
-      aggregated.jenisSaluran = ""; aggregated.jenisSedimen = ""; aggregated.aktifitasPenanganan = "";
-      aggregated.materials = [];
-    }
-
-    return aggregated;
-  };
-
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      let currentLaporanId = laporanId;
+      // 1. Commit the current activity's state to formData.kegiatans before saving
+      commitCurrentKegiatanState();
 
-      // Aggregate current activity's penanganan details before saving
-      const aggregatedKegiatan = aggregateKegiatanData(currentKegiatan, currentPenangananDetails);
+      let currentLaporanId = laporanId;
 
       // Ensure main report date is set for Harian/Bulanan, or use activity date if Tersier
       const finalReportDate = formData.reportType === "tersier" 
-        ? aggregatedKegiatan.hariTanggal || new Date() 
-        : formData.tanggal || aggregatedKegiatan.hariTanggal || new Date();
+        ? formData.kegiatans[0]?.hariTanggal || new Date() // Use first activity's date for tersier if available
+        : formData.tanggal || formData.kegiatans[0]?.hariTanggal || new Date();
 
       // Ensure periode is set, default to current month/year if not explicitly set
       const finalPeriode = formData.periode || format(finalReportDate, 'MMMM yyyy', { locale: idLocale });
 
+      // 2. Save/Update main laporan_drainase entry
       if (currentLaporanId) {
         const { error: updateError } = await supabase
           .from('laporan_drainase')
@@ -645,24 +691,6 @@ export const DrainaseForm = () => {
           .eq('id', currentLaporanId);
 
         if (updateError) throw updateError;
-
-        // Delete existing activities and their sub-data for this report
-        const { data: existingKegiatanIds, error: fetchKegiatanIdsError } = await supabase
-          .from('kegiatan_drainase')
-          .select('id')
-          .eq('laporan_id', currentLaporanId);
-
-        if (fetchKegiatanIdsError) throw fetchKegiatanIdsError;
-
-        const idsToDelete = existingKegiatanIds.map(k => k.id);
-
-        if (idsToDelete.length > 0) {
-          await supabase.from('material_kegiatan').delete().in('kegiatan_id', idsToDelete);
-          await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', idsToDelete);
-          await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', idsToDelete);
-          await supabase.from('kegiatan_drainase').delete().in('id', idsToDelete);
-        }
-
       } else {
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
@@ -679,113 +707,142 @@ export const DrainaseForm = () => {
         setLaporanId(currentLaporanId);
       }
 
-      // Now save the aggregated currentKegiatan
-      const kegiatanToSave = aggregatedKegiatan;
-
-      let foto0Urls: string[] = [];
-      let foto50Urls: string[] = [];
-      let foto100Urls: string[] = [];
-      let fotoSketUrls: string[] = [];
-
-      // Handle photo uploads based on report type
-      if (formData.reportType === "tersier") {
-        foto0Urls = await uploadFiles(kegiatanToSave.foto0, `${currentLaporanId}/${kegiatanToSave.id}/0`);
-        foto100Urls = await uploadFiles(kegiatanToSave.foto100, `${currentLaporanId}/${kegiatanToSave.id}/100`);
-      } else {
-        foto0Urls = await uploadFiles(kegiatanToSave.foto0, `${currentLaporanId}/${kegiatanToSave.id}/0`);
-        foto50Urls = await uploadFiles(kegiatanToSave.foto50, `${currentLaporanId}/${kegiatanToSave.id}/50`);
-        foto100Urls = await uploadFiles(kegiatanToSave.foto100, `${currentLaporanId}/${kegiatanToSave.id}/100`);
-        fotoSketUrls = await uploadFiles(kegiatanToSave.fotoSket, `${currentLaporanId}/${kegiatanToSave.id}/sket`);
-      }
-
-      const { data: kegiatanData, error: kegiatanError } = await supabase
+      // 3. Fetch existing kegiatan IDs for comparison
+      const { data: existingKegiatanRecords, error: fetchKegiatanError } = await supabase
         .from('kegiatan_drainase')
-        .insert({
+        .select('id')
+        .eq('laporan_id', currentLaporanId);
+
+      if (fetchKegiatanError) throw fetchKegiatanError;
+      const existingKegiatanIds = new Set(existingKegiatanRecords.map(k => k.id));
+      const kegiatansToKeepInDb = new Set<string>(); // To track which existing ones are still in formData
+
+      // 4. Iterate over all activities in formData.kegiatans (which is now fully updated)
+      for (const kegiatanToProcess of formData.kegiatans) {
+        let kegiatanDbId = kegiatanToProcess.id; // This ID might be from DB or temporary
+
+        // Upload files for this specific kegiatan
+        let foto0Urls: string[] = [];
+        let foto50Urls: string[] = [];
+        let foto100Urls: string[] = [];
+        let fotoSketUrls: string[] = [];
+
+        if (formData.reportType === "tersier") {
+          foto0Urls = await uploadFiles(kegiatanToProcess.foto0, `${currentLaporanId}/${kegiatanToProcess.id}/0`);
+          foto100Urls = await uploadFiles(kegiatanToProcess.foto100, `${currentLaporanId}/${kegiatanToProcess.id}/100`);
+        } else {
+          foto0Urls = await uploadFiles(kegiatanToProcess.foto0, `${currentLaporanId}/${kegiatanToProcess.id}/0`);
+          foto50Urls = await uploadFiles(kegiatanToProcess.foto50, `${currentLaporanId}/${kegiatanToProcess.id}/50`);
+          foto100Urls = await uploadFiles(kegiatanToProcess.foto100, `${currentLaporanId}/${kegiatanToProcess.id}/100`);
+          fotoSketUrls = await uploadFiles(kegiatanToProcess.fotoSket, `${currentLaporanId}/${kegiatanToProcess.id}/sket`);
+        }
+
+        const kegiatanDataToSave = {
           laporan_id: currentLaporanId,
-          nama_jalan: kegiatanToSave.namaJalan,
-          kecamatan: kegiatanToSave.kecamatan,
-          kelurahan: kegiatanToSave.kelurahan,
+          nama_jalan: kegiatanToProcess.namaJalan,
+          kecamatan: kegiatanToProcess.kecamatan,
+          kelurahan: kegiatanToProcess.kelurahan,
           foto_0_url: foto0Urls,
           foto_50_url: foto50Urls,
           foto_100_url: foto100Urls,
           foto_sket_url: fotoSketUrls,
-          jenis_saluran: kegiatanToSave.jenisSaluran,
-          jenis_sedimen: kegiatanToSave.jenisSedimen,
-          aktifitas_penanganan: kegiatanToSave.aktifitasPenanganan,
-          panjang_penanganan: kegiatanToSave.panjangPenanganan,
-          lebar_rata_rata: kegiatanToSave.lebarRataRata,
-          rata_rata_sedimen: kegiatanToSave.rataRataSedimen,
-          volume_galian: kegiatanToSave.volumeGalian,
-          koordinator: kegiatanToSave.koordinator,
-          jumlah_phl: kegiatanToSave.jumlahPHL,
-          keterangan: kegiatanToSave.keterangan,
-          hari_tanggal: kegiatanToSave.hariTanggal ? format(kegiatanToSave.hariTanggal, 'yyyy-MM-dd') : null,
-          jumlah_upt: kegiatanToSave.jumlahUPT,
-          jumlah_p3su: kegiatanToSave.jumlahP3SU,
-          sisa_target: kegiatanToSave.sisaTargetHari,
-          rencana_panjang: kegiatanToSave.rencanaPanjang,
-          rencana_volume: kegiatanToSave.rencanaVolume,
-          realisasi_panjang: kegiatanToSave.realisasiPanjang,
-          realisasi_volume: kegiatanToSave.realisasiVolume,
-        })
-        .select()
-        .single();
+          jenis_saluran: kegiatanToProcess.jenisSaluran,
+          jenis_sedimen: kegiatanToProcess.jenisSedimen,
+          aktifitas_penanganan: kegiatanToProcess.aktifitasPenanganan,
+          panjang_penanganan: kegiatanToProcess.panjangPenanganan,
+          lebar_rata_rata: kegiatanToProcess.lebarRataRata,
+          rata_rata_sedimen: kegiatanToProcess.rataRataSedimen,
+          volume_galian: kegiatanToProcess.volumeGalian,
+          koordinator: kegiatanToProcess.koordinator,
+          jumlah_phl: kegiatanToProcess.jumlahPHL,
+          keterangan: kegiatanToProcess.keterangan,
+          hari_tanggal: kegiatanToProcess.hariTanggal ? format(kegiatanToProcess.hariTanggal, 'yyyy-MM-dd') : null,
+          jumlah_upt: kegiatanToProcess.jumlahUPT,
+          jumlah_p3su: kegiatanToProcess.jumlahP3SU,
+          sisa_target: kegiatanToProcess.sisaTargetHari,
+          rencana_panjang: kegiatanToProcess.rencanaPanjang,
+          rencana_volume: kegiatanToProcess.rencanaVolume,
+          realisasi_panjang: kegiatanToProcess.realisasiPanjang,
+          realisasi_volume: kegiatanToProcess.realisasiVolume,
+        };
 
-      if (kegiatanError) throw kegiatanError;
+        if (existingKegiatanIds.has(kegiatanToProcess.id)) {
+          // Update existing kegiatan
+          const { error: updateKegiatanError } = await supabase
+            .from('kegiatan_drainase')
+            .update(kegiatanDataToSave)
+            .eq('id', kegiatanToProcess.id);
+          if (updateKegiatanError) throw updateKegiatanError;
+          kegiatanDbId = kegiatanToProcess.id; // Ensure ID is correct for sub-records
+          kegiatansToKeepInDb.add(kegiatanDbId);
+        } else {
+          // Insert new kegiatan
+          const { data: newKegiatanRecord, error: insertKegiatanError } = await supabase
+            .from('kegiatan_drainase')
+            .insert(kegiatanDataToSave)
+            .select('id')
+            .single();
+          if (insertKegiatanError) throw insertKegiatanError;
+          kegiatanDbId = newKegiatanRecord.id; // Update ID for sub-records
+          kegiatansToKeepInDb.add(kegiatanDbId);
+        }
 
-      // Save materials (now aggregated)
-      const materialsToInsert = kegiatanToSave.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({
-        kegiatan_id: kegiatanData!.id,
-        jenis: m.jenis === "custom" ? currentPenangananDetails.flatMap(d => d.materialCustomInputs[m.id]).filter(Boolean)[0] || "" : m.jenis, // Get custom value from the detail it came from
-        jumlah: m.jumlah,
-        satuan: m.satuan,
-        keterangan: m.keterangan,
-      }));
+        // Handle materials, peralatans, operasionalAlatBerats for this specific kegiatan
+        // Delete existing sub-records for this kegiatan first
+        await supabase.from('material_kegiatan').delete().eq('kegiatan_id', kegiatanDbId);
+        await supabase.from('peralatan_kegiatan').delete().eq('kegiatan_id', kegiatanDbId);
+        await supabase.from('operasional_alat_berat_kegiatan').delete().eq('kegiatan_id', kegiatanDbId);
 
-      if (materialsToInsert.length > 0) {
-        const { error: materialsError } = await supabase
-          .from('material_kegiatan')
-          .insert(materialsToInsert);
+        // Insert new sub-records
+        const materialsToInsert = kegiatanToProcess.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({
+          kegiatan_id: kegiatanDbId,
+          jenis: m.jenis,
+          jumlah: m.jumlah,
+          satuan: m.satuan,
+          keterangan: m.keterangan,
+        }));
+        if (materialsToInsert.length > 0) {
+          const { error: materialsError } = await supabase.from('material_kegiatan').insert(materialsToInsert);
+          if (materialsError) throw materialsError;
+        }
 
-        if (materialsError) throw materialsError;
+        const peralatanToInsert = kegiatanToProcess.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
+          kegiatan_id: kegiatanDbId,
+          nama: p.nama,
+          jumlah: p.jumlah,
+          satuan: p.satuan,
+        }));
+        if (peralatanToInsert.length > 0) {
+          const { error: peralatanError } = await supabase.from('peralatan_kegiatan').insert(peralatanToInsert);
+          if (peralatanError) throw peralatanError;
+        }
+
+        const operasionalAlatBeratsToInsert = kegiatanToProcess.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
+          kegiatan_id: kegiatanDbId,
+          jenis: o.jenis,
+          jumlah: o.jumlah,
+          dexlite_jumlah: o.dexliteJumlah,
+          dexlite_satuan: o.dexliteSatuan,
+          pertalite_jumlah: o.pertaliteJumlah,
+          pertalite_satuan: o.pertaliteSatuan,
+          bio_solar_jumlah: o.bioSolarJumlah,
+          bio_solar_satuan: o.bioSolarSatuan,
+          keterangan: o.keterangan,
+        }));
+        if (operasionalAlatBeratsToInsert.length > 0) {
+          const { error: operasionalError } = await supabase.from('operasional_alat_berat_kegiatan').insert(operasionalAlatBeratsToInsert);
+          if (operasionalError) throw operasionalError;
+        }
       }
 
-      // Save peralatans
-      const peralatanToInsert = kegiatanToSave.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
-        kegiatan_id: kegiatanData!.id,
-        nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
-        jumlah: p.jumlah,
-        satuan: p.satuan,
-      }));
-
-      if (peralatanToInsert.length > 0) {
-        const { error: peralatanError } = await supabase
-          .from('peralatan_kegiatan')
-          .insert(peralatanToInsert);
-
-        if (peralatanError) throw peralatanError;
-      }
-
-      // Save operasionalAlatBerats
-      const operasionalAlatBeratsToInsert = kegiatanToSave.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
-        kegiatan_id: kegiatanData!.id,
-        jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
-        jumlah: o.jumlah,
-        dexlite_jumlah: o.dexliteJumlah,
-        dexlite_satuan: o.dexliteSatuan,
-        pertalite_jumlah: o.pertaliteJumlah,
-        pertalite_satuan: o.pertaliteSatuan,
-        bio_solar_jumlah: o.bioSolarJumlah,
-        bio_solar_satuan: o.bioSolarSatuan,
-        keterangan: o.keterangan,
-      }));
-
-      if (operasionalAlatBeratsToInsert.length > 0) {
-        const { error: operasionalError } = await supabase
-          .from('operasional_alat_berat_kegiatan')
-          .insert(operasionalAlatBeratsToInsert);
-
-        if (operasionalError) throw operasionalError;
+      // 5. Delete activities that are in DB but no longer in formData.kegiatans
+      const idsToDeleteFromDb = Array.from(existingKegiatanIds).filter(id => !kegiatansToKeepInDb.has(id));
+      if (idsToDeleteFromDb.length > 0) {
+        // Supabase RLS might require deleting child records first if cascade is not set up
+        await supabase.from('material_kegiatan').delete().in('kegiatan_id', idsToDeleteFromDb);
+        await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', idsToDeleteFromDb);
+        await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', idsToDeleteFromDb);
+        await supabase.from('kegiatan_drainase').delete().in('id', idsToDeleteFromDb);
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
@@ -889,7 +946,7 @@ export const DrainaseForm = () => {
                   key={index}
                   variant={currentKegiatanIndex === index ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setCurrentKegiatanIndex(index)}
+                  onClick={() => handleSetCurrentKegiatanIndex(index)} // Use new handler
                 >
                   Kegiatan {index + 1}
                 </Button>
