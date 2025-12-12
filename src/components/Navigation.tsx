@@ -9,11 +9,13 @@ export const Navigation = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    console.log("Attempting to log out...");
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error logging out:", error);
       toast.error("Gagal keluar: " + error.message);
     } else {
+      console.log("Successfully logged out.");
       toast.success("Anda telah berhasil keluar.");
       navigate("/login");
     }
