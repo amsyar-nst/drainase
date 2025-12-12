@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Trash2, Edit, Plus, Printer, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
@@ -261,7 +261,12 @@ const LaporanList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px]">Tanggal</TableHead><TableHead className="min-w-[100px]">Jenis Laporan</TableHead><TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead><TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead><TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead><TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
+                      <TableHead className="min-w-[120px]">Tanggal</TableHead>
+                      <TableHead className="min-w-[100px]">Jenis Laporan</TableHead>
+                      <TableHead className="min-w-[150px] hidden md:table-cell">Periode</TableHead>
+                      <TableHead className="min-w-[150px] hidden md:table-cell">Jumlah Kegiatan</TableHead>
+                      <TableHead className="min-w-[180px] hidden md:table-cell">Dibuat</TableHead>
+                      <TableHead className="text-right min-w-[120px] md:min-w-[240px]">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
