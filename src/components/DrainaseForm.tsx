@@ -229,15 +229,22 @@ export const DrainaseForm = () => {
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
     try {
+      if (!user) {
+        toast.error('Anda harus login untuk memuat laporan.');
+        navigate('/login');
+        return;
+      }
+
       const { data: laporanData, error: laporanError } = await supabase
         .from('laporan_drainase')
         .select('*')
         .eq('id', laporanId)
+        .eq('user_id', user.id) // Tambahkan filter user_id untuk RLS
         .single();
 
       if (laporanError) throw laporanError;
       if (!laporanData) {
-        toast.error('Laporan tidak ditemukan');
+        toast.error('Laporan tidak ditemukan atau Anda tidak memiliki akses.');
         navigate('/laporan');
         return;
       }
@@ -384,11 +391,11 @@ export const DrainaseForm = () => {
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
             jumlahUPT: kegiatan.jumlah_upt || 0,
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
-            rencanaPanjang: "",
-            rencanaVolume: "",
-            realisasiPanjang: "",
-            realisasiVolume: "",
-            sisaTargetHari: "",
+            rencanaPanjang: kegiatan.rencana_panjang || "",
+            rencanaVolume: kegiatan.rencana_volume || "",
+            realisasiPanjang: kegiatan.realisasi_panjang || "",
+            realisasiVolume: kegiatan.realisasi_volume || "",
+            sisaTargetHari: kegiatan.sisa_target || "",
             aktifitasPenangananDetails: aktifitasPenangananDetails,
           };
         })
@@ -421,7 +428,7 @@ export const DrainaseForm = () => {
       toast.success('Laporan berhasil dimuat');
     } catch (error: any) {
       console.error('Error loading laporan:', error);
-      toast.error('Gagal memuat laporan');
+      toast.error('Gagal memuat laporan: ' + (error.message || JSON.stringify(error)));
     } finally {
       setIsLoading(false);
     }
@@ -602,7 +609,7 @@ export const DrainaseForm = () => {
       toast.success("Laporan berhasil dipratinjau.");
     } catch (error) {
       console.error("Preview error:", error);
-      toast.error("Gagal membuat pratinjau PDF.");
+      toast.error("Gagal membuat pratinjau PDF: " + (error.message || JSON.stringify(error)));
     }
   };
 
@@ -641,7 +648,7 @@ export const DrainaseForm = () => {
       toast.success("Laporan berhasil diunduh.");
     } catch (error) {
       console.error("Download error:", error);
-      toast.error("Gagal mengunduh PDF.");
+      toast.error("Gagal mengunduh PDF: " + (error.message || JSON.stringify(error)));
     }
   };
 
@@ -865,7 +872,7 @@ export const DrainaseForm = () => {
       navigate('/');
     } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Gagal menyimpan laporan: ' + error.message);
+      toast.error('Gagal menyimpan laporan: ' + (error.message || JSON.stringify(error)));
     } finally {
       setIsSaving(false);
     }

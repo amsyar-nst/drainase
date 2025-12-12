@@ -22,6 +22,7 @@ import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { materialOptions } from "@/data/kecamatan-kelurahan"; // Import materialOptions
 import { PenangananDetailFormState } from "@/types/form-types"; // Import PenangananDetailFormState
+import { useSession } from "./SessionContextProvider"; // Import useSession
 
 interface DrainasePrintDialogProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   const [selectedKegiatanIds, setSelectedKegiatanIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
+  const { user } = useSession(); // Dapatkan user dari session
 
   useEffect(() => {
     if (isOpen) {
@@ -64,7 +66,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       setLoading(true);
       setIsPrinting(false);
     }
-  }, [isOpen, laporanIdsToFetch, reportType, filterPeriod]);
+  }, [isOpen, laporanIdsToFetch, reportType, filterPeriod, user]); // Tambahkan user sebagai dependency
 
   const ensureArray = (value: string | string[] | null | undefined): string[] => {
     if (Array.isArray(value)) {
@@ -79,6 +81,12 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   const fetchKegiatansForPrint = async () => {
     setLoading(true);
     try {
+      if (!user) {
+        toast.error('Anda harus login untuk memuat kegiatan.');
+        setLoading(false);
+        return;
+      }
+
       const fetchedKegiatans: KegiatanItemForPrint[] = [];
       
       let targetLaporanIds = laporanIdsToFetch;
@@ -91,6 +99,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           .select("id, tanggal, periode")
           .eq("periode", filterPeriod)
           .eq("report_type", "harian")
+          .eq('user_id', user.id) // Tambahkan filter user_id untuk RLS
           .order("tanggal", { ascending: true });
 
         if (periodError) throw periodError;
@@ -104,6 +113,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
           .from("laporan_drainase")
           .select("tanggal, periode, report_type")
           .eq("id", laporanIdsToFetch[0])
+          .eq('user_id', user.id) // Tambahkan filter user_id untuk RLS
           .single();
         if (singleLaporanError) throw singleLaporanError;
         periodLaporanDates[laporanIdsToFetch[0]] = new Date(singleLaporan.tanggal);
@@ -129,12 +139,11 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('kegiatan_drainase')
           .select('*')
-          .eq('laporan_id', laporanId)
-          .order('created_at', { ascending: true });
+          .eq('laporan_id', laporanId);
 
         if (kegiatanError) {
           console.error(`Error fetching kegiatan list for laporan ID ${laporanId}:`, kegiatanError);
-          toast.error(`Gagal memuat daftar kegiatan untuk laporan ID ${laporanId}.`);
+          toast.error(`Gagal memuat daftar kegiatan untuk laporan ID ${laporanId}: ` + (kegiatanError.message || JSON.stringify(kegiatanError)));
           continue;
         }
 
@@ -174,6 +183,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
 
               if (materialsError) {
                 console.error("Error fetching materials for aktifitas_detail_id:", detail.id, materialsError);
+                toast.error(`Gagal memuat material untuk detail aktifitas ${detail.id}: ` + (materialsError.message || JSON.stringify(materialsError)));
                 throw materialsError;
               }
 
@@ -269,7 +279,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       setSelectedKegiatanIds(new Set(fetchedKegiatans.map(k => k.id)));
     } catch (error: any) {
       console.error("Error fetching activities for print:", error);
-      toast.error("Gagal memuat daftar kegiatan: " + error.message);
+      toast.error("Gagal memuat daftar kegiatan: " + (error.message || JSON.stringify(error)));
     } finally {
       setLoading(false);
     }
@@ -355,7 +365,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error generating PDF:", error);
-      toast.error("Gagal membuat laporan PDF: " + error.message);
+      toast.error("Gagal membuat laporan PDF: " + (error.message || JSON.stringify(error)));
     } finally {
       setIsPrinting(false);
     }
