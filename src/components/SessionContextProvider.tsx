@@ -21,17 +21,17 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
   const location = useLocation();
 
   useEffect(() => {
-    console.log("SessionContextProvider useEffect running...");
+    console.log("SessionContextProvider useEffect running (mount/pathname change)...");
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log(`Auth state change: Event=${event}, Session=${currentSession ? 'exists' : 'null'}, Path=${location.pathname}`);
+      console.log(`Auth state change detected: Event=${event}, Session=${currentSession ? 'exists' : 'null'}, Path=${location.pathname}`);
       
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         setSession(currentSession);
         setUser(currentSession?.user || null);
         console.log(`User is authenticated. Current path: ${location.pathname}`);
         if (currentSession && location.pathname === '/login') {
-          console.log("Redirecting authenticated user from /login to /");
+          console.log("SessionContextProvider: Navigating authenticated user from /login to /");
           navigate('/'); // Redirect authenticated users from login page to home
         }
       } else if (event === 'SIGNED_OUT') {
@@ -39,35 +39,36 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
         setUser(null);
         console.log(`User is signed out. Current path: ${location.pathname}`);
         if (location.pathname !== '/login') {
-          console.log("Redirecting unauthenticated user from non-/login to /login");
+          console.log("SessionContextProvider: Navigating unauthenticated user from non-/login to /login");
           navigate('/login'); // Redirect unauthenticated users to login page
         }
       }
       setLoading(false);
-      console.log(`Loading set to false. Session: ${session ? 'exists' : 'null'}, User: ${user ? 'exists' : 'null'}`);
+      console.log(`Loading set to false. Current session: ${currentSession ? 'exists' : 'null'}, User: ${currentSession?.user ? 'exists' : 'null'}`);
     });
 
-    // Initial session check
+    // Initial session check (runs once on mount and when location.pathname changes)
+    // This is important for direct access to routes or refresh scenarios
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log(`Initial session check. Session=${initialSession ? 'exists' : 'null'}, Path=${location.pathname}`);
+      console.log(`Initial session check completed. Session=${initialSession ? 'exists' : 'null'}, Path=${location.pathname}`);
       setSession(initialSession);
       setUser(initialSession?.user || null);
       if (!initialSession && location.pathname !== '/login') {
-        console.log("Initial check: No session, redirecting to /login");
+        console.log("SessionContextProvider: Initial check - No session, navigating to /login");
         navigate('/login');
       } else if (initialSession && location.pathname === '/login') {
-        console.log("Initial check: Session exists, redirecting from /login to /");
+        console.log("SessionContextProvider: Initial check - Session exists, navigating from /login to /");
         navigate('/');
       }
       setLoading(false);
-      console.log(`Initial check loading set to false. Session: ${session ? 'exists' : 'null'}, User: ${user ? 'exists' : 'null'}`);
+      console.log(`Initial check loading set to false. Session: ${initialSession ? 'exists' : 'null'}, User: ${initialSession?.user ? 'exists' : 'null'}`);
     });
 
     return () => {
       console.log("SessionContextProvider useEffect cleanup.");
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, location.pathname, session, user]); // Menambahkan session dan user ke dependency array
+  }, [navigate, location.pathname]); // Menghapus session dan user dari dependensi
 
   if (loading) {
     console.log("SessionContextProvider is loading...");
