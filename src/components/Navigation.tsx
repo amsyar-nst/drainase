@@ -34,6 +34,7 @@ export const Navigation = () => {
               to="/drainase/new"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
               activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => console.log("Navigating to Form Drainase")}
             >
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Form Drainase</span>
@@ -42,6 +43,7 @@ export const Navigation = () => {
               to="/"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
               activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => console.log("Navigating to List Laporan")}
             >
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">List Laporan</span>
