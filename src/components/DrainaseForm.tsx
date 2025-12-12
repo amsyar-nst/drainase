@@ -40,6 +40,7 @@ import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBera
 import { PeralatanSection } from "./drainase-form/PeralatanSection"; // Import new component
 import { PenangananDetailSection } from "./drainase-form/PenangananDetailSection"; // Import new component
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSession } from "./SessionContextProvider"; // Import useSession
 
 // Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
@@ -68,6 +69,7 @@ export const DrainaseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useSession(); // Get the current user
 
   const [formData, setFormData] = useState<LaporanDrainase>({
     tanggal: null, // Main report date, now optional for Tersier
@@ -662,6 +664,12 @@ export const DrainaseForm = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      if (!user) {
+        toast.error("Anda harus login untuk menyimpan laporan.");
+        setIsSaving(false);
+        return;
+      }
+
       // 1. Commit the current activity's state to formData.kegiatans before saving
       commitCurrentKegiatanState();
 
@@ -683,6 +691,7 @@ export const DrainaseForm = () => {
             tanggal: format(finalReportDate, 'yyyy-MM-dd'),
             periode: finalPeriode,
             report_type: formData.reportType,
+            user_id: user.id, // Ensure user_id is updated
           })
           .eq('id', currentLaporanId);
 
@@ -694,6 +703,7 @@ export const DrainaseForm = () => {
             tanggal: format(finalReportDate, 'yyyy-MM-dd'),
             periode: finalPeriode,
             report_type: formData.reportType,
+            user_id: user.id, // Set user_id for new reports
           })
           .select()
           .single();

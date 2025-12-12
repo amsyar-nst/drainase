@@ -28,6 +28,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import DrainasePrintDialog from "@/components/DrainasePrintDialog"; // Import the new dialog
+import { useSession } from "@/components/SessionContextProvider"; // Import useSession
 
 interface LaporanItem {
   id: string;
@@ -61,14 +62,23 @@ const LaporanList = () => {
   const [showMonthlyPrintConfirm, setShowMonthlyPrintConfirm] = useState(false);
 
   const navigate = useNavigate();
+  const { user } = useSession(); // Get the current user
 
   const fetchLaporans = async (filterPeriod: string | null = null) => {
+    if (!user) {
+      setLoading(false);
+      setLaporans([]);
+      setUniquePeriods([]);
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Fetch main laporan data
       let laporanQuery = supabase
         .from("laporan_drainase")
         .select("*")
+        .eq('user_id', user.id) // Filter by current user's ID
         .order("tanggal", { ascending: false });
 
       if (filterPeriod) {
@@ -89,6 +99,7 @@ const LaporanList = () => {
       const { data: allPeriodsData, error: allPeriodsError } = await supabase
         .from("laporan_drainase")
         .select("periode")
+        .eq('user_id', user.id) // Filter periods by current user's ID
         .order("periode", { ascending: false });
 
       if (allPeriodsError) {
@@ -136,8 +147,10 @@ const LaporanList = () => {
   };
 
   useEffect(() => {
-    fetchLaporans(selectedFilterPeriod);
-  }, [selectedFilterPeriod]); // Re-fetch when filter period changes
+    if (user) { // Only fetch if user is authenticated
+      fetchLaporans(selectedFilterPeriod);
+    }
+  }, [selectedFilterPeriod, user]); // Re-fetch when filter period or user changes
 
   const handleDelete = async (id: string) => {
     try {

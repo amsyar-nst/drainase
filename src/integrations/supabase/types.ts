@@ -200,6 +200,7 @@ export type Database = {
           tanggal: string
           updated_at: string
           report_type: string | null
+          user_id: string | null // Added user_id
         }
         Insert: {
           created_at?: string
@@ -208,6 +209,7 @@ export type Database = {
           tanggal: string
           updated_at?: string
           report_type?: string | null
+          user_id?: string | null // Added user_id
         }
         Update: {
           created_at?: string
@@ -216,8 +218,17 @@ export type Database = {
           tanggal?: string
           updated_at?: string
           report_type?: string | null
+          user_id?: string | null // Added user_id
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "laporan_drainase_user_id_fkey",
+            columns: ["user_id"],
+            isOneToOne: false,
+            referencedRelation: "users",
+            referencedColumns: ["id"],
+          },
+        ]
       }
       laporan_drainase_tersier: {
         Row: {
