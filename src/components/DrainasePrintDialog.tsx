@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { materialOptions } from "@/data/kecamatan-kelurahan"; // Import materialOptions
+import { PenangananDetailFormState } from "@/types/form-types"; // Import PenangananDetailFormState
 
 interface DrainasePrintDialogProps {
   isOpen: boolean;
@@ -35,6 +36,12 @@ interface KegiatanItemForPrint extends KegiatanDrainase {
   laporanTanggal: Date;
   reportType: "harian" | "tersier";
 }
+
+const predefinedSedimenOptions = [
+  "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
+  "Padat & Batu", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
+  "Batu/ Padat & Cair", "Sampah"
+];
 
 const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
   isOpen,
@@ -158,7 +165,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             keterangan: o.keterangan || "",
           }));
 
-          const aktifitasPenangananDetails: AktifitasPenangananDetail[] = await Promise.all(
+          const aktifitasPenangananDetails: PenangananDetailFormState[] = await Promise.all(
             (aktifitasDetailsRes.data || []).map(async (detail) => {
               const { data: materialsRes, error: materialsError } = await supabase
                 .from('material_kegiatan')
@@ -170,7 +177,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 throw materialsError;
               }
 
-              const materials = (materialsRes.data || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
+              const materials = (materialsRes || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
                 id: m.id,
                 jenis: m.jenis,
                 jumlah: m.jumlah,
@@ -188,6 +195,17 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 }
               });
 
+              let selectedSedimenOption: string = "";
+              let customSedimen: string = "";
+              if (detail.jenis_sedimen) {
+                if (predefinedSedimenOptions.includes(detail.jenis_sedimen)) {
+                  selectedSedimenOption = detail.jenis_sedimen;
+                } else {
+                  selectedSedimenOption = "custom";
+                  customSedimen = detail.jenis_sedimen;
+                }
+              }
+
               return {
                 id: detail.id,
                 kegiatanId: detail.kegiatan_id,
@@ -203,7 +221,9 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 foto100Url: ensureArray(detail.foto_100_url),
                 fotoSketUrl: ensureArray(detail.foto_sket_url),
                 materials: materials,
-                materialCustomInputs: initialMaterialCustomInputs, // Initialize
+                selectedSedimenOption: selectedSedimenOption, // UI state
+                customSedimen: customSedimen, // UI state
+                materialCustomInputs: initialMaterialCustomInputs, // UI state
               };
             })
           );

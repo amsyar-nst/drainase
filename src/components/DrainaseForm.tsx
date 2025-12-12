@@ -308,7 +308,7 @@ export const DrainaseForm = () => {
                 throw materialsError;
               }
 
-              let materials = (materialsRes.data || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
+              let materials = (materialsRes || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
                 id: m.id,
                 jenis: m.jenis,
                 jumlah: m.jumlah,
@@ -384,11 +384,11 @@ export const DrainaseForm = () => {
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
             jumlahUPT: kegiatan.jumlah_upt || 0,
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
-            rencanaPanjang: kegiatan.rencana_panjang || "",
-            rencanaVolume: kegiatan.rencana_volume || "",
-            realisasiPanjang: kegiatan.realisasi_panjang || "",
-            realisasiVolume: kegiatan.realisasi_volume || "",
-            sisaTargetHari: kegiatan.sisa_target || "",
+            rencanaPanjang: "",
+            rencanaVolume: "",
+            realisasiPanjang: "",
+            realisasiVolume: "",
+            sisaTargetHari: "",
             aktifitasPenangananDetails: aktifitasPenangananDetails,
           };
         })
