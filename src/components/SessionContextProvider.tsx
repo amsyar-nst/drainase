@@ -26,18 +26,18 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log(`Auth state change detected: Event=${event}, Session=${currentSession ? 'exists' : 'null'}, Path=${location.pathname}`);
       
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+      if (currentSession) { // User is authenticated or session exists
         setSession(currentSession);
-        setUser(currentSession?.user || null);
+        setUser(currentSession.user || null);
         console.log(`User is authenticated. Current path: ${location.pathname}`);
-        if (currentSession && location.pathname === '/login') {
+        if (location.pathname === '/login') {
           console.log("SessionContextProvider: Navigating authenticated user from /login to /");
           navigate('/'); // Redirect authenticated users from login page to home
         }
-      } else if (event === 'SIGNED_OUT') {
+      } else { // User is not authenticated or session is null
         setSession(null);
         setUser(null);
-        console.log(`User is signed out. Current path: ${location.pathname}`);
+        console.log(`User is NOT authenticated. Current path: ${location.pathname}`);
         if (location.pathname !== '/login') {
           console.log("SessionContextProvider: Navigating unauthenticated user from non-/login to /login");
           navigate('/login'); // Redirect unauthenticated users to login page
