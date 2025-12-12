@@ -17,7 +17,7 @@ export const Navigation = () => {
     } else {
       console.log("Successfully logged out.");
       toast.success("Anda telah berhasil keluar.");
-      navigate("/login");
+      // navigate("/login"); // Panggilan ini dihapus, pengalihan akan ditangani oleh SessionContextProvider
     }
   };
 
