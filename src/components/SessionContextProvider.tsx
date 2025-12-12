@@ -67,7 +67,7 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
       console.log("SessionContextProvider useEffect cleanup.");
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]); // Tambahkan session dan user ke dependency array untuk melacak perubahan
+  }, [navigate, location.pathname, session, user]); // Menambahkan session dan user ke dependency array
 
   if (loading) {
     console.log("SessionContextProvider is loading...");
