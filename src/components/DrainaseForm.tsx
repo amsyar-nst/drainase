@@ -296,7 +296,7 @@ export const DrainaseForm = () => {
             });
           }
 
-          const aktifitasPenangananDetails: AktifitasPenangananDetail[] = await Promise.all(
+          const aktifitasPenangananDetails: PenangananDetailFormState[] = await Promise.all(
             (aktifitasDetailsRes.data || []).map(async (detail) => {
               const { data: materialsRes, error: materialsError } = await supabase
                 .from('material_kegiatan')
@@ -308,16 +308,36 @@ export const DrainaseForm = () => {
                 throw materialsError;
               }
 
-              let materials = (materialsRes.data || []).map(m => ({
+              let materials = (materialsRes.data || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
                 id: m.id,
                 jenis: m.jenis,
                 jumlah: m.jumlah,
                 satuan: m.satuan,
                 keterangan: m.keterangan || "",
-                aktifitas_detail_id: m.aktifitas_detail_id || undefined,
+                aktifitas_detail_id: m.aktifitas_detail_id || null, // Pastikan ini null jika tidak ada
               }));
               if (materials.length === 0 && laporanData.report_type !== "tersier") {
-                materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "" });
+                materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "", aktifitas_detail_id: null });
+              }
+
+              // Initialize UI-specific states
+              const initialMaterialCustomInputs: Record<string, string> = {};
+              materials.forEach(m => {
+                if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
+                  initialMaterialCustomInputs[m.id] = m.jenis;
+                  m.jenis = "custom"; // Set to 'custom' for select component
+                }
+              });
+
+              let selectedSedimenOption: string = "";
+              let customSedimen: string = "";
+              if (detail.jenis_sedimen) {
+                if (predefinedSedimenOptions.includes(detail.jenis_sedimen)) {
+                  selectedSedimenOption = detail.jenis_sedimen;
+                } else {
+                  selectedSedimenOption = "custom";
+                  customSedimen = detail.jenis_sedimen;
+                }
               }
 
               return {
@@ -335,6 +355,9 @@ export const DrainaseForm = () => {
                 foto100Url: ensureArray(detail.foto_100_url),
                 fotoSketUrl: ensureArray(detail.foto_sket_url),
                 materials: materials,
+                selectedSedimenOption: selectedSedimenOption, // UI state
+                customSedimen: customSedimen, // UI state
+                materialCustomInputs: initialMaterialCustomInputs, // UI state
               };
             })
           );
@@ -560,7 +583,7 @@ export const DrainaseForm = () => {
           ...detail,
           materials: detail.materials.map(m => ({
             ...m,
-            jenis: m.jenis === "custom" ? (detail.materialCustomInputs[m.id] || "") : m.jenis,
+            jenis: m.jenis === "custom" ? (detail.materialCustomInputs?.[m.id] || "") : m.jenis,
           })),
         })),
       }],
@@ -603,7 +626,7 @@ export const DrainaseForm = () => {
           ...detail,
           materials: detail.materials.map(m => ({
             ...m,
-            jenis: m.jenis === "custom" ? (detail.materialCustomInputs[m.id] || "") : m.jenis,
+            jenis: m.jenis === "custom" ? (detail.materialCustomInputs?.[m.id] || "") : m.jenis,
           })),
         })),
       }],
@@ -777,7 +800,7 @@ export const DrainaseForm = () => {
           const detailDataToSave = {
             kegiatan_id: kegiatanDbId,
             jenis_saluran: detailToProcess.jenisSaluran,
-            jenis_sedimen: detailToProcess.jenisSedimen === "custom" ? (detailToProcess.materialCustomInputs[detailToProcess.id] || "") : detailToProcess.jenisSedimen,
+            jenis_sedimen: detailToProcess.jenisSedimen === "custom" ? (detailToProcess.customSedimen || "") : detailToProcess.jenisSedimen, // FIX: Use customSedimen
             aktifitas_penanganan: detailToProcess.aktifitasPenanganan,
             foto_0_url: foto0Urls,
             foto_50_url: foto50Urls,

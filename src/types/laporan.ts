@@ -4,7 +4,7 @@ export interface Material {
   jumlah: string;
   satuan: string;
   keterangan?: string;
-  aktifitas_detail_id?: string; // New FK to aktifitas_penanganan_detail
+  aktifitas_detail_id?: string | null; // Mengizinkan null agar sesuai dengan DB
 }
 
 export interface Peralatan {
@@ -43,7 +43,10 @@ export interface AktifitasPenangananDetail {
   foto100Url?: string[]; // For URLs from DB
   fotoSketUrl?: string[]; // For URLs from DB
   materials: Material[]; // Materials are now nested under AktifitasPenangananDetail
+  materialCustomInputs?: Record<string, string>; // Added for UI state compatibility
 }
+
+import { PenangananDetailFormState } from "@/types/form-types"; // Import PenangananDetailFormState
 
 export interface KegiatanDrainase {
   id: string;
@@ -71,7 +74,7 @@ export interface KegiatanDrainase {
   sisaTargetHari?: string;
 
   // Aktifitas Penanganan Details are now an array within KegiatanDrainase
-  aktifitasPenangananDetails: AktifitasPenangananDetail[];
+  aktifitasPenangananDetails: PenangananDetailFormState[]; // Menggunakan PenangananDetailFormState
 }
 
 export interface LaporanDrainase {

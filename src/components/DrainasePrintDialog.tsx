@@ -20,6 +20,7 @@ import { Loader2, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { materialOptions } from "@/data/kecamatan-kelurahan"; // Import materialOptions
 
 interface DrainasePrintDialogProps {
   isOpen: boolean;
@@ -169,14 +170,23 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 throw materialsError;
               }
 
-              const materials = (materialsRes.data || []).map(m => ({
+              const materials = (materialsRes.data || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
                 id: m.id,
                 jenis: m.jenis,
                 jumlah: m.jumlah,
                 satuan: m.satuan,
                 keterangan: m.keterangan || "",
-                aktifitas_detail_id: m.aktifitas_detail_id || undefined,
+                aktifitas_detail_id: m.aktifitas_detail_id || null, // Pastikan ini null jika tidak ada
               }));
+
+              // Initialize materialCustomInputs for printing
+              const initialMaterialCustomInputs: Record<string, string> = {};
+              materials.forEach(m => {
+                if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
+                  initialMaterialCustomInputs[m.id] = m.jenis;
+                  // Note: We don't change m.jenis to "custom" here, as we want the actual name for printing
+                }
+              });
 
               return {
                 id: detail.id,
@@ -193,6 +203,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 foto100Url: ensureArray(detail.foto_100_url),
                 fotoSketUrl: ensureArray(detail.foto_sket_url),
                 materials: materials,
+                materialCustomInputs: initialMaterialCustomInputs, // Initialize
               };
             })
           );
@@ -285,6 +296,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
               ...detail,
               materials: detail.materials.map(m => ({
                 ...m,
+                // Use the resolved custom material name if it exists, otherwise use the stored name
                 jenis: m.jenis === "custom" ? (detail.materialCustomInputs?.[m.id] || "") : m.jenis,
               })),
             })),

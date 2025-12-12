@@ -1,10 +1,9 @@
-import { LaporanDrainase, KegiatanDrainase } from "@/types/laporan";
+import { LaporanDrainase, KegiatanDrainase, AktifitasPenangananDetail } from "@/types/laporan";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
 
-  // Convert images to base64
   const getBase64 = async (file: File | string | null): Promise<string> => {
     return new Promise(async (resolve) => {
       if (!file) {
@@ -34,8 +33,13 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
   const kegiatansWithImages = await Promise.all(
     data.kegiatans.map(async (kegiatan) => ({
       ...kegiatan,
-      foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))),
-      foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))),
+      aktifitasPenangananDetails: await Promise.all(
+        kegiatan.aktifitasPenangananDetails.map(async (detail) => ({
+          ...detail,
+          foto0Base64: await Promise.all(detail.foto0.map(f => getBase64(f))),
+          foto100Base64: await Promise.all(detail.foto100.map(f => getBase64(f))),
+        }))
+      ),
     }))
   );
 
@@ -102,8 +106,8 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           padding: 3px;
           border: 1px solid #000;
           font-size: 6pt;
-          vertical-align: middle; /* Changed to middle for better alignment */
-          text-align: center; /* Default text align for all cells */
+          vertical-align: middle;
+          text-align: center;
         }
 
         table th {
@@ -112,7 +116,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-cell {
-          width: 100px; /* Adjusted width for single image */
+          width: 100px;
           text-align: center;
           padding: 2px;
         }
@@ -125,8 +129,8 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-container img {
-          width: 90px; /* Larger width for single image */
-          height: 60px; /* Larger height for single image */
+          width: 90px;
+          height: 60px;
           object-fit: cover;
           border: 1px solid #ccc;
         }
@@ -140,14 +144,13 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           margin: 0;
           padding: 0;
           line-height: 1.1;
-          text-align: center; /* Ensure list items are centered */
+          text-align: center;
         }
 
         .center {
           text-align: center;
         }
 
-        /* Column Widths - Adjusted for better fit */
         .no-col { width: 20px; }
         .hari-tanggal-col { width: 70px; }
         .lokasi-col { width: 100px; }
@@ -217,46 +220,52 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           </tr>
         </thead>
         <tbody>
-          ${kegiatansWithImages.map((kegiatan, index) => `
-            <tr>
-              <td class="center">${index + 1}</td>
-              <td>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
-              <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
-                </div>
-              </td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
-                </div>
-              </td>
-              <td class="center">${kegiatan.jenisSedimen || '-'}</td>
-              <td>
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.nama}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">${kegiatan.jumlahUPT || '-'}</td>
-              <td class="center">${kegiatan.jumlahP3SU || '-'}</td>
-              <td class="center">${kegiatan.rencanaPanjang || '-'}</td>
-              <td class="center">${kegiatan.rencanaVolume || '-'}</td>
-              <td class="center">${kegiatan.realisasiPanjang || '-'}</td>
-              <td class="center">${kegiatan.realisasiVolume || '-'}</td>
-              <td class="center">${kegiatan.sisaTargetHari || '-'}</td>
-              <td>${kegiatan.koordinator.join(', ')}</td>
-              <td>${kegiatan.keterangan || ''}</td>
-            </tr>
+          ${kegiatansWithImages.map((kegiatan, kegiatanIndex) => `
+            ${kegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => `
+              <tr>
+                ${detailIndex === 0 ? `
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatanIndex + 1}</td>
+                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "EEEE", { locale: id }) : ''}<br/>${kegiatan.hariTanggal ? format(kegiatan.hariTanggal, "dd/MM/yyyy", { locale: id }) : ''}</td>
+                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
+                ` : ''}
+                <td class="photo-cell">
+                  <div class="photo-container">
+                    ${detail.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
+                  </div>
+                </td>
+                <td class="photo-cell">
+                  <div class="photo-container">
+                    ${detail.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
+                  </div>
+                </td>
+                <td class="center">${detail.jenisSedimen || '-'}</td>
+                ${detailIndex === 0 ? `
+                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+                    <ul class="equipment-list">
+                      ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                        <li>${peralatan.nama}</li>
+                      `).join('')}
+                    </ul>
+                  </td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+                    <ul class="equipment-list">
+                      ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
+                        <li>${peralatan.jumlah}</li>
+                      `).join('')}
+                    </ul>
+                  </td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahUPT || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahP3SU || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.rencanaPanjang || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.rencanaVolume || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.realisasiPanjang || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.realisasiVolume || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.sisaTargetHari || '-'}</td>
+                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.koordinator.join(', ')}</td>
+                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.keterangan || ''}</td>
+                ` : ''}
+              </tr>
+            `).join('')}
           `).join('')}
         </tbody>
       </table>
