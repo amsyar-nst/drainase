@@ -187,13 +187,13 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 throw materialsError;
               }
 
-              const materials = (materialsRes || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
+              const materials = (materialsRes || []).map(m => ({
                 id: m.id,
                 jenis: m.jenis,
                 jumlah: m.jumlah,
                 satuan: m.satuan,
                 keterangan: m.keterangan || "",
-                aktifitas_detail_id: m.aktifitas_detail_id || null, // Pastikan ini null jika tidak ada
+                aktifitas_detail_id: m.aktifitas_detail_id || null,
               }));
 
               // Initialize materialCustomInputs for printing
@@ -380,9 +380,9 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
             Pilih kegiatan yang ingin Anda sertakan dalam laporan PDF.
             {reportType === "bulanan" && filterPeriod && <span className="font-semibold"> (Periode: {filterPeriod})</span>}
             {(reportType === "bulanan" || reportType === "tersier") && (
-              <p className="text-red-500 text-xs mt-1">
+              <span className="text-red-500 text-xs mt-1 block">
                 Catatan: Laporan {reportType} akan menggabungkan semua kegiatan yang dipilih dalam satu dokumen.
-              </p>
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>
