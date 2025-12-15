@@ -869,7 +869,9 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan: ' + (error.message || JSON.stringify(error)));
@@ -934,7 +936,7 @@ export const DrainaseForm = () => {
 
   const handleLihatLaporanClick = () => {
     console.log("Tombol 'Lihat Laporan' diklik. Mengarahkan ke /");
-    navigate('/');
+    window.location.href = '/';
   };
 
   if (isLoading) {
