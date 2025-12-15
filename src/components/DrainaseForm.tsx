@@ -1533,7 +1533,7 @@ export const DrainaseForm = () => {
             <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
               <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
               <div className="space-y-2">
-                <Label htmlFor={`jumlah-phl-tersier-${currentKegiatan.id}`}>Jumlah PHL</Label> 
+                <Label htmlFor={`jumlah-phl-tersier-${currentKegiatan.id}`}>UPT</Label> 
                 <Input
                   id={`jumlah-phl-tersier-${currentKegiatan.id}`} 
                   type="text"
