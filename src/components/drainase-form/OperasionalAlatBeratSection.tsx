@@ -19,6 +19,7 @@ interface OperasionalAlatBeratSectionProps {
   updateCurrentKegiatan: (updates: Partial<KegiatanDrainase>) => void;
   operasionalCustomInputs: Record<string, string>; // Added prop
   setOperasionalCustomInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>; // Added prop
+  reportType: "harian" | "bulanan" | "tersier"; // New prop
 }
 
 export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionProps> = ({
@@ -26,6 +27,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
   updateCurrentKegiatan,
   operasionalCustomInputs, // Destructure from props
   setOperasionalCustomInputs, // Destructure from props
+  reportType, // Destructure new prop
 }) => {
   // No longer need local state for operasionalCustomInputs here, it's passed via props.
 
@@ -159,46 +161,54 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               maxLength={2}
             />
           </div>
-          {/* Dexlite Jumlah */}
-          <div className="space-y-2 md:col-span-1">
-            <Label>Dexlite</Label>
-            <Input
-              type="text"
-              placeholder="Jumlah (L)"
-              value={operasional.dexliteJumlah}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
-            />
-          </div>
-          {/* Pertalite Jumlah */}
-          <div className="space-y-2 md:col-span-1">
-            <Label>Pertalite</Label>
-            <Input
-              type="text"
-              placeholder="Jumlah (L)"
-              value={operasional.pertaliteJumlah}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
-            />
-          </div>
-          {/* Bio Solar Jumlah */}
-          <div className="space-y-2 md:col-span-1">
-            <Label>Bio Solar</Label>
-            <Input
-              type="text"
-              placeholder="Jumlah (L)"
-              value={operasional.bioSolarJumlah}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
-            />
-          </div>
-          {/* Keterangan */}
-          <div className="space-y-2 md:col-span-3">
-            <Label>Keterangan</Label>
-            <Textarea
-              placeholder="Catatan tambahan"
-              value={operasional.keterangan}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
-              rows={1}
-            />
-          </div>
+          {/* Dexlite Jumlah (Conditional) */}
+          {reportType !== "tersier" && (
+            <div className="space-y-2 md:col-span-1">
+              <Label>Dexlite</Label>
+              <Input
+                type="text"
+                placeholder="Jumlah (L)"
+                value={operasional.dexliteJumlah}
+                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
+              />
+            </div>
+          )}
+          {/* Pertalite Jumlah (Conditional) */}
+          {reportType !== "tersier" && (
+            <div className="space-y-2 md:col-span-1">
+              <Label>Pertalite</Label>
+              <Input
+                type="text"
+                placeholder="Jumlah (L)"
+                value={operasional.pertaliteJumlah}
+                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
+              />
+            </div>
+          )}
+          {/* Bio Solar Jumlah (Conditional) */}
+          {reportType !== "tersier" && (
+            <div className="space-y-2 md:col-span-1">
+              <Label>Bio Solar</Label>
+              <Input
+                type="text"
+                placeholder="Jumlah (L)"
+                value={operasional.bioSolarJumlah}
+                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
+              />
+            </div>
+          )}
+          {/* Keterangan (Conditional) */}
+          {reportType !== "tersier" && (
+            <div className="space-y-2 md:col-span-3">
+              <Label>Keterangan</Label>
+              <Textarea
+                placeholder="Catatan tambahan"
+                value={operasional.keterangan}
+                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
+                rows={1}
+              />
+            </div>
+          )}
           {/* Remove Button */}
           <div className="md:col-span-1 flex justify-end">
             <Button

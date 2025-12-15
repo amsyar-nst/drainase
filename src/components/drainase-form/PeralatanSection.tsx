@@ -18,6 +18,7 @@ interface PeralatanSectionProps {
   updateCurrentKegiatan: (updates: Partial<KegiatanDrainase>) => void;
   peralatanCustomInputs: Record<string, string>;
   setPeralatanCustomInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  reportType: "harian" | "bulanan" | "tersier"; // New prop
 }
 
 export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
@@ -25,6 +26,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
   updateCurrentKegiatan,
   peralatanCustomInputs,
   setPeralatanCustomInputs,
+  reportType, // Destructure new prop
 }) => {
   const addPeralatan = () => {
     const newPeralatan: Peralatan = {
@@ -126,24 +128,26 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
               onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Satuan</Label>
-            <Select
-              value={peralatan.satuan}
-              onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {satuanOptions.map((satuan) => (
-                  <SelectItem key={satuan} value={satuan}>
-                    {satuan}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {reportType !== "tersier" && ( // Conditional rendering for Satuan
+            <div className="space-y-2">
+              <Label>Satuan</Label>
+              <Select
+                value={peralatan.satuan}
+                onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {satuanOptions.map((satuan) => (
+                    <SelectItem key={satuan} value={satuan}>
+                      {satuan}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Button
             type="button"
             variant="destructive"

@@ -147,7 +147,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
             updateDetail(index, { materialCustomInputs: newCustomInputs });
             const normalizedJenis = value.toLowerCase().trim();
             const defaultUnit = materialDefaultUnits[normalizedJenis];
-            if (defaultUnit) {
+            if (defaultUnit && reportType !== "tersier") { // Only set default unit for Harian/Bulanan
               updatedMaterial.satuan = defaultUnit;
             }
           }
@@ -411,9 +411,9 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         )}
       </div>
 
-      {/* Jenis Saluran & Sedimen (Conditional for Harian/Bulanan) */}
-      {reportType !== "tersier" && (
-        <div className="grid gap-4 md:grid-cols-2">
+      {/* Jenis Saluran & Sedimen (Jenis Saluran conditional, Jenis Sedimen always visible) */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {reportType !== "tersier" && (
           <div className="space-y-2">
             <Label htmlFor={`jenis-saluran-${detail.id}`}>Jenis Saluran</Label>
             <Select
@@ -430,45 +430,45 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor={`jenis-sedimen-${detail.id}`}>Jenis Sedimen</Label>
-            <Select
-              value={detail.selectedSedimenOption}
-              onValueChange={(value) => {
-                updateDetail(index, { selectedSedimenOption: value });
-                if (value === "custom") {
-                  updateDetail(index, { jenisSedimen: detail.customSedimen });
-                } else {
-                  updateDetail(index, { jenisSedimen: value, customSedimen: "" });
-                }
+        )}
+        <div className="space-y-2"> {/* Jenis Sedimen is now always visible */}
+          <Label htmlFor={`jenis-sedimen-${detail.id}`}>Jenis Sedimen</Label>
+          <Select
+            value={detail.selectedSedimenOption}
+            onValueChange={(value) => {
+              updateDetail(index, { selectedSedimenOption: value });
+              if (value === "custom") {
+                updateDetail(index, { jenisSedimen: detail.customSedimen });
+              } else {
+                updateDetail(index, { jenisSedimen: value, customSedimen: "" });
+              }
+            }}
+          >
+            <SelectTrigger id={`jenis-sedimen-${detail.id}`}>
+              <SelectValue placeholder="Pilih jenis sedimen" />
+            </SelectTrigger>
+            <SelectContent>
+              {predefinedSedimenOptions.map((jenis) => (
+                <SelectItem key={jenis} value={jenis}>
+                  {jenis}
+                </SelectItem>
+              ))}
+              <SelectItem value="custom">Lainnya</SelectItem>
+            </SelectContent>
+          </Select>
+          {detail.selectedSedimenOption === "custom" && (
+            <Input
+              type="text"
+              placeholder="Masukkan jenis sedimen manual"
+              value={detail.customSedimen}
+              onChange={(e) => {
+                updateDetail(index, { customSedimen: e.target.value, jenisSedimen: e.target.value });
               }}
-            >
-              <SelectTrigger id={`jenis-sedimen-${detail.id}`}>
-                <SelectValue placeholder="Pilih jenis sedimen" />
-              </SelectTrigger>
-              <SelectContent>
-                {predefinedSedimenOptions.map((jenis) => (
-                  <SelectItem key={jenis} value={jenis}>
-                    {jenis}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Lainnya</SelectItem>
-              </SelectContent>
-            </Select>
-            {detail.selectedSedimenOption === "custom" && (
-              <Input
-                type="text"
-                placeholder="Masukkan jenis sedimen manual"
-                value={detail.customSedimen}
-                onChange={(e) => {
-                  updateDetail(index, { customSedimen: e.target.value, jenisSedimen: e.target.value });
-                }}
-                className="mt-2"
-              />
-            )}
-          </div>
+              className="mt-2"
+            />
+          )}
         </div>
-      )}
+      </div>
 
       {/* Aktifitas Penanganan (Conditional for Harian/Bulanan) */}
       {reportType !== "tersier" && (
@@ -483,48 +483,48 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         </div>
       )}
 
-      {/* Materials (Conditional for Harian/Bulanan) */}
-      {reportType !== "tersier" && (
-        <div className="space-y-4">
-          <Label>Material yang Digunakan</Label>
-          {detail.materials.map((material) => (
-            <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
-              <div className="space-y-2">
-                <Label>Jenis Material</Label>
-                <Select
-                  value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
-                  onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih material" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materialOptions.map((jenis) => (
-                      <SelectItem key={jenis} value={jenis}>
-                        {jenis}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">Lainnya</SelectItem>
-                  </SelectContent>
-                </Select>
-                {material.jenis === "custom" ? (
-                  <Input
-                    type="text"
-                    placeholder="Masukkan jenis material manual"
-                    value={detail.materialCustomInputs[material.id] || ""}
-                    onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
-                    className="mt-2"
-                  />
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label>Jumlah</Label>
+      {/* Materials (Always visible, but Satuan and Keterangan are conditional) */}
+      <div className="space-y-4">
+        <Label>Material yang Digunakan</Label>
+        {detail.materials.map((material) => (
+          <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
+            <div className="space-y-2">
+              <Label>Jenis Material</Label>
+              <Select
+                value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
+                onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih material" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materialOptions.map((jenis) => (
+                    <SelectItem key={jenis} value={jenis}>
+                      {jenis}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+              {material.jenis === "custom" ? (
                 <Input
-                  value={material.jumlah}
-                  onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
-                  placeholder="0"
+                  type="text"
+                  placeholder="Masukkan jenis material manual"
+                  value={detail.materialCustomInputs[material.id] || ""}
+                  onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
+                  className="mt-2"
                 />
-              </div>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label>Jumlah</Label>
+              <Input
+                value={material.jumlah}
+                onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                placeholder="0"
+              />
+            </div>
+            {reportType !== "tersier" && ( // Satuan Material is conditional
               <div className="space-y-2">
                 <Label>Satuan</Label>
                 <Select
@@ -543,6 +543,8 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                   </SelectContent>
                 </Select>
               </div>
+            )}
+            {reportType !== "tersier" && ( // Keterangan Material is conditional
               <div className="space-y-2">
                 <Label>Keterangan</Label>
                 <Input
@@ -551,25 +553,25 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                   placeholder="Catatan material (opsional)"
                 />
               </div>
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                onClick={() => removeMaterial(material.id)}
-                disabled={detail.materials.length === 1}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <div className="flex justify-end">
-            <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-              <Plus className="h-4 w-4 mr-1" />
-              Tambah Material
+            )}
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={() => removeMaterial(material.id)}
+              disabled={detail.materials.length === 1}
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
+        ))}
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+            <Plus className="h-4 w-4 mr-1" />
+            Tambah Material
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

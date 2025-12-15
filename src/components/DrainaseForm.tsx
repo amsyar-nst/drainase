@@ -288,7 +288,8 @@ export const DrainaseForm = () => {
             bioSolarSatuan: o.bio_solar_satuan || "Liter",
             keterangan: o.keterangan || "",
           }));
-          if (operasionalAlatBerats.length === 0 && laporanData.report_type !== "tersier") {
+          // Always ensure at least one operasional entry for consistency, even if empty
+          if (operasionalAlatBerats.length === 0) {
             operasionalAlatBerats.push({
               id: "operasional-" + Date.now().toString() + '-op',
               jenis: "",
@@ -315,15 +316,16 @@ export const DrainaseForm = () => {
                 throw materialsError;
               }
 
-              let materials = (materialsRes || []).map(m => ({ // FIX: materialsRes.data -> materialsRes
+              let materials = (materialsRes || []).map(m => ({
                 id: m.id,
                 jenis: m.jenis,
                 jumlah: m.jumlah,
                 satuan: m.satuan,
                 keterangan: m.keterangan || "",
-                aktifitas_detail_id: m.aktifitas_detail_id || null, // Pastikan ini null jika tidak ada
+                aktifitas_detail_id: m.aktifitas_detail_id || null,
               }));
-              if (materials.length === 0 && laporanData.report_type !== "tersier") {
+              // Always ensure at least one material entry for consistency, even if empty
+              if (materials.length === 0) {
                 materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "", aktifitas_detail_id: null });
               }
 
@@ -369,8 +371,8 @@ export const DrainaseForm = () => {
             })
           );
 
-          // Ensure at least one aktifitasPenangananDetail for new forms
-          if (aktifitasPenangananDetails.length === 0 && laporanData.report_type !== "tersier") {
+          // Always ensure at least one aktifitasPenangananDetail for consistency
+          if (aktifitasPenangananDetails.length === 0) {
             aktifitasPenangananDetails.push(createNewPenangananDetailFormState());
           }
 
@@ -570,8 +572,6 @@ export const DrainaseForm = () => {
     return uploadedUrls;
   };
 
-  // Removed handlePrintPreview function as it's no longer needed.
-
   const handlePrintDownload = async () => {
     // Aggregate current form data for PDF generation
     const laporanForPdf: LaporanDrainase = {
@@ -766,7 +766,7 @@ export const DrainaseForm = () => {
           const detailDataToSave = {
             kegiatan_id: kegiatanDbId,
             jenis_saluran: detailToProcess.jenisSaluran,
-            jenis_sedimen: detailToProcess.jenisSedimen === "custom" ? (detailToProcess.customSedimen || "") : detailToProcess.jenisSedimen, // FIX: Use customSedimen
+            jenis_sedimen: detailToProcess.jenisSedimen === "custom" ? (detailToProcess.customSedimen || "") : detailToProcess.jenisSedimen,
             aktifitas_penanganan: detailToProcess.aktifitasPenanganan,
             foto_0_url: foto0Urls,
             foto_50_url: foto50Urls,
@@ -994,43 +994,41 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Main Report Date (Only for Harian/Bulanan) */}
-          {(formData.reportType === "harian" || formData.reportType === "bulanan") && (
-            <div className="space-y-2">
-              <Label htmlFor="tanggal-laporan-utama">Tanggal Laporan Utama</Label>
-              <div className="relative flex items-center">
-                <Input
-                  id="tanggal-laporan-utama"
-                  value={mainDateInputString}
-                  onChange={handleMainDateInputChange}
-                  placeholder="dd/MM/yyyy"
-                  className={cn(
-                    "w-full justify-start text-left font-normal pr-10",
-                    !formData.tanggal && "text-muted-foreground"
-                  )}
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
-                    >
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
-                    <Calendar
-                      mode="single"
-                      selected={formData.tanggal || undefined}
-                      onSelect={handleMainDateSelect}
-                      initialFocus
-                      locale={idLocale}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          {/* Main Report Date (Always visible now) */}
+          <div className="space-y-2">
+            <Label htmlFor="tanggal-laporan-utama">Tanggal Laporan Utama</Label>
+            <div className="relative flex items-center">
+              <Input
+                id="tanggal-laporan-utama"
+                value={mainDateInputString}
+                onChange={handleMainDateInputChange}
+                placeholder="dd/MM/yyyy"
+                className={cn(
+                  "w-full justify-start text-left font-normal pr-10",
+                  !formData.tanggal && "text-muted-foreground"
+                )}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
+                  <Calendar
+                    mode="single"
+                    selected={formData.tanggal || undefined}
+                    onSelect={handleMainDateSelect}
+                    initialFocus
+                    locale={idLocale}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
+          </div>
 
           {/* Hari/Tanggal Kegiatan (Always visible for Harian and Tersier) */}
           {(formData.reportType === "harian" || formData.reportType === "tersier") && (
@@ -1201,48 +1199,46 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Aktifitas Penanganan Details Section */}
-          {(formData.reportType === "harian" || formData.reportType === "bulanan") && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
-              {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
-                <PenangananDetailSection
-                  key={detail.id}
-                  detail={detail}
-                  index={detailIndex}
-                  updateDetail={updateAktifitasPenangananDetail}
-                  removeDetail={removeAktifitasPenangananDetail}
-                  isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
-                  reportType={formData.reportType}
-                  onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
-                />
-              ))}
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Aktifitas Penanganan
-                </Button>
-              </div>
+          {/* Aktifitas Penanganan Details Section (Always rendered, internal fields are conditional) */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
+            {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
+              <PenangananDetailSection
+                key={detail.id}
+                detail={detail}
+                index={detailIndex}
+                updateDetail={updateAktifitasPenangananDetail}
+                removeDetail={removeAktifitasPenangananDetail}
+                isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
+                reportType={formData.reportType}
+                onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
+              />
+            ))}
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Aktifitas Penanganan
+              </Button>
             </div>
-          )}
+          </div>
 
-          {/* Peralatan Section */}
+          {/* Peralatan Section (Always rendered, internal fields are conditional) */}
           <PeralatanSection
             currentKegiatan={currentKegiatan}
             updateCurrentKegiatan={updateCurrentKegiatan}
             peralatanCustomInputs={peralatanCustomInputs}
             setPeralatanCustomInputs={setPeralatanCustomInputs}
+            reportType={formData.reportType}
           />
 
-          {/* Operasional Alat Berat Section (Conditional for Harian/Bulanan) */}
-          {(formData.reportType === "harian" || formData.reportType === "bulanan") && (
-            <OperasionalAlatBeratSection
-              currentKegiatan={currentKegiatan}
-              updateCurrentKegiatan={updateCurrentKegiatan}
-              operasionalCustomInputs={operasionalCustomInputs}
-              setOperasionalCustomInputs={setOperasionalCustomInputs}
-            />
-          )}
+          {/* Operasional Alat Berat Section (Always rendered, internal fields are conditional) */}
+          <OperasionalAlatBeratSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+            operasionalCustomInputs={operasionalCustomInputs}
+            setOperasionalCustomInputs={setOperasionalCustomInputs}
+            reportType={formData.reportType}
+          />
 
           {/* Koordinator & PHL */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -1263,7 +1259,7 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {(formData.reportType === "harian" || formData.reportType === "bulanan") && (
+            {formData.reportType !== "tersier" && (
               <div className="space-y-2">
                 <Label htmlFor={`jumlah-phl-${currentKegiatan.id}`}>Jumlah PHL</Label>
                 <Input
@@ -1357,7 +1353,7 @@ export const DrainaseForm = () => {
           {/* Actions */}
           <div className="flex flex-wrap gap-4 pt-4">
             <Button
-              onClick={handlePrintDownload} // Menggunakan fungsi download untuk tombol tunggal
+              onClick={handlePrintDownload}
               variant="default"
               className="flex-1 min-w-[150px]"
             >
