@@ -974,22 +974,25 @@ export const DrainaseForm = () => {
             </Select>
           </div>
 
-          {/* Periode Laporan (Always visible, now the primary time identifier) */}
-          <div className="space-y-2">
-            <Label htmlFor="periode-laporan">Periode Laporan</Label>
-            <Input
-              id="periode-laporan"
-              value={formData.periode}
-              onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
-              placeholder="Contoh: November 2025"
-              disabled={formData.reportType !== "bulanan"}
-            />
-            {formData.reportType !== "bulanan" && (
-              <p className="text-xs text-muted-foreground">
-                Periode laporan otomatis diambil dari Hari/Tanggal Kegiatan.
+          {/* Periode Laporan (Conditional visibility) */}
+          {formData.reportType === "bulanan" ? (
+            <div className="space-y-2">
+              <Label htmlFor="periode-laporan">Periode Laporan</Label>
+              <Input
+                id="periode-laporan"
+                value={formData.periode}
+                onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
+                placeholder="Contoh: November 2025"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="periode-laporan">Periode Laporan</Label>
+              <p className="text-sm text-muted-foreground p-2 border rounded-md bg-muted/50">
+                Periode laporan otomatis diambil dari Hari/Tanggal Kegiatan: <span className="font-medium">{formData.periode}</span>
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Main Report Date (Only for Harian/Bulanan) */}
           {(formData.reportType === "harian" || formData.reportType === "bulanan") && (
