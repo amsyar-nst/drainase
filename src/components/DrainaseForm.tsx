@@ -432,7 +432,7 @@ export const DrainaseForm = () => {
 
         // Update the currentKegiatan with the copied data
         const copiedJumlahPHL = harianKegiatan.jumlah_phl || 0;
-        console.log(`Attempting to copy Harian PHL (${copiedJumlahPHL}) to Tersier UPT.`);
+        console.log(`Attempting to copy Harian PHL (${copiedJumlahPHL}) to Tersier PHL.`);
         updateCurrentKegiatan({
           panjangPenanganan: harianKegiatan.panjang_penanganan || "",
           lebarRataRata: harianKegiatan.lebar_rata_rata || "",
@@ -443,11 +443,11 @@ export const DrainaseForm = () => {
             id: "operasional-" + Date.now().toString(), jenis: "", jumlah: 0, dexliteJumlah: "", dexliteSatuan: "Liter", pertaliteJumlah: "", pertaliteSatuan: "Liter", bioSolarJumlah: "", bioSolarSatuan: "Liter", keterangan: "",
           }],
           koordinator: harianKegiatan.koordinator || [],
-          jumlahPHL: harianKegiatan.jumlah_phl || 0,
+          jumlahPHL: copiedJumlahPHL, // <--- CHANGE IS HERE: Copying jumlah_phl to jumlahPHL
           keterangan: harianKegiatan.keterangan || "",
           aktifitasPenangananDetails: aktifitasPenangananDetails.length > 0 ? aktifitasPenangananDetails : [createNewPenangananDetailFormState()],
           // Tersier specific fields might also be copied if they exist in harianKegiatan
-          jumlahUPT: copiedJumlahPHL, // <--- CHANGE IS HERE: Copying jumlah_phl to jumlahUPT
+          jumlahUPT: harianKegiatan.jumlah_upt || 0, // Keep this for DB, but UI will use jumlahPHL
           jumlahP3SU: harianKegiatan.jumlah_p3su || 0,
           rencanaPanjang: harianKegiatan.rencana_panjang || "",
           rencanaVolume: harianKegiatan.rencana_volume || "",
@@ -455,7 +455,7 @@ export const DrainaseForm = () => {
           realisasiVolume: harianKegiatan.realisasi_volume || "",
           sisaTargetHari: harianKegiatan.sisa_target || "",
         });
-        console.log(`Successfully copied Harian PHL (${copiedJumlahPHL}) to Tersier UPT.`);
+        console.log(`Successfully copied Harian PHL (${copiedJumlahPHL}) to Tersier PHL.`);
         toast.info("Data dari laporan Harian yang cocok telah disalin.");
 
       } catch (error: any) {
@@ -1528,21 +1528,21 @@ export const DrainaseForm = () => {
             )}
           </div>
 
-          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) (Conditional visibility) */}
+          {/* Kebutuhan Tenaga Kerja (Orang) (Conditional visibility) */}
           {formData.reportType === "tersier" && (
             <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
               <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
               <div className="space-y-2">
-                <Label htmlFor={`jumlah-upt-${currentKegiatan.id}`}>UPT</Label>
+                <Label htmlFor={`jumlah-phl-tersier-${currentKegiatan.id}`}>Jumlah PHL</Label> {/* Changed label and id */}
                 <Input
-                  id={`jumlah-upt-${currentKegiatan.id}`}
+                  id={`jumlah-phl-tersier-${currentKegiatan.id}`} {/* Changed id */}
                   type="text"
                   placeholder="0"
-                  value={currentKegiatan.jumlahUPT?.toString()} 
+                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL?.toString()} {/* Use jumlahPHL */}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
+                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) || 0 }); {/* Update jumlahPHL */}
                     }
                   }}
                   maxLength={2}
