@@ -203,31 +203,62 @@ export const DrainaseForm = () => {
     );
   }, [formData.tanggal]);
 
+  // Effect for Volume Galian calculation (always runs now)
   useEffect(() => {
-    // Only calculate volume for Harian/Bulanan reports
-    if (formData.reportType !== "tersier") {
-      const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
-      const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
-      const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
+    const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
+    const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
+    const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
 
-      const calculatedVolume = (panjang * lebar * tinggi).toFixed(2);
+    const calculatedVolume = (panjang * lebar * tinggi).toFixed(2);
 
-      const isVolumeGalianEmpty = currentKegiatan.volumeGalian === "";
-      const isVolumeGalianSameAsLastCalculated = currentKegiatan.volumeGalian === lastCalculatedVolumeRef.current;
+    const isVolumeGalianEmpty = currentKegiatan.volumeGalian === "";
+    const isVolumeGalianSameAsLastCalculated = currentKegiatan.volumeGalian === lastCalculatedVolumeRef.current;
 
-      if (isVolumeGalianEmpty || (isVolumeGalianSameAsLastCalculated && currentKegiatan.volumeGalian !== calculatedVolume)) {
-        updateCurrentKegiatan({ volumeGalian: calculatedVolume });
-      }
-
-      lastCalculatedVolumeRef.current = calculatedVolume;
+    if (isVolumeGalianEmpty || (isVolumeGalianSameAsLastCalculated && currentKegiatan.volumeGalian !== calculatedVolume)) {
+      updateCurrentKegiatan({ volumeGalian: calculatedVolume });
     }
+
+    lastCalculatedVolumeRef.current = calculatedVolume;
   }, [
     currentKegiatan.panjangPenanganan,
     currentKegiatan.lebarRataRata,
     currentKegiatan.rataRataSedimen,
     currentKegiatanIndex,
-    formData.reportType,
   ]);
+
+  // Effect for Tersier report type synchronization
+  useEffect(() => {
+    if (formData.reportType === "tersier") {
+      const panjangPenanganan = currentKegiatan.panjangPenanganan;
+      const volumeGalian = currentKegiatan.volumeGalian;
+
+      // Synchronize Realisasi Panjang with Panjang Penanganan
+      if (currentKegiatan.realisasiPanjang !== panjangPenanganan) {
+        updateCurrentKegiatan({ realisasiPanjang: panjangPenanganan });
+      }
+      // Synchronize Realisasi Volume with Volume Galian
+      if (currentKegiatan.realisasiVolume !== volumeGalian) {
+        updateCurrentKegiatan({ realisasiVolume: volumeGalian });
+      }
+      // Also set Rencana Panjang/Volume to match Panjang Penanganan/Volume Galian for Tersier
+      if (currentKegiatan.rencanaPanjang !== panjangPenanganan) {
+        updateCurrentKegiatan({ rencanaPanjang: panjangPenanganan });
+      }
+      if (currentKegiatan.rencanaVolume !== volumeGalian) {
+        updateCurrentKegiatan({ rencanaVolume: volumeGalian });
+      }
+    }
+  }, [
+    currentKegiatan.panjangPenanganan,
+    currentKegiatan.volumeGalian,
+    currentKegiatan.realisasiPanjang,
+    currentKegiatan.realisasiVolume,
+    currentKegiatan.rencanaPanjang,
+    currentKegiatan.rencanaVolume,
+    formData.reportType,
+    currentKegiatanIndex,
+  ]);
+
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
@@ -580,9 +611,7 @@ export const DrainaseForm = () => {
 
       let currentLaporanId = laporanId;
 
-      const finalReportDate = formData.reportType === "tersier" 
-        ? formData.kegiatans[0]?.hariTanggal || new Date()
-        : formData.tanggal || formData.kegiatans[0]?.hariTanggal || new Date();
+      const finalReportDate = formData.tanggal || formData.kegiatans[0]?.hariTanggal || new Date(); // Use main date if available, otherwise activity date
 
       const finalPeriode = formData.periode || format(finalReportDate, 'MMMM yyyy', { locale: idLocale });
 
@@ -859,49 +888,20 @@ export const DrainaseForm = () => {
       let newTanggal = prev.tanggal;
       let newPeriode = prev.periode;
 
-      if (value === "tersier") {
-        // For Tersier, ensure only one activity and one detail, clear irrelevant fields
-        const defaultKegiatan = createNewKegiatanDrainase();
-        defaultKegiatan.aktifitasPenangananDetails = [createNewPenangananDetailFormState()];
-        newKegiatans = [defaultKegiatan];
-        
-        // Clear fields not relevant for tersier
-        newKegiatans[0].panjangPenanganan = "";
-        newKegiatans[0].lebarRataRata = "";
-        newKegiatans[0].rataRataSedimen = "";
-        newKegiatans[0].volumeGalian = "";
-        newKegiatans[0].jumlahPHL = 0;
-        newKegiatans[0].aktifitasPenangananDetails[0].foto50 = [];
-        newKegiatans[0].aktifitasPenangananDetails[0].fotoSket = [];
-        newKegiatans[0].aktifitasPenangananDetails[0].jenisSaluran = "";
-        newKegiatans[0].aktifitasPenangananDetails[0].aktifitasPenanganan = "";
-        newKegiatans[0].aktifitasPenangananDetails[0].materials = [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "", keterangan: "" }]; // Clear satuan/keterangan
-        newKegiatans[0].operasionalAlatBerats = [{ id: "operasional-" + Date.now().toString(), jenis: "", jumlah: 0, dexliteJumlah: "", dexliteSatuan: "", pertaliteJumlah: "", pertaliteSatuan: "", bioSolarJumlah: "", bioSolarSatuan: "", keterangan: "" }]; // Clear fuel details
-
-        newTanggal = null; // Hide main date for tersier
-        newPeriode = format(newKegiatans[0].hariTanggal || new Date(), 'MMMM yyyy', { locale: idLocale }); // Period from activity date
-      } else {
-        // For Harian/Bulanan, ensure at least one activity and one detail
-        if (newKegiatans.length === 0) {
-          newKegiatans = [createNewKegiatanDrainase()];
-        }
-        newKegiatans = newKegiatans.map(keg => {
-          if (keg.aktifitasPenangananDetails.length === 0) {
-            keg.aktifitasPenangananDetails = [createNewPenangananDetailFormState()];
-          }
-          // Reset tersier-specific fields
-          keg.jumlahUPT = 0;
-          keg.jumlahP3SU = 0;
-          keg.rencanaPanjang = "";
-          keg.rencanaVolume = "";
-          keg.realisasiPanjang = "";
-          keg.realisasiVolume = "";
-          keg.sisaTargetHari = "";
-          return keg;
-        });
-        newTanggal = prev.tanggal || new Date(); // Show main date for harian/bulanan
-        newPeriode = format(newTanggal, 'MMMM yyyy', { locale: idLocale });
+      // Ensure at least one activity and one detail always exists
+      if (newKegiatans.length === 0) {
+        newKegiatans = [createNewKegiatanDrainase()];
       }
+      newKegiatans = newKegiatans.map(keg => {
+        if (keg.aktifitasPenangananDetails.length === 0) {
+          keg.aktifitasPenangananDetails = [createNewPenangananDetailFormState()];
+        }
+        return keg;
+      });
+      
+      // Main date is always visible, so no need to hide/show based on reportType
+      newTanggal = prev.tanggal || new Date(); 
+      newPeriode = format(newTanggal, 'MMMM yyyy', { locale: idLocale });
 
       setCurrentKegiatanIndex(0); // Reset to first activity
       setPeralatanCustomInputs({}); // Clear custom inputs
@@ -948,38 +948,36 @@ export const DrainaseForm = () => {
           </Button>
         </div>
 
-        {/* Activity Navigation (Hidden for Tersier, as it's a single activity concept) */}
-        {formData.reportType !== "tersier" && (
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2 flex-wrap">
-                {formData.kegiatans.map((_, index) => (
-                  <Button
-                    key={index}
-                    variant={currentKegiatanIndex === index ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleSetCurrentKegiatanIndex(index)}
-                  >
-                    Kegiatan {index + 1}
-                  </Button>
-                ))}
-                <Button variant="outline" size="sm" onClick={addKegiatan}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Kegiatan
-                </Button>
-              </div>
-              {formData.kegiatans.length > 1 && (
+        {/* Activity Navigation (Always visible now) */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2 flex-wrap">
+              {formData.kegiatans.map((_, index) => (
                 <Button
-                  variant="destructive"
+                  key={index}
+                  variant={currentKegiatanIndex === index ? "default" : "outline"}
                   size="sm"
-                  onClick={() => removeKegiatan(currentKegiatanIndex)}
+                  onClick={() => handleSetCurrentKegiatanIndex(index)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  Kegiatan {index + 1}
                 </Button>
-              )}
+              ))}
+              <Button variant="outline" size="sm" onClick={addKegiatan}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Kegiatan
+              </Button>
             </div>
-          </Card>
-        )}
+            {formData.kegiatans.length > 1 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => removeKegiatan(currentKegiatanIndex)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </Card>
 
         <Card className="p-6 space-y-6">
           {/* Report Type Selection */}
@@ -1020,81 +1018,77 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Main Report Date (Hidden for Tersier) */}
-          {formData.reportType !== "tersier" && (
-            <div className="space-y-2">
-              <Label htmlFor="tanggal-laporan-utama">Tanggal Laporan Utama</Label>
-              <div className="relative flex items-center">
-                <Input
-                  id="tanggal-laporan-utama"
-                  value={mainDateInputString}
-                  onChange={handleMainDateInputChange}
-                  placeholder="dd/MM/yyyy"
-                  className={cn(
-                    "w-full justify-start text-left font-normal pr-10",
-                    !formData.tanggal && "text-muted-foreground"
-                  )}
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
-                    >
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
-                    <Calendar
-                      mode="single"
-                      selected={formData.tanggal || undefined}
-                      onSelect={handleMainDateSelect}
-                      initialFocus
-                      locale={idLocale}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          {/* Main Report Date (Always visible now) */}
+          <div className="space-y-2">
+            <Label htmlFor="tanggal-laporan-utama">Tanggal Laporan Utama</Label>
+            <div className="relative flex items-center">
+              <Input
+                id="tanggal-laporan-utama"
+                value={mainDateInputString}
+                onChange={handleMainDateInputChange}
+                placeholder="dd/MM/yyyy"
+                className={cn(
+                  "w-full justify-start text-left font-normal pr-10",
+                  !formData.tanggal && "text-muted-foreground"
+                )}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
+                  <Calendar
+                    mode="single"
+                    selected={formData.tanggal || undefined}
+                    onSelect={handleMainDateSelect}
+                    initialFocus
+                    locale={idLocale}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
+          </div>
 
-          {/* Hari/Tanggal Kegiatan (Always visible for Harian and Tersier) */}
-          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
-            <div className="space-y-2">
-              <Label htmlFor={`hari-tanggal-kegiatan-${currentKegiatan.id}`}>Hari/Tanggal Kegiatan</Label>
-              <div className="relative flex items-center">
-                <Input
-                  id={`hari-tanggal-kegiatan-${currentKegiatan.id}`}
-                  value={activityDateInputString}
-                  onChange={handleActivityDateInputChange}
-                  placeholder="dd/MM/yyyy"
-                  className={cn(
-                    "w-full justify-start text-left font-normal pr-10",
-                    !currentKegiatan.hariTanggal && "text-muted-foreground"
-                  )}
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
-                    >
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
-                    <Calendar
-                      mode="single"
-                      selected={currentKegiatan.hariTanggal || undefined}
-                      onSelect={handleActivityDateSelect}
-                      initialFocus
-                      locale={idLocale}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          {/* Hari/Tanggal Kegiatan (Always visible) */}
+          <div className="space-y-2">
+            <Label htmlFor={`hari-tanggal-kegiatan-${currentKegiatan.id}`}>Hari/Tanggal Kegiatan</Label>
+            <div className="relative flex items-center">
+              <Input
+                id={`hari-tanggal-kegiatan-${currentKegiatan.id}`}
+                value={activityDateInputString}
+                onChange={handleActivityDateInputChange}
+                placeholder="dd/MM/yyyy"
+                className={cn(
+                  "w-full justify-start text-left font-normal pr-10",
+                  !currentKegiatan.hariTanggal && "text-muted-foreground"
+                )}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
+                  <Calendar
+                    mode="single"
+                    selected={currentKegiatan.hariTanggal || undefined}
+                    onSelect={handleActivityDateSelect}
+                    initialFocus
+                    locale={idLocale}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
+          </div>
 
           {/* Lokasi */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -1143,149 +1137,126 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Rencana/Realisasi Panjang/Volume (Only for Tersier) */}
-          {formData.reportType === "tersier" && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={`rencana-panjang-${currentKegiatan.id}`}>Rencana Panjang (M)</Label>
-                <Input
-                  id={`rencana-panjang-${currentKegiatan.id}`}
-                  value={currentKegiatan.rencanaPanjang || ""}
-                  onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`rencana-volume-${currentKegiatan.id}`}>Rencana Volume (M³)</Label>
-                <Input
-                  id={`rencana-volume-${currentKegiatan.id}`}
-                  value={currentKegiatan.rencanaVolume || ""}
-                  onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`realisasi-panjang-${currentKegiatan.id}`}>Realisasi Panjang (M)</Label>
-                <Input
-                  id={`realisasi-panjang-${currentKegiatan.id}`}
-                  value={currentKegiatan.realisasiPanjang || ""}
-                  onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`realisasi-volume-${currentKegiatan.id}`}>Realisasi Volume (M³)</Label>
-                <Input
-                  id={`realisasi-volume-${currentKegiatan.id}`}
-                  value={currentKegiatan.realisasiVolume || ""}
-                  onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Measurements (Panjang, Lebar, Sedimen, Volume) (Hidden for Tersier) */}
-          {formData.reportType !== "tersier" && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={`panjang-${currentKegiatan.id}`}>Panjang Penanganan (M)</Label>
-                <Input
-                  id={`panjang-${currentKegiatan.id}`}
-                  value={currentKegiatan.panjangPenanganan}
-                  onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`lebar-${currentKegiatan.id}`}>Lebar Rata-rata (M)</Label>
-                <Input
-                  id={`lebar-${currentKegiatan.id}`}
-                  value={currentKegiatan.lebarRataRata}
-                  onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`sedimen-${currentKegiatan.id}`}>Tinggi Rata-rata Sedimen (M)</Label>
-                <Input
-                  id={`sedimen-${currentKegiatan.id}`}
-                  value={currentKegiatan.rataRataSedimen}
-                  onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`volume-${currentKegiatan.id}`}>Volume Galian (M³)</Label>
-                <Input
-                  id={`volume-${currentKegiatan.id}`}
-                  value={currentKegiatan.volumeGalian}
-                  onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Aktifitas Penanganan Details Section (Conditional rendering) */}
-          {formData.reportType !== "tersier" ? (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
-              {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
-                <PenangananDetailSection
-                  key={detail.id}
-                  detail={detail}
-                  index={detailIndex}
-                  updateDetail={updateAktifitasPenangananDetail}
-                  removeDetail={removeAktifitasPenangananDetail}
-                  isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
-                  reportType={formData.reportType}
-                  onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
-                />
-              ))}
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Aktifitas Penanganan
-                </Button>
-              </div>
-            </div>
-          ) : (
-            // Render single PenangananDetailSection directly for Tersier
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
-              <PenangananDetailSection
-                key={currentKegiatan.aktifitasPenangananDetails[0].id}
-                detail={currentKegiatan.aktifitasPenangananDetails[0]}
-                index={0}
-                updateDetail={updateAktifitasPenangananDetail}
-                removeDetail={() => {}} // No remove for single detail in Tersier
-                isRemovable={false} // Not removable for single detail in Tersier
-                reportType={formData.reportType}
-                onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
+          {/* Rencana/Realisasi Panjang/Volume (Always visible now) */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={`rencana-panjang-${currentKegiatan.id}`}>Rencana Panjang (M)</Label>
+              <Input
+                id={`rencana-panjang-${currentKegiatan.id}`}
+                value={currentKegiatan.rencanaPanjang || ""}
+                onChange={(e) => updateCurrentKegiatan({ rencanaPanjang: e.target.value })}
+                placeholder="0"
               />
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor={`rencana-volume-${currentKegiatan.id}`}>Rencana Volume (M³)</Label>
+              <Input
+                id={`rencana-volume-${currentKegiatan.id}`}
+                value={currentKegiatan.rencanaVolume || ""}
+                onChange={(e) => updateCurrentKegiatan({ rencanaVolume: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`realisasi-panjang-${currentKegiatan.id}`}>Realisasi Panjang (M)</Label>
+              <Input
+                id={`realisasi-panjang-${currentKegiatan.id}`}
+                value={currentKegiatan.realisasiPanjang || ""}
+                onChange={(e) => updateCurrentKegiatan({ realisasiPanjang: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`realisasi-volume-${currentKegiatan.id}`}>Realisasi Volume (M³)</Label>
+              <Input
+                id={`realisasi-volume-${currentKegiatan.id}`}
+                value={currentKegiatan.realisasiVolume || ""}
+                onChange={(e) => updateCurrentKegiatan({ realisasiVolume: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+          </div>
 
-          {/* Peralatan Section (Always rendered, internal fields are conditional) */}
+          {/* Measurements (Panjang, Lebar, Sedimen, Volume) (Always visible now) */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={`panjang-${currentKegiatan.id}`}>Panjang Penanganan (M)</Label>
+              <Input
+                id={`panjang-${currentKegiatan.id}`}
+                value={currentKegiatan.panjangPenanganan}
+                onChange={(e) => updateCurrentKegiatan({ panjangPenanganan: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`lebar-${currentKegiatan.id}`}>Lebar Rata-rata (M)</Label>
+              <Input
+                id={`lebar-${currentKegiatan.id}`}
+                value={currentKegiatan.lebarRataRata}
+                onChange={(e) => updateCurrentKegiatan({ lebarRataRata: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`sedimen-${currentKegiatan.id}`}>Tinggi Rata-rata Sedimen (M)</Label>
+              <Input
+                id={`sedimen-${currentKegiatan.id}`}
+                value={currentKegiatan.rataRataSedimen}
+                onChange={(e) => updateCurrentKegiatan({ rataRataSedimen: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`volume-${currentKegiatan.id}`}>Volume Galian (M³)</Label>
+              <Input
+                id={`volume-${currentKegiatan.id}`}
+                value={currentKegiatan.volumeGalian}
+                onChange={(e) => updateCurrentKegiatan({ volumeGalian: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {/* Aktifitas Penanganan Details Section (Always visible now) */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
+            {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
+              <PenangananDetailSection
+                key={detail.id}
+                detail={detail}
+                index={detailIndex}
+                updateDetail={updateAktifitasPenangananDetail}
+                removeDetail={removeAktifitasPenangananDetail}
+                isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
+                reportType={formData.reportType} // Pass reportType for internal conditional rendering
+                onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
+              />
+            ))}
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Aktifitas Penanganan
+              </Button>
+            </div>
+          </div>
+
+          {/* Peralatan Section (Always rendered) */}
           <PeralatanSection
             currentKegiatan={currentKegiatan}
             updateCurrentKegiatan={updateCurrentKegiatan}
             peralatanCustomInputs={peralatanCustomInputs}
             setPeralatanCustomInputs={setPeralatanCustomInputs}
-            reportType={formData.reportType}
+            reportType={formData.reportType} // Pass reportType for internal conditional rendering
           />
 
-          {/* Operasional Alat Berat Section (Hidden for Tersier) */}
-          {formData.reportType !== "tersier" && (
-            <OperasionalAlatBeratSection
-              currentKegiatan={currentKegiatan}
-              updateCurrentKegiatan={updateCurrentKegiatan}
-              operasionalCustomInputs={operasionalCustomInputs}
-              setOperasionalCustomInputs={setOperasionalCustomInputs}
-              reportType={formData.reportType}
-            />
-          )}
+          {/* Operasional Alat Berat Section (Always visible now) */}
+          <OperasionalAlatBeratSection
+            currentKegiatan={currentKegiatan}
+            updateCurrentKegiatan={updateCurrentKegiatan}
+            operasionalCustomInputs={operasionalCustomInputs}
+            setOperasionalCustomInputs={setOperasionalCustomInputs}
+            reportType={formData.reportType} // Pass reportType for internal conditional rendering
+          />
 
           {/* Koordinator & PHL */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -1306,84 +1277,79 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
-            {formData.reportType !== "tersier" && (
-              <div className="space-y-2">
-                <Label htmlFor={`jumlah-phl-${currentKegiatan.id}`}>Jumlah PHL</Label>
-                <Input
-                  id={`jumlah-phl-${currentKegiatan.id}`}
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Only for Tersier */}
-          {formData.reportType === "tersier" && (
-            <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
-              <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
-              <div className="space-y-2">
-                <Label htmlFor={`jumlah-upt-${currentKegiatan.id}`}>UPT</Label>
-                <Input
-                  id={`jumlah-upt-${currentKegiatan.id}`}
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`jumlah-p3su-${currentKegiatan.id}`}>P3SU</Label>
-                <Input
-                  id={`jumlah-p3su-${currentKegiatan.id}`}
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Sisa Target Penyelesaian Pekerjaan (Hari) - Only for Tersier */}
-          {formData.reportType === "tersier" && (
+            {/* Jumlah PHL (Always visible now) */}
             <div className="space-y-2">
-              <Label htmlFor={`sisa-target-hari-${currentKegiatan.id}`}>Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
+              <Label htmlFor={`jumlah-phl-${currentKegiatan.id}`}>Jumlah PHL</Label>
               <Input
-                id={`sisa-target-hari-${currentKegiatan.id}`}
+                id={`jumlah-phl-${currentKegiatan.id}`}
                 type="text"
-                placeholder="00"
-                value={currentKegiatan.sisaTargetHari || ""}
+                placeholder="0"
+                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
                 onChange={(e) => {
                   const value = e.target.value;
                   if (value === "" || /^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ sisaTargetHari: value });
+                    updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
                   }
                 }}
                 maxLength={2}
               />
             </div>
-          )}
+          </div>
+
+          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) (Always visible now) */}
+          <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
+            <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
+            <div className="space-y-2">
+              <Label htmlFor={`jumlah-upt-${currentKegiatan.id}`}>UPT</Label>
+              <Input
+                id={`jumlah-upt-${currentKegiatan.id}`}
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
+                  }
+                }}
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`jumlah-p3su-${currentKegiatan.id}`}>P3SU</Label>
+              <Input
+                id={`jumlah-p3su-${currentKegiatan.id}`}
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahP3SU === 0 ? "" : currentKegiatan.jumlahP3SU?.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahP3SU: parseInt(value, 10) || 0 });
+                  }
+                }}
+                maxLength={2}
+              />
+            </div>
+          </div>
+
+          {/* Sisa Target Penyelesaian Pekerjaan (Hari) (Always visible now) */}
+          <div className="space-y-2">
+            <Label htmlFor={`sisa-target-hari-${currentKegiatan.id}`}>Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
+            <Input
+              id={`sisa-target-hari-${currentKegiatan.id}`}
+              type="text"
+              placeholder="00"
+              value={currentKegiatan.sisaTargetHari || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "" || /^\d{0,2}$/.test(value)) {
+                  updateCurrentKegiatan({ sisaTargetHari: value });
+                }
+              }}
+              maxLength={2}
+            />
+          </div>
 
           {/* Keterangan */}
           <div className="space-y-2">
