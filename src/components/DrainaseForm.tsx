@@ -932,6 +932,11 @@ export const DrainaseForm = () => {
     }
   };
 
+  const handleLihatLaporanClick = () => {
+    console.log("Tombol 'Lihat Laporan' diklik. Mengarahkan ke /");
+    navigate('/');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -952,7 +957,7 @@ export const DrainaseForm = () => {
               {id ? 'Edit laporan kegiatan drainase' : 'Isi formulir dengan lengkap untuk menghasilkan laporan'}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
+          <Button variant="outline" onClick={handleLihatLaporanClick} className="gap-2">
             <List className="h-4 w-4" />
             Lihat Laporan
           </Button>
