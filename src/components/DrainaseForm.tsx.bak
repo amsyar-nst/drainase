@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom"; 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,77 +29,89 @@ import { format, parse, isValid } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat } from "@/types/laporan";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, AktifitasPenangananDetail } from "@/types/laporan";
+import { PenangananDetailFormState } from "@/types/form-types";
 import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions, alatBeratOptions } from "@/data/kecamatan-kelurahan";
 import { toast } from "sonner";
 import { generatePDF } from "@/lib/pdf-generator";
+import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
 import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
+import { PeralatanSection } from "./drainase-form/PeralatanSection";
+import { PenangananDetailSection } from "./drainase-form/PenangananDetailSection";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSession } from "./SessionContextProvider";
 
-// Define predefined sedimen options for easier comparison
 const predefinedSedimenOptions = [
   "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
   "Padat & Batu", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
   "Batu/ Padat & Cair", "Sampah"
 ];
 
+// Initial state for a new PenangananDetailFormState
+const createNewPenangananDetailFormState = (): PenangananDetailFormState => ({
+  id: "detail-" + Date.now().toString(),
+  foto0: [],
+  foto50: [],
+  foto100: [],
+  fotoSket: [],
+  jenisSaluran: "",
+  jenisSedimen: "",
+  aktifitasPenanganan: "",
+  materials: [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
+  selectedSedimenOption: "",
+  customSedimen: "",
+  materialCustomInputs: {},
+});
+
+// Initial state for a new KegiatanDrainase
+const createNewKegiatanDrainase = (): KegiatanDrainase => ({
+  id: "kegiatan-" + Date.now().toString(),
+  namaJalan: "",
+  kecamatan: "",
+  kelurahan: "",
+  panjangPenanganan: "",
+  lebarRataRata: "",
+  rataRataSedimen: "",
+  volumeGalian: "",
+  peralatans: [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
+  operasionalAlatBerats: [{
+    id: "operasional-" + Date.now().toString(),
+    jenis: "",
+    jumlah: 0,
+    dexliteJumlah: "",
+    dexliteSatuan: "Liter",
+    pertaliteJumlah: "",
+    pertaliteSatuan: "Liter",
+    bioSolarJumlah: "",
+    bioSolarSatuan: "Liter",
+    keterangan: "",
+  }],
+  koordinator: [],
+  jumlahPHL: 0,
+  keterangan: "",
+  hariTanggal: new Date(),
+  jumlahUPT: 0,
+  jumlahP3SU: 0,
+  rencanaPanjang: "",
+  rencanaVolume: "",
+  realisasiPanjang: "",
+  realisasiVolume: "",
+  sisaTargetHari: "",
+  aktifitasPenangananDetails: [createNewPenangananDetailFormState()],
+});
+
 export const DrainaseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useSession();
 
   const [formData, setFormData] = useState<LaporanDrainase>({
+    tanggal: null,
     periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
     reportType: "harian",
-    kegiatans: [{
-      id: "1",
-      namaJalan: "",
-      kecamatan: "",
-      kelurahan: "",
-      foto0: [],
-      foto50: [],
-      foto100: [],
-      foto0Url: [],
-      foto50Url: [],
-      foto100Url: [],
-      fotoSket: [],
-      fotoSketUrl: [],
-      jenisSaluran: "",
-      jenisSedimen: "",
-      aktifitasPenanganan: "",
-      panjangPenanganan: "",
-      lebarRataRata: "",
-      rataRataSedimen: "",
-      volumeGalian: "",
-      materials: [{ id: "1", jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
-      peralatans: [{ id: "1", nama: "", jumlah: 1, satuan: "Unit" }],
-      operasionalAlatBerats: [{
-        id: "1",
-        jenis: "",
-        jumlah: 0,
-        dexliteJumlah: "",
-        dexliteSatuan: "Liter",
-        pertaliteJumlah: "",
-        pertaliteSatuan: "Liter",
-        bioSolarJumlah: "",
-        bioSolarSatuan: "Liter",
-        keterangan: "",
-      }],
-      koordinator: [],
-      jumlahPHL: 0,
-      keterangan: "",
-      hariTanggal: new Date(),
-      // Tersier specific fields (now simplified based on request)
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
-      sisaTarget: "",
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-    }]
+    kegiatans: [createNewKegiatanDrainase()]
   });
 
   const [currentKegiatanIndex, setCurrentKegiatanIndex] = useState(0);
@@ -111,31 +123,30 @@ export const DrainaseForm = () => {
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [selectedSedimenOption, setSelectedSedimenOption] = useState<string>("");
-  const [customSedimen, setCustomSedimen] = useState("");
-
-  const [koordinatorSearchTerm, setKoordinatorSearchTerm] = useState("");
-  const [koordinatorPopoverOpen, setKoordinatorPopoverOpen] = useState(false);
-
-  // State for individual activity date input string
-  const [activityDateInputStrings, setActivityDateInputStrings] = useState<string[]>([]);
-
-  // States for custom inputs for Material and Peralatan
-  const [materialCustomInputs, setMaterialCustomInputs] = useState<Record<string, string>>({});
   const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({});
-  // State for custom inputs for Operasional Alat Berat
   const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
 
-  // New states for dragging
-  const [isFoto0Dragging, setIsFoto0Dragging] = useState(false);
-  const [isFoto50Dragging, setIsFoto50Dragging] = useState(false);
-  const [isFoto100Dragging, setIsFoto100Dragging] = useState(false);
-  const [isFotoSketDragging, setIsFotoSketDragging] = useState(false);
-
-
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
-
   const lastCalculatedVolumeRef = useRef<string | null>(null);
+
+  const [mainDateInputString, setMainDateInputString] = useState<string>(
+    formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+  );
+
+  const [activityDateInputString, setActivityDateInputString] = useState<string>(
+    currentKegiatan.hariTanggal ? format(currentKegiatan.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+  );
+
+  // Helper to ensure array of strings for URLs
+  const ensureArray = (value: string | string[] | null | undefined): string[] => {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value) {
+      return [value];
+    }
+    return [];
+  }
 
   useEffect(() => {
     if (id) {
@@ -143,44 +154,57 @@ export const DrainaseForm = () => {
     }
   }, [id]);
 
+  // Update local state for current activity when currentKegiatanIndex changes
   useEffect(() => {
     if (formData.kegiatans.length > 0) {
-      const currentKecamatan = formData.kegiatans[currentKegiatanIndex].kecamatan;
-      setSelectedKecamatan(currentKecamatan);
-      const selected = kecamatanKelurahanData.find((k) => k.kecamatan === currentKecamatan);
+      const currentKec = formData.kegiatans[currentKegiatanIndex];
+      setSelectedKecamatan(currentKec.kecamatan);
+      const selected = kecamatanKelurahanData.find((k) => k.kecamatan === currentKec.kecamatan);
       setKelurahanOptions(selected?.kelurahan || []);
 
-      // Update activity date input string for the current activity
-      const newActivityDateInputStrings = [...activityDateInputStrings];
-      newActivityDateInputStrings[currentKegiatanIndex] = currentKegiatan.hariTanggal 
-        ? format(currentKegiatan.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) 
-        : "";
-      setActivityDateInputStrings(newActivityDateInputStrings);
+      // Update activity date input string
+      setActivityDateInputString(
+        currentKec.hariTanggal ? format(currentKec.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+      );
+
+      // Initialize custom inputs for Peralatan
+      const initialPeralatanCustomInputs: Record<string, string> = {};
+      currentKec.peralatans.forEach(p => {
+        if (!peralatanOptions.includes(p.nama) && p.nama !== "") {
+          initialPeralatanCustomInputs[p.id] = p.nama;
+          p.nama = "custom";
+        }
+      });
+      setPeralatanCustomInputs(initialPeralatanCustomInputs);
+
+      // Initialize custom inputs for Operasional Alat Berat
+      const initialOperasionalCustomInputs: Record<string, string> = {};
+      currentKec.operasionalAlatBerats.forEach(op => {
+        if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
+          initialOperasionalCustomInputs[op.id] = op.jenis;
+          op.jenis = "custom";
+        }
+      });
+      setOperasionalCustomInputs(initialOperasionalCustomInputs);
 
     } else {
       setSelectedKecamatan("");
       setKelurahanOptions([]);
-      setActivityDateInputStrings([]);
+      setActivityDateInputString("");
+      setPeralatanCustomInputs({});
+      setOperasionalCustomInputs({});
     }
   }, [formData.kegiatans, currentKegiatanIndex]);
 
+  // Update main report date input string
   useEffect(() => {
-    if (currentKegiatan.jenisSedimen) {
-      if (predefinedSedimenOptions.includes(currentKegiatan.jenisSedimen)) {
-        setSelectedSedimenOption(currentKegiatan.jenisSedimen);
-        setCustomSedimen("");
-      } else {
-        setSelectedSedimenOption("custom");
-        setCustomSedimen(currentKegiatan.jenisSedimen);
-      }
-    } else {
-      setSelectedSedimenOption("");
-      setCustomSedimen("");
-    }
-  }, [currentKegiatan.jenisSedimen, currentKegiatanIndex]);
+    setMainDateInputString(
+      formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+    );
+  }, [formData.tanggal]);
 
+  // Effect for Volume Galian calculation (only for Harian/Bulanan)
   useEffect(() => {
-    // Only calculate volume for Harian/Bulanan reports
     if (formData.reportType !== "tersier") {
       const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
       const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
@@ -205,62 +229,278 @@ export const DrainaseForm = () => {
     formData.reportType,
   ]);
 
-  // Helper to process files from drop/paste
-  const processAndAddFiles = (files: FileList, field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket') => {
-    const newFiles = Array.from(files);
-    if (newFiles.length > 0) {
-      updateCurrentKegiatan({ [field]: [...currentKegiatan[field], ...newFiles] });
-    }
-  };
+  // Effect for Tersier report type synchronization (Realisasi Panjang/Volume from Panjang Penanganan/Volume Galian)
+  useEffect(() => {
+    if (formData.reportType === "tersier") {
+      const panjangPenanganan = currentKegiatan.panjangPenanganan;
+      const volumeGalian = currentKegiatan.volumeGalian;
 
-  // Generic drag and paste handlers factory
-  const createDragAndPasteHandlers = (setDraggingState: React.Dispatch<React.SetStateAction<boolean>>, field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket') => ({
-    onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDraggingState(true);
-    },
-    onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDraggingState(false);
-    },
-    onDrop: (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDraggingState(false);
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        processAndAddFiles(e.dataTransfer.files, field);
-        e.dataTransfer.clearData();
+      // Synchronize Realisasi Panjang with Panjang Penanganan
+      if (currentKegiatan.realisasiPanjang !== panjangPenanganan) {
+        updateCurrentKegiatan({ realisasiPanjang: panjangPenanganan });
       }
-    },
-    onPaste: (e: React.ClipboardEvent<HTMLDivElement>) => {
-      e.stopPropagation();
-      if (e.clipboardData.files && e.clipboardData.files.length > 0) {
-        processAndAddFiles(e.clipboardData.files, field);
+      // Synchronize Realisasi Volume with Volume Galian
+      if (currentKegiatan.realisasiVolume !== volumeGalian) {
+        updateCurrentKegiatan({ realisasiVolume: volumeGalian });
+      }
+      // Also set Rencana Panjang/Volume to match Panjang Penanganan/Volume Galian for Tersier
+      if (currentKegiatan.rencanaPanjang !== panjangPenanganan) {
+        updateCurrentKegiatan({ rencanaPanjang: panjangPenanganan });
+      }
+      if (currentKegiatan.rencanaVolume !== volumeGalian) {
+        updateCurrentKegiatan({ rencanaVolume: volumeGalian });
       }
     }
-  });
+  }, [
+    currentKegiatan.panjangPenanganan,
+    currentKegiatan.volumeGalian,
+    currentKegiatan.realisasiPanjang,
+    currentKegiatan.realisasiVolume,
+    currentKegiatan.rencanaPanjang,
+    currentKegiatan.rencanaVolume,
+    formData.reportType,
+    currentKegiatanIndex,
+  ]);
 
-  // Create handlers for each field
-  const foto0Handlers = createDragAndPasteHandlers(setIsFoto0Dragging, 'foto0');
-  const foto50Handlers = createDragAndPasteHandlers(setIsFoto50Dragging, 'foto50');
-  const foto100Handlers = createDragAndPasteHandlers(setIsFoto100Dragging, 'foto100');
-  const fotoSketHandlers = createDragAndPasteHandlers(setIsFotoSketDragging, 'fotoSket');
+  // Effect to fetch and prepopulate Tersier data from Harian
+  useEffect(() => {
+    const fetchAndPrepopulateTersierData = async () => {
+      if (!user) {
+        console.log("Prepopulation skipped: User not logged in.");
+        return;
+      }
+      if (laporanId) {
+        console.log("Prepopulation skipped: Editing existing report.");
+        return;
+      }
+      if (formData.reportType !== "tersier") {
+        console.log("Prepopulation skipped: Report type is not tersier.");
+        return;
+      }
+
+      const { hariTanggal, namaJalan, kecamatan, kelurahan } = currentKegiatan;
+
+      if (!hariTanggal || !namaJalan || !kecamatan || !kelurahan) {
+        console.log("Prepopulation skipped: Key activity fields (date, location) are not fully filled.");
+        return;
+      }
+
+      // Check if the current activity is mostly empty, to avoid overwriting user input
+      const isCurrentKegiatanMostlyEmpty =
+        !currentKegiatan.panjangPenanganan &&
+        !currentKegiatan.lebarRataRata &&
+        !currentKegiatan.rataRataSedimen &&
+        !currentKegiatan.volumeGalian &&
+        currentKegiatan.peralatans.every(p => !p.nama && p.jumlah === 1) &&
+        currentKegiatan.operasionalAlatBerats.every(o => !o.jenis && o.jumlah === 0) &&
+        currentKegiatan.aktifitasPenangananDetails.every(d =>
+          !d.jenisSaluran && !d.jenisSedimen && !d.aktifitasPenanganan &&
+          d.foto0.length === 0 && d.foto50.length === 0 && d.foto100.length === 0 && d.fotoSket.length === 0 &&
+          d.materials.every(m => !m.jenis && !m.jumlah && !m.satuan)
+        );
+
+      if (!isCurrentKegiatanMostlyEmpty) {
+        console.log("Prepopulation skipped: Current activity form is not mostly empty.");
+        return;
+      }
+
+      console.log("Attempting to fetch and prepopulate Tersier data from Harian...");
+      console.log("Search criteria:", {
+        date: format(hariTanggal, 'yyyy-MM-dd'),
+        namaJalan,
+        kecamatan,
+        kelurahan
+      });
+
+      try {
+        // 1. Find Harian Laporan for the same date
+        const { data: harianLaporans, error: harianLaporanError } = await supabase
+          .from('laporan_drainase')
+          .select('id')
+          .eq('tanggal', format(hariTanggal, 'yyyy-MM-dd'))
+          .eq('report_type', 'harian')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }); // Get the most recent one
+
+        if (harianLaporanError) throw harianLaporanError;
+        if (!harianLaporans || harianLaporans.length === 0) {
+          console.log("No matching harian laporan found for the date.");
+          return; // No matching harian laporan found
+        }
+
+        const harianLaporanId = harianLaporans[0].id;
+        console.log("Found Harian Laporan ID:", harianLaporanId);
+
+        // 2. Find Harian Kegiatan for the same location
+        const { data: harianKegiatans, error: harianKegiatanError } = await supabase
+          .from('kegiatan_drainase')
+          .select('*')
+          .eq('laporan_id', harianLaporanId)
+          .eq('nama_jalan', namaJalan)
+          .eq('kecamatan', kecamatan)
+          .eq('kelurahan', kelurahan)
+          .order('created_at', { ascending: false }); // Get the most recent one
+
+        if (harianKegiatanError) throw harianKegiatanError;
+        if (!harianKegiatans || harianKegiatans.length === 0) {
+          console.log("No matching harian kegiatan found for the location.");
+          return; // No matching harian kegiatan found
+        }
+
+        const harianKegiatan = harianKegiatans[0];
+        console.log("Found Harian Kegiatan:", harianKegiatan);
+
+        // 3. Fetch all associated details for the Harian Kegiatan
+        const [peralatanRes, operasionalRes, aktifitasDetailsRes] = await Promise.all([
+          supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', harianKegiatan.id),
+          supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', harianKegiatan.id),
+          supabase.from('aktifitas_penanganan_detail').select('*').eq('kegiatan_id', harianKegiatan.id),
+        ]);
+
+        const peralatans = (peralatanRes.data || []).map(p => ({
+          id: "peralatan-" + Date.now().toString() + '-' + p.id, // Generate new ID for copied item
+          nama: p.nama,
+          jumlah: p.jumlah,
+          satuan: p.satuan || "Unit",
+        }));
+        console.log("Copied Peralatans:", peralatans);
+
+
+        const operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
+          id: "operasional-" + Date.now().toString() + '-' + o.id, // Generate new ID for copied item
+          jenis: o.jenis,
+          jumlah: o.jumlah,
+          dexliteJumlah: o.dexlite_jumlah || "",
+          dexliteSatuan: o.dexlite_satuan || "Liter",
+          pertaliteJumlah: o.pertalite_jumlah || "",
+          pertaliteSatuan: o.pertalite_satuan || "Liter",
+          bioSolarJumlah: o.bio_solar_jumlah || "",
+          bioSolarSatuan: o.bio_solar_satuan || "Liter",
+          keterangan: o.keterangan || "",
+        }));
+        console.log("Copied Operasional Alat Berats:", operasionalAlatBerats);
+
+
+        const aktifitasPenangananDetails: PenangananDetailFormState[] = await Promise.all(
+          (aktifitasDetailsRes.data || []).map(async (detail) => {
+            const { data: materialsRes } = await supabase
+              .from('material_kegiatan')
+              .select('*')
+              .eq('aktifitas_detail_id', detail.id);
+
+            const materials = (materialsRes || []).map(m => ({
+              id: "material-" + Date.now().toString() + '-' + m.id, // Generate new ID for copied item
+              jenis: m.jenis,
+              jumlah: m.jumlah,
+              satuan: m.satuan,
+              keterangan: m.keterangan || "",
+              aktifitas_detail_id: null, // Reset FK as it's a new entry
+            }));
+
+            let selectedSedimenOption: string = "";
+            let customSedimen: string = "";
+            if (detail.jenis_sedimen) {
+              if (predefinedSedimenOptions.includes(detail.jenis_sedimen)) {
+                selectedSedimenOption = detail.jenis_sedimen;
+              } else {
+                selectedSedimenOption = "custom";
+                customSedimen = detail.jenis_sedimen;
+              }
+            }
+
+            const copiedDetail = {
+              id: "detail-" + Date.now().toString() + '-' + detail.id, // Generate new ID for copied item
+              kegiatanId: undefined, // Reset FK
+              jenisSaluran: (detail.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
+              jenisSedimen: (detail.jenis_sedimen || "") as string,
+              aktifitasPenanganan: detail.aktifitas_penanganan || "",
+              foto0: ensureArray(detail.foto_0_url),
+              foto50: ensureArray(detail.foto_50_url), // Copy even if not displayed in Tersier UI
+              foto100: ensureArray(detail.foto_100_url),
+              fotoSket: ensureArray(detail.foto_sket_url), // Copy even if not displayed in Tersier UI
+              materials: materials,
+              selectedSedimenOption: selectedSedimenOption,
+              customSedimen: customSedimen,
+              materialCustomInputs: {}, // Will be re-initialized by child component if needed
+            };
+            console.log(`Copied Aktifitas Penanganan Detail ${detail.id}:`, copiedDetail);
+            console.log(`  Foto 0% URLs:`, copiedDetail.foto0);
+            console.log(`  Foto 100% URLs:`, copiedDetail.foto100);
+            return copiedDetail;
+          })
+        );
+
+        // Update the currentKegiatan with the copied data
+        const copiedJumlahPHL = harianKegiatan.jumlah_phl || 0;
+        console.log(`Attempting to copy Harian PHL (${copiedJumlahPHL}) to Tersier PHL.`);
+        updateCurrentKegiatan({
+          panjangPenanganan: harianKegiatan.panjang_penanganan || "",
+          lebarRataRata: harianKegiatan.lebar_rata_rata || "",
+          rataRataSedimen: harianKegiatan.rata_rata_sedimen || "",
+          volumeGalian: harianKegiatan.volume_galian || "",
+          peralatans: peralatans.length > 0 ? peralatans : [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
+          operasionalAlatBerats: operasionalAlatBerats.length > 0 ? operasionalAlatBerats : [{
+            id: "operasional-" + Date.now().toString(), jenis: "", jumlah: 0, dexliteJumlah: "", dexliteSatuan: "Liter", pertaliteJumlah: "", pertaliteSatuan: "Liter", bioSolarJumlah: "", bioSolarSatuan: "Liter", keterangan: "",
+          }],
+          koordinator: harianKegiatan.koordinator || [],
+          jumlahPHL: copiedJumlahPHL, // <--- CHANGE IS HERE: Copying jumlah_phl to jumlahPHL
+          keterangan: harianKegiatan.keterangan || "",
+          aktifitasPenangananDetails: aktifitasPenangananDetails.length > 0 ? aktifitasPenangananDetails : [createNewPenangananDetailFormState()],
+          // Tersier specific fields might also be copied if they exist in harianKegiatan
+          jumlahUPT: harianKegiatan.jumlah_upt || 0, // Keep this for DB, but UI will use jumlahPHL
+          jumlahP3SU: harianKegiatan.jumlah_p3su || 0,
+          rencanaPanjang: harianKegiatan.rencana_panjang || "",
+          rencanaVolume: harianKegiatan.rencana_volume || "",
+          realisasiPanjang: harianKegiatan.realisasi_panjang || "",
+          realisasiVolume: harianKegiatan.realisasi_volume || "",
+          sisaTargetHari: harianKegiatan.sisa_target || "",
+        });
+        console.log(`Successfully copied Harian PHL (${copiedJumlahPHL}) to Tersier PHL.`);
+        toast.info("Data dari laporan Harian yang cocok telah disalin.");
+
+      } catch (error: any) {
+        console.error("Error fetching and prepopulating Tersier data:", error);
+        toast.error("Gagal menyalin data Harian: " + (error.message || JSON.stringify(error)));
+      }
+    };
+
+    // Trigger data fetching when reportType is tersier and key fields are filled, and it's a new report
+    if (formData.reportType === "tersier" && !laporanId &&
+        currentKegiatan.hariTanggal && currentKegiatan.namaJalan &&
+        currentKegiatan.kecamatan && currentKegiatan.kelurahan) {
+      fetchAndPrepopulateTersierData();
+    }
+  }, [
+    formData.reportType,
+    laporanId,
+    currentKegiatan.hariTanggal,
+    currentKegiatan.namaJalan,
+    currentKegiatan.kecamatan,
+    currentKegiatan.kelurahan,
+    currentKegiatanIndex, // Re-run if activity changes
+    user,
+  ]);
 
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
     try {
+      if (!user) {
+        toast.error('Anda harus login untuk memuat laporan.');
+        navigate('/login');
+        return;
+      }
+
       const { data: laporanData, error: laporanError } = await supabase
         .from('laporan_drainase')
         .select('*')
         .eq('id', laporanId)
+        .eq('user_id', user.id) // Tambahkan filter user_id untuk RLS
         .single();
 
       if (laporanError) throw laporanError;
       if (!laporanData) {
-        toast.error('Laporan tidak ditemukan');
+        toast.error('Laporan tidak ditemukan atau Anda tidak memiliki akses.');
         navigate('/laporan');
         return;
       }
@@ -276,22 +516,11 @@ export const DrainaseForm = () => {
 
       const kegiatansWithDetails = await Promise.all(
         (kegiatanData || []).map(async (kegiatan) => {
-          const [materialsRes, peralatanRes, operasionalRes] = await Promise.all([
-            supabase.from('material_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+          const [peralatanRes, operasionalRes, aktifitasDetailsRes] = await Promise.all([
             supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
-            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id)
+            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('aktifitas_penanganan_detail').select('*').eq('kegiatan_id', kegiatan.id),
           ]);
-
-          let materials = (materialsRes.data || []).map(m => ({
-            id: m.id,
-            jenis: m.jenis,
-            jumlah: m.jumlah,
-            satuan: m.satuan,
-            keterangan: m.keterangan || "",
-          }));
-          if (materials.length === 0) {
-            materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "" });
-          }
 
           let peralatans = (peralatanRes.data || []).map(p => ({
             id: p.id,
@@ -315,6 +544,7 @@ export const DrainaseForm = () => {
             bioSolarSatuan: o.bio_solar_satuan || "Liter",
             keterangan: o.keterangan || "",
           }));
+          // Always ensure at least one operasional entry for consistency
           if (operasionalAlatBerats.length === 0) {
             operasionalAlatBerats.push({
               id: "operasional-" + Date.now().toString() + '-op',
@@ -330,101 +560,122 @@ export const DrainaseForm = () => {
             });
           }
 
-          const ensureArray = (value: string | string[] | null | undefined): string[] => {
-            if (Array.isArray(value)) {
-              return value;
-            }
-            if (typeof value === 'string' && value) {
-              return [value];
-            }
-            return [];
-          };
+          const aktifitasPenangananDetails: PenangananDetailFormState[] = await Promise.all(
+            (aktifitasDetailsRes.data || []).map(async (detail) => {
+              const { data: materialsRes, error: materialsError } = await supabase
+                .from('material_kegiatan')
+                .select('*')
+                .eq('aktifitas_detail_id', detail.id);
 
-          // Initialize custom input states for loaded data
-          const initialMaterialCustomInputs: Record<string, string> = {};
-          materials.forEach(m => {
-            if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
-              initialMaterialCustomInputs[m.id] = m.jenis;
-              m.jenis = "custom"; // Set select value to 'custom'
-            }
-          });
-          setMaterialCustomInputs(initialMaterialCustomInputs);
+              if (materialsError) {
+                console.error("Error fetching materials for aktifitas_detail_id:", detail.id, materialsError);
+                throw materialsError;
+              }
 
-          const initialPeralatanCustomInputs: Record<string, string> = {};
-          peralatans.forEach(p => {
-            if (!peralatanOptions.includes(p.nama) && p.nama !== "") {
-              initialPeralatanCustomInputs[p.id] = p.nama;
-              p.nama = "custom"; // Set select value to 'custom'
-            }
-          });
-          setPeralatanCustomInputs(initialPeralatanCustomInputs);
+              let materials = (materialsRes || []).map(m => ({
+                id: m.id,
+                jenis: m.jenis,
+                jumlah: m.jumlah,
+                satuan: m.satuan,
+                keterangan: m.keterangan || "",
+                aktifitas_detail_id: m.aktifitas_detail_id || null,
+              }));
+              // Always ensure at least one material entry for consistency
+              if (materials.length === 0) {
+                materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "", aktifitas_detail_id: null });
+              }
 
-          const initialOperasionalCustomInputs: Record<string, string> = {};
-          operasionalAlatBerats.forEach(op => {
-            if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
-              initialOperasionalCustomInputs[op.id] = op.jenis;
-              op.jenis = "custom"; 
-            }
-          });
-          setOperasionalCustomInputs(initialOperasionalCustomInputs);
+              // Initialize UI-specific states
+              const initialMaterialCustomInputs: Record<string, string> = {};
+              materials.forEach(m => {
+                if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
+                  initialMaterialCustomInputs[m.id] = m.jenis;
+                  m.jenis = "custom"; // Set to 'custom' for select component
+                }
+              });
+
+              let selectedSedimenOption: string = "";
+              let customSedimen: string = "";
+              if (detail.jenis_sedimen) {
+                if (predefinedSedimenOptions.includes(detail.jenis_sedimen)) {
+                  selectedSedimenOption = detail.jenis_sedimen;
+                } else {
+                  selectedSedimenOption = "custom";
+                  customSedimen = detail.jenis_sedimen;
+                }
+              }
+
+              return {
+                id: detail.id,
+                kegiatanId: detail.kegiatan_id,
+                jenisSaluran: (detail.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
+                jenisSedimen: (detail.jenis_sedimen || "") as string,
+                aktifitasPenanganan: detail.aktifitas_penanganan || "",
+                foto0: ensureArray(detail.foto_0_url),
+                foto50: ensureArray(detail.foto_50_url),
+                foto100: ensureArray(detail.foto_100_url),
+                fotoSket: ensureArray(detail.foto_sket_url),
+                foto0Url: ensureArray(detail.foto_0_url),
+                foto50Url: ensureArray(detail.foto_50_url),
+                foto100Url: ensureArray(detail.foto_100_url),
+                fotoSketUrl: ensureArray(detail.foto_sket_url),
+                materials: materials,
+                selectedSedimenOption: selectedSedimenOption, // UI state
+                customSedimen: customSedimen, // UI state
+                materialCustomInputs: initialMaterialCustomInputs, // UI state
+              };
+            })
+          );
+
+          // Always ensure at least one aktifitasPenangananDetail for consistency
+          if (aktifitasPenangananDetails.length === 0) {
+            aktifitasPenangananDetails.push(createNewPenangananDetailFormState());
+          }
 
           return {
             id: kegiatan.id,
             namaJalan: kegiatan.nama_jalan,
             kecamatan: kegiatan.kecamatan,
             kelurahan: kegiatan.kelurahan,
-            foto0: ensureArray(kegiatan.foto_0_url),
-            foto50: ensureArray(kegiatan.foto_50_url),
-            foto100: ensureArray(kegiatan.foto_100_url),
-            fotoSket: ensureArray(kegiatan.foto_sket_url),
-            foto0Url: ensureArray(kegiatan.foto_0_url),
-            foto50Url: ensureArray(kegiatan.foto_50_url),
-            foto100Url: ensureArray(kegiatan.foto_100_url),
-            fotoSketUrl: ensureArray(kegiatan.foto_sket_url),
-            jenisSaluran: (kegiatan.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "", // Changed default from "-" to ""
-            jenisSedimen: (kegiatan.jenis_sedimen || "") as string,
-            aktifitasPenanganan: kegiatan.aktifitas_penanganan || "",
             panjangPenanganan: kegiatan.panjang_penanganan || "",
             lebarRataRata: kegiatan.lebar_rata_rata || "",
             rataRataSedimen: kegiatan.rata_rata_sedimen || "",
             volumeGalian: kegiatan.volume_galian || "",
-            materials: materials,
             peralatans: peralatans,
             operasionalAlatBerats: operasionalAlatBerats,
             koordinator: kegiatan.koordinator || [],
             jumlahPHL: kegiatan.jumlah_phl || 0,
-            keterangan: kegiatan.keterangan,
+            keterangan: kegiatan.keterangan || "",
             hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
-            // Tersier specific fields
             jumlahUPT: kegiatan.jumlah_upt || 0,
             jumlahP3SU: kegiatan.jumlah_p3su || 0,
-            sisaTarget: kegiatan.sisa_target || "",
             rencanaPanjang: kegiatan.rencana_panjang || "",
             rencanaVolume: kegiatan.rencana_volume || "",
             realisasiPanjang: kegiatan.realisasi_panjang || "",
             realisasiVolume: kegiatan.realisasi_volume || "",
+            sisaTargetHari: kegiatan.sisa_target || "",
+            aktifitasPenangananDetails: aktifitasPenangananDetails,
           };
         })
       );
 
       setFormData({
+        tanggal: laporanData.tanggal ? new Date(laporanData.tanggal) : null,
         periode: laporanData.periode,
         reportType: (laporanData.report_type || "harian") as "harian" | "bulanan" | "tersier",
-        kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : formData.kegiatans
+        kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : [createNewKegiatanDrainase()]
       });
 
       if (kegiatansWithDetails.length > 0) {
-        setCurrentKegiatanIndex(0); 
-        setActivityDateInputStrings(kegiatansWithDetails.map(k => k.hariTanggal ? format(k.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""));
+        setCurrentKegiatanIndex(0);
       } else {
         setCurrentKegiatanIndex(0);
-        setActivityDateInputStrings([""]);
       }
 
       toast.success('Laporan berhasil dimuat');
     } catch (error: any) {
       console.error('Error loading laporan:', error);
-      toast.error('Gagal memuat laporan');
+      toast.error('Gagal memuat laporan: ' + (error.message || JSON.stringify(error)));
     } finally {
       setIsLoading(false);
     }
@@ -436,65 +687,22 @@ export const DrainaseForm = () => {
     setFormData({ ...formData, kegiatans: newKegiatans });
   };
 
+  const handleSetCurrentKegiatanIndex = (index: number) => {
+    setCurrentKegiatanIndex(index);
+  };
+
   const addKegiatan = () => {
-    const newKegiatan: KegiatanDrainase = {
-      id: "kegiatan-" + Date.now().toString(), // Unique ID for new activity
-      namaJalan: "",
-      kecamatan: "",
-      kelurahan: "",
-      foto0: [],
-      foto50: [],
-      foto100: [],
-      foto0Url: [],
-      foto50Url: [],
-      foto100Url: [],
-      fotoSket: [],
-      fotoSketUrl: [],
-      jenisSaluran: "",
-      jenisSedimen: "",
-      aktifitasPenanganan: "",
-      panjangPenanganan: "",
-      lebarRataRata: "",
-      rataRataSedimen: "",
-      volumeGalian: "",
-      materials: [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
-      peralatans: [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
-      operasionalAlatBerats: [{
-        id: "operasional-" + Date.now().toString(),
-        jenis: "",
-        jumlah: 0,
-        dexliteJumlah: "",
-        dexliteSatuan: "Liter",
-        pertaliteJumlah: "",
-        pertaliteSatuan: "Liter",
-        bioSolarJumlah: "",
-        bioSolarSatuan: "Liter",
-        keterangan: "",
-      }],
-      koordinator: [],
-      jumlahPHL: 0,
-      keterangan: "",
-      hariTanggal: new Date(),
-      // Tersier specific fields
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
-      sisaTarget: "",
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-    };
+    const newKegiatan = createNewKegiatanDrainase();
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
-    setActivityDateInputStrings([...activityDateInputStrings, format(newKegiatan.hariTanggal!, "dd/MM/yyyy", { locale: idLocale })]);
+    setPeralatanCustomInputs({});
+    setOperasionalCustomInputs({});
   };
 
   const removeKegiatan = (index: number) => {
     if (formData.kegiatans.length > 1) {
       const newKegiatans = formData.kegiatans.filter((_, i) => i !== index);
       setFormData({ ...formData, kegiatans: newKegiatans });
-      const newActivityDateInputStrings = activityDateInputStrings.filter((_, i) => i !== index);
-      setActivityDateInputStrings(newActivityDateInputStrings);
       if (currentKegiatanIndex >= newKegiatans.length) {
         setCurrentKegiatanIndex(newKegiatans.length - 1);
       }
@@ -510,72 +718,34 @@ export const DrainaseForm = () => {
     updateCurrentKegiatan({ kelurahan: value });
   };
 
-  const addMaterial = () => {
-    const newMaterial: Material = {
-      id: "material-" + Date.now().toString(), // Unique ID for new material
-      jenis: "",
-      jumlah: "",
-      satuan: "M³",
-      keterangan: "",
-    };
-    updateCurrentKegiatan({
-      materials: [...currentKegiatan.materials, newMaterial],
-    });
-  };
+  const updateAktifitasPenangananDetail = useCallback((detailIndex: number, updates: Partial<PenangananDetailFormState>) => {
+    const newDetails = [...currentKegiatan.aktifitasPenangananDetails];
+    const updatedDetail = { ...newDetails[detailIndex], ...updates };
 
-  const removeMaterial = (id: string) => {
-    if (currentKegiatan.materials.length > 1) {
-      updateCurrentKegiatan({
-        materials: currentKegiatan.materials.filter((m) => m.id !== id),
-      });
-      setMaterialCustomInputs((prev) => {
-        const newInputs = { ...prev };
-        delete newInputs[id];
-        return newInputs;
-      });
+    // Handle custom material inputs within the detail
+    if (updates.materialCustomInputs) {
+      updatedDetail.materialCustomInputs = { ...updatedDetail.materialCustomInputs, ...updates.materialCustomInputs };
     }
-  };
+    if (updates.materials) {
+      updatedDetail.materials = updates.materials;
+    }
 
-  const updateMaterial = (id: string, field: keyof Material, value: string) => {
+    newDetails[detailIndex] = updatedDetail;
+    updateCurrentKegiatan({ aktifitasPenangananDetails: newDetails });
+  }, [currentKegiatan, updateCurrentKegiatan]);
+
+  const addAktifitasPenangananDetail = () => {
+    const newDetail = createNewPenangananDetailFormState();
     updateCurrentKegiatan({
-      materials: currentKegiatan.materials.map((m) => {
-        if (m.id === id) {
-          const updatedMaterial = { ...m, [field]: value };
-          
-          if (field === "jenis") {
-            if (value === "custom") {
-              updatedMaterial.jenis = "custom"; // Keep 'custom' in material.jenis to trigger conditional rendering
-              setMaterialCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input to empty
-            } else {
-              // If a predefined option is selected, clear custom input
-              setMaterialCustomInputs((prev) => {
-                const newInputs = { ...prev };
-                delete newInputs[id];
-                return newInputs;
-              });
-              const normalizedJenis = value.toLowerCase().trim();
-              const defaultUnit = materialDefaultUnits[normalizedJenis];
-              if (defaultUnit) {
-                updatedMaterial.satuan = defaultUnit;
-              }
-            }
-          }
-          
-          return updatedMaterial;
-        }
-        return m;
-      }),
+      aktifitasPenangananDetails: [...currentKegiatan.aktifitasPenangananDetails, newDetail],
     });
   };
 
-  const updateMaterialCustomInput = (id: string, value: string) => {
-    setMaterialCustomInputs((prev) => ({ ...prev, [id]: value }));
-    // Also update the actual material.jenis in formData
-    updateCurrentKegiatan({
-      materials: currentKegiatan.materials.map((m) =>
-        m.id === id ? { ...m, jenis: value } : m
-      ),
-    });
+  const removeAktifitasPenangananDetail = (detailIndex: number) => {
+    if (currentKegiatan.aktifitasPenangananDetails.length > 1) {
+      const newDetails = currentKegiatan.aktifitasPenangananDetails.filter((_, i) => i !== detailIndex);
+      updateCurrentKegiatan({ aktifitasPenangananDetails: newDetails });
+    }
   };
 
   const toggleKoordinator = (koordinatorName: string) => {
@@ -613,117 +783,81 @@ export const DrainaseForm = () => {
     return uploadedUrls;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket') => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      updateCurrentKegiatan({ [field]: [...currentKegiatan[field], ...newFiles] });
-    }
-  };
-
-  const removePhoto = (field: 'foto0' | 'foto50' | 'foto100' | 'fotoSket', indexToRemove: number) => {
-    const updatedPhotos = currentKegiatan[field].filter((_, index) => index !== indexToRemove);
-    updateCurrentKegiatan({ [field]: updatedPhotos });
-  };
-
-  const handlePrintPreview = async () => {
-    if (formData.reportType === "tersier") {
-      toast.error("Generator PDF untuk laporan Tersier tidak tersedia.");
-      return;
-    }
-
-    // For preview, we can use the current date as a placeholder if hariTanggal is null
-    const tempLaporanDate = currentKegiatan.hariTanggal || new Date(); 
-    const laporanForPdf: LaporanDrainase = {
-      periode: formData.periode,
-      reportType: formData.reportType,
-      kegiatans: formData.kegiatans.map(k => ({
-        ...k,
-        hariTanggal: k.hariTanggal || tempLaporanDate // Ensure hariTanggal is not null for PDF
-      })),
-    };
-    try {
-      let blob: Blob;
-      // Only generate Harian or Bulanan PDF
-      blob = await generatePDF(laporanForPdf, false);
-      
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setShowPreviewDialog(true);
-      toast.success("Laporan berhasil dipratinjau.");
-    } catch (error) {
-      console.error("Preview error:", error);
-      toast.error("Gagal membuat pratinjau PDF.");
-    }
-  };
-
   const handlePrintDownload = async () => {
-    if (formData.reportType === "tersier") {
-      toast.error("Generator PDF untuk laporan Tersier tidak tersedia.");
-      return;
-    }
-
-    // For download, we can use the current date as a placeholder if hariTanggal is null
-    const tempLaporanDate = currentKegiatan.hariTanggal || new Date();
+    // Aggregate current form data for PDF generation
     const laporanForPdf: LaporanDrainase = {
+      tanggal: formData.tanggal || currentKegiatan.hariTanggal || new Date(),
       periode: formData.periode,
       reportType: formData.reportType,
-      kegiatans: formData.kegiatans.map(k => ({
-        ...k,
-        hariTanggal: k.hariTanggal || tempLaporanDate // Ensure hariTanggal is not null for PDF
-      })),
+      kegiatans: [{
+        ...currentKegiatan,
+        peralatans: currentKegiatan.peralatans.map(p => ({
+          ...p,
+          nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
+        })),
+        operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map(o => ({
+          ...o,
+          jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
+        })),
+        aktifitasPenangananDetails: currentKegiatan.aktifitasPenangananDetails.map(detail => ({
+          ...detail,
+          materials: detail.materials.map(m => ({
+            ...m,
+            jenis: m.jenis === "custom" ? (detail.materialCustomInputs?.[m.id] || "") : m.jenis,
+          })),
+        })),
+      }],
     };
+
     try {
-      // Only generate Harian or Bulanan PDF
-      await generatePDF(laporanForPdf, true);
-      
+      if (laporanForPdf.reportType === "tersier") {
+        await generatePDFTersier(laporanForPdf, true);
+      } else {
+        await generatePDF(laporanForPdf, true);
+      }
       toast.success("Laporan berhasil diunduh.");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Download error:", error);
-      toast.error("Gagal mengunduh PDF.");
+      toast.error("Gagal mengunduh PDF: " + (error.message || JSON.stringify(error)));
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      if (!user) {
+        toast.error("Anda harus login untuk menyimpan laporan.");
+        setIsSaving(false);
+        return;
+      }
+
       let currentLaporanId = laporanId;
 
-      // Ensure periode is set, default to current month/year if not explicitly set
-      const finalPeriode = formData.periode || format(new Date(), 'MMMM yyyy', { locale: idLocale });
+      const finalReportDate = formData.tanggal || formData.kegiatans[0]?.hariTanggal || new Date(); // Use main date if available, otherwise activity date
 
+      const finalPeriode = formData.periode || format(finalReportDate, 'MMMM yyyy', { locale: idLocale });
+
+      // 1. Save/Update main laporan_drainase entry
       if (currentLaporanId) {
         const { error: updateError } = await supabase
           .from('laporan_drainase')
           .update({
+            tanggal: format(finalReportDate, 'yyyy-MM-dd'),
             periode: finalPeriode,
             report_type: formData.reportType,
+            user_id: user.id,
           })
           .eq('id', currentLaporanId);
 
         if (updateError) throw updateError;
-
-        const { data: existingKegiatanIds, error: fetchKegiatanIdsError } = await supabase
-          .from('kegiatan_drainase')
-          .select('id')
-          .eq('laporan_id', currentLaporanId);
-
-        if (fetchKegiatanIdsError) throw fetchKegiatanIdsError;
-
-        const idsToDelete = existingKegiatanIds.map(k => k.id);
-
-        if (idsToDelete.length > 0) {
-          await supabase.from('material_kegiatan').delete().in('kegiatan_id', idsToDelete);
-          await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', idsToDelete);
-          await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', idsToDelete);
-          await supabase.from('kegiatan_drainase').delete().in('id', idsToDelete);
-        }
-
       } else {
         const { data: laporanData, error: laporanError } = await supabase
           .from('laporan_drainase')
           .insert({
+            tanggal: format(finalReportDate, 'yyyy-MM-dd'),
             periode: finalPeriode,
             report_type: formData.reportType,
+            user_id: user.id,
           })
           .select()
           .single();
@@ -733,97 +867,78 @@ export const DrainaseForm = () => {
         setLaporanId(currentLaporanId);
       }
 
-      for (const kegiatan of formData.kegiatans) {
-        let foto0Urls: string[] = [];
-        let foto50Urls: string[] = [];
-        let foto100Urls: string[] = [];
-        let fotoSketUrls: string[] = [];
+      // 2. Fetch existing kegiatan IDs for comparison
+      const { data: existingKegiatanRecords, error: fetchKegiatanError } = await supabase
+        .from('kegiatan_drainase')
+        .select('id')
+        .eq('laporan_id', currentLaporanId);
 
-        // Handle photo uploads based on report type
-        if (formData.reportType === "tersier") {
-          foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
-          foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
-          // foto50 and fotoSket are not used for tersier input, so no upload needed
+      if (fetchKegiatanError) throw fetchKegiatanError;
+      const existingKegiatanIds = new Set(existingKegiatanRecords.map(k => k.id));
+      const kegiatansToKeepInDb = new Set<string>();
+
+      // 3. Iterate over all activities in formData.kegiatans
+      for (const kegiatanToProcess of formData.kegiatans) {
+        let kegiatanDbId = kegiatanToProcess.id;
+
+        const kegiatanDataToSave = {
+          laporan_id: currentLaporanId,
+          nama_jalan: kegiatanToProcess.namaJalan,
+          kecamatan: kegiatanToProcess.kecamatan,
+          kelurahan: kegiatanToProcess.kelurahan,
+          panjang_penanganan: kegiatanToProcess.panjangPenanganan,
+          lebar_rata_rata: kegiatanToProcess.lebarRataRata,
+          rata_rata_sedimen: kegiatanToProcess.rataRataSedimen,
+          volume_galian: kegiatanToProcess.volumeGalian,
+          koordinator: kegiatanToProcess.koordinator,
+          jumlah_phl: kegiatanToProcess.jumlahPHL,
+          keterangan: kegiatanToProcess.keterangan,
+          hari_tanggal: kegiatanToProcess.hariTanggal ? format(kegiatanToProcess.hariTanggal, 'yyyy-MM-dd') : null,
+          jumlah_upt: kegiatanToProcess.jumlahUPT,
+          jumlah_p3su: kegiatanToProcess.jumlahP3SU,
+          sisa_target: kegiatanToProcess.sisaTargetHari,
+          rencana_panjang: kegiatanToProcess.rencanaPanjang,
+          rencana_volume: kegiatanToProcess.rencanaVolume,
+          realisasi_panjang: kegiatanToProcess.realisasiPanjang,
+          realisasi_volume: kegiatanToProcess.realisasiVolume,
+        };
+
+        if (existingKegiatanIds.has(kegiatanToProcess.id)) {
+          const { error: updateKegiatanError } = await supabase
+            .from('kegiatan_drainase')
+            .update(kegiatanDataToSave)
+            .eq('id', kegiatanToProcess.id);
+          if (updateKegiatanError) throw updateKegiatanError;
+          kegiatanDbId = kegiatanToProcess.id;
+          kegiatansToKeepInDb.add(kegiatanDbId);
         } else {
-          foto0Urls = await uploadFiles(kegiatan.foto0, `${currentLaporanId}/${kegiatan.id}/0`);
-          foto50Urls = await uploadFiles(kegiatan.foto50, `${currentLaporanId}/${kegiatan.id}/50`);
-          foto100Urls = await uploadFiles(kegiatan.foto100, `${currentLaporanId}/${kegiatan.id}/100`);
-          fotoSketUrls = await uploadFiles(kegiatan.fotoSket, `${currentLaporanId}/${kegiatan.id}/sket`);
+          const { data: newKegiatanRecord, error: insertKegiatanError } = await supabase
+            .from('kegiatan_drainase')
+            .insert(kegiatanDataToSave)
+            .select('id')
+            .single();
+          if (insertKegiatanError) throw insertKegiatanError;
+          kegiatanDbId = newKegiatanRecord.id;
+          kegiatansToKeepInDb.add(kegiatanDbId);
         }
 
-        const { data: kegiatanData, error: kegiatanError } = await supabase
-          .from('kegiatan_drainase')
-          .insert({
-            laporan_id: currentLaporanId,
-            nama_jalan: kegiatan.namaJalan,
-            kecamatan: kegiatan.kecamatan,
-            kelurahan: kegiatan.kelurahan,
-            foto_0_url: foto0Urls,
-            foto_50_url: foto50Urls, // Will be empty for tersier
-            foto_100_url: foto100Urls,
-            foto_sket_url: fotoSketUrls, // Will be empty for tersier
-            jenis_saluran: kegiatan.jenisSaluran,
-            jenis_sedimen: kegiatan.jenisSedimen,
-            aktifitas_penanganan: kegiatan.aktifitasPenanganan,
-            panjang_penanganan: kegiatan.panjangPenanganan,
-            lebar_rata_rata: kegiatan.lebarRataRata,
-            rata_rata_sedimen: kegiatan.rataRataSedimen, 
-            volume_galian: kegiatan.volumeGalian,
-            koordinator: kegiatan.koordinator,
-            jumlah_phl: kegiatan.jumlahPHL,
-            keterangan: kegiatan.keterangan,
-            hari_tanggal: kegiatan.hariTanggal ? format(kegiatan.hariTanggal, 'yyyy-MM-dd') : null,
-            // Tersier specific fields (now simplified)
-            jumlah_upt: kegiatan.jumlahUPT,
-            jumlah_p3su: kegiatan.jumlahP3SU,
-            sisa_target: kegiatan.sisaTarget,
-            rencana_panjang: kegiatan.rencanaPanjang,
-            rencana_volume: kegiatan.rencanaVolume,
-            realisasi_panjang: kegiatan.realisasiPanjang,
-            realisasi_volume: kegiatan.realisasiVolume,
-          })
-          .select()
-          .single();
+        // Handle Peralatan and Operasional Alat Berat for this kegiatan
+        await supabase.from('peralatan_kegiatan').delete().eq('kegiatan_id', kegiatanDbId);
+        await supabase.from('operasional_alat_berat_kegiatan').delete().eq('kegiatan_id', kegiatanDbId);
 
-        if (kegiatanError) throw kegiatanError;
-
-        // Save materials only for non-tersier reports
-        if (formData.reportType !== "tersier") {
-          const materialsToInsert = kegiatan.materials.filter(m => m.jenis || m.jumlah || m.jenis || m.satuan).map(m => ({
-            kegiatan_id: kegiatanData!.id,
-            jenis: m.jenis === "custom" ? materialCustomInputs[m.id] || "" : m.jenis,
-            jumlah: m.jumlah,
-            satuan: m.satuan,
-            keterangan: m.keterangan,
-          }));
-
-          if (materialsToInsert.length > 0) {
-            const { error: materialsError } = await supabase
-              .from('material_kegiatan')
-              .insert(materialsToInsert);
-
-            if (materialsError) throw materialsError;
-          }
-        }
-
-        // Save peralatans and operasionalAlatBerats for all report types
-        const peralatanToInsert = kegiatan.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
-          kegiatan_id: kegiatanData!.id,
+        const peralatanToInsert = kegiatanToProcess.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
+          kegiatan_id: kegiatanDbId,
           nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
           jumlah: p.jumlah,
           satuan: p.satuan,
         }));
-
         if (peralatanToInsert.length > 0) {
-          const { error: peralatanError } = await supabase
-            .from('peralatan_kegiatan')
-            .insert(peralatanToInsert);
-
+          const { error: peralatanError } = await supabase.from('peralatan_kegiatan').insert(peralatanToInsert);
           if (peralatanError) throw peralatanError;
         }
 
-        const operasionalAlatBeratsToInsert = kegiatan.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
-          kegiatan_id: kegiatanData!.id,
+        const operasionalAlatBeratsToInsert = kegiatanToProcess.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
+          kegiatan_id: kegiatanDbId,
           jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
           jumlah: o.jumlah,
           dexlite_jumlah: o.dexliteJumlah,
@@ -834,31 +949,132 @@ export const DrainaseForm = () => {
           bio_solar_satuan: o.bioSolarSatuan,
           keterangan: o.keterangan,
         }));
-
         if (operasionalAlatBeratsToInsert.length > 0) {
-          const { error: operasionalError } = await supabase
-            .from('operasional_alat_berat_kegiatan')
-            .insert(operasionalAlatBeratsToInsert);
-
+          const { error: operasionalError } = await supabase.from('operasional_alat_berat_kegiatan').insert(operasionalAlatBeratsToInsert);
           if (operasionalError) throw operasionalError;
+        }
+
+        // Handle Aktifitas Penanganan Details for this kegiatan
+        const { data: existingAktifitasDetails, error: fetchDetailsError } = await supabase
+          .from('aktifitas_penanganan_detail')
+          .select('id')
+          .eq('kegiatan_id', kegiatanDbId);
+        if (fetchDetailsError) throw fetchDetailsError;
+        const existingAktifitasDetailIds = new Set(existingAktifitasDetails.map(d => d.id));
+        const aktifitasDetailsToKeepInDb = new Set<string>();
+
+        for (const detailToProcess of kegiatanToProcess.aktifitasPenangananDetails) {
+          let detailDbId = detailToProcess.id;
+
+          // Upload files for this specific detail
+          const foto0Urls = await uploadFiles(detailToProcess.foto0, `${currentLaporanId}/${kegiatanDbId}/${detailToProcess.id}/0`);
+          const foto50Urls = await uploadFiles(detailToProcess.foto50, `${currentLaporanId}/${kegiatanDbId}/${detailToProcess.id}/50`);
+          const foto100Urls = await uploadFiles(detailToProcess.foto100, `${currentLaporanId}/${kegiatanDbId}/${detailToProcess.id}/100`);
+          const fotoSketUrls = await uploadFiles(detailToProcess.fotoSket, `${currentLaporanId}/${kegiatanDbId}/${detailToProcess.id}/sket`);
+
+          const detailDataToSave = {
+            kegiatan_id: kegiatanDbId,
+            jenis_saluran: detailToProcess.jenisSaluran,
+            jenis_sedimen: detailToProcess.jenisSedimen === "custom" ? (detailToProcess.customSedimen || "") : detailToProcess.jenisSedimen,
+            aktifitas_penanganan: detailToProcess.aktifitasPenanganan,
+            foto_0_url: foto0Urls,
+            foto_50_url: foto50Urls,
+            foto_100_url: foto100Urls,
+            foto_sket_url: fotoSketUrls,
+          };
+
+          if (existingAktifitasDetailIds.has(detailToProcess.id)) {
+            const { error: updateDetailError } = await supabase
+              .from('aktifitas_penanganan_detail')
+              .update(detailDataToSave)
+              .eq('id', detailToProcess.id);
+            if (updateDetailError) throw updateDetailError;
+            detailDbId = detailToProcess.id;
+            aktifitasDetailsToKeepInDb.add(detailDbId);
+          } else {
+            const { data: newDetailRecord, error: insertDetailError } = await supabase
+              .from('aktifitas_penanganan_detail')
+              .insert(detailDataToSave)
+              .select('id')
+              .single();
+            if (insertDetailError) throw insertDetailError;
+            detailDbId = newDetailRecord.id;
+            aktifitasDetailsToKeepInDb.add(detailDbId);
+          }
+
+          // Handle Materials for this specific aktifitas_penanganan_detail
+          await supabase.from('material_kegiatan').delete().eq('aktifitas_detail_id', detailDbId);
+          const materialsToInsert = detailToProcess.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({
+            aktifitas_detail_id: detailDbId,
+            jenis: m.jenis === "custom" ? (detailToProcess.materialCustomInputs[m.id] || "") : m.jenis,
+            jumlah: m.jumlah,
+            satuan: m.satuan,
+            keterangan: m.keterangan,
+          }));
+          if (materialsToInsert.length > 0) {
+            const { error: materialsError } = await supabase.from('material_kegiatan').insert(materialsToInsert);
+            if (materialsError) throw materialsError;
+          }
+        }
+
+        // Delete aktifitas_penanganan_detail records that are in DB but no longer in formData
+        const detailsToDeleteFromDb = Array.from(existingAktifitasDetailIds).filter(id => !aktifitasDetailsToKeepInDb.has(id));
+        if (detailsToDeleteFromDb.length > 0) {
+          await supabase.from('material_kegiatan').delete().in('aktifitas_detail_id', detailsToDeleteFromDb);
+          await supabase.from('aktifitas_penanganan_detail').delete().in('id', detailsToDeleteFromDb);
         }
       }
 
+      // 4. Delete activities that are in DB but no longer in formData.kegiatans
+      const idsToDeleteFromDb = Array.from(existingKegiatanIds).filter(id => !kegiatansToKeepInDb.has(id));
+      if (idsToDeleteFromDb.length > 0) {
+        // Cascade delete should handle sub-records, but explicitly deleting for clarity/safety
+        await supabase.from('material_kegiatan').delete().in('aktifitas_detail_id', idsToDeleteFromDb); // This might need to be more complex if materials are not directly linked to kegiatan_id
+        await supabase.from('aktifitas_penanganan_detail').delete().in('kegiatan_id', idsToDeleteFromDb);
+        await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', idsToDeleteFromDb);
+        await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', idsToDeleteFromDb);
+        await supabase.from('kegiatan_drainase').delete().in('id', idsToDeleteFromDb);
+      }
+
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      navigate('/');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Gagal menyimpan laporan: ' + error.message);
+      toast.error('Gagal menyimpan laporan: ' + (error.message || JSON.stringify(error)));
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleActivityDateInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleMainDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const newActivityDateInputStrings = [...activityDateInputStrings];
-    newActivityDateInputStrings[index] = value;
-    setActivityDateInputStrings(newActivityDateInputStrings);
+    setMainDateInputString(value);
+
+    if (value === "") {
+      setFormData((prev) => ({ ...prev, tanggal: null }));
+    } else {
+      const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
+      if (isValid(parsedDate)) {
+        setFormData((prev) => ({ ...prev, tanggal: parsedDate, periode: format(parsedDate, 'MMMM yyyy', { locale: idLocale }) }));
+      }
+    }
+  };
+
+  const handleMainDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setFormData((prev) => ({ ...prev, tanggal: date, periode: format(date, 'MMMM yyyy', { locale: idLocale }) }));
+      setMainDateInputString(format(date, "dd/MM/yyyy", { locale: idLocale }));
+    } else {
+      setFormData((prev) => ({ ...prev, tanggal: null, periode: "" }));
+      setMainDateInputString("");
+    }
+  };
+
+  const handleActivityDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setActivityDateInputString(value);
 
     if (value === "") {
       updateCurrentKegiatan({ hariTanggal: null });
@@ -866,30 +1082,66 @@ export const DrainaseForm = () => {
       const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
       if (isValid(parsedDate)) {
         updateCurrentKegiatan({ hariTanggal: parsedDate });
-        // Update main form periode based on the first activity's date if it's a new report
-        if (!laporanId && index === 0) {
+        // If not editing an existing report, update the main report's period based on activity date
+        if (!laporanId) {
           setFormData((prev) => ({ ...prev, periode: format(parsedDate, 'MMMM yyyy', { locale: idLocale }) }));
         }
       }
     }
   };
 
-  const handleActivityDateSelect = (date: Date | undefined, index: number) => {
+  const handleActivityDateSelect = (date: Date | undefined) => {
     if (date) {
       updateCurrentKegiatan({ hariTanggal: date });
-      const newActivityDateInputStrings = [...activityDateInputStrings];
-      newActivityDateInputStrings[index] = format(date, "dd/MM/yyyy", { locale: idLocale });
-      setActivityDateInputStrings(newActivityDateInputStrings);
-      // Update main form periode based on the first activity's date if it's a new report
-      if (!laporanId && index === 0) {
+      setActivityDateInputString(format(date, "dd/MM/yyyy", { locale: idLocale }));
+      // If not editing an existing report, update the main report's period based on activity date
+      if (!laporanId) {
         setFormData((prev) => ({ ...prev, periode: format(date, 'MMMM yyyy', { locale: idLocale }) }));
       }
     } else {
       updateCurrentKegiatan({ hariTanggal: null });
-      const newActivityDateInputStrings = [...activityDateInputStrings];
-      newActivityDateInputStrings[index] = "";
-      setActivityDateInputStrings(newActivityDateInputStrings);
+      setActivityDateInputString("");
     }
+  };
+
+  const handleReportTypeChange = (value: "harian" | "bulanan" | "tersier") => {
+    setFormData((prev) => {
+      let newKegiatans = [...prev.kegiatans];
+      let newTanggal = prev.tanggal;
+      let newPeriode = prev.periode;
+
+      // Ensure at least one activity and one detail always exists
+      if (newKegiatans.length === 0) {
+        newKegiatans = [createNewKegiatanDrainase()];
+      }
+      newKegiatans = newKegiatans.map(keg => {
+        if (keg.aktifitasPenangananDetails.length === 0) {
+          keg.aktifitasPenangananDetails = [createNewPenangananDetailFormState()];
+        }
+        return keg;
+      });
+      
+      // Main date is always visible, so no need to hide/show based on reportType
+      newTanggal = prev.tanggal || new Date(); 
+      newPeriode = format(newTanggal, 'MMMM yyyy', { locale: idLocale });
+
+      setCurrentKegiatanIndex(0); // Reset to first activity
+      setPeralatanCustomInputs({}); // Clear custom inputs
+      setOperasionalCustomInputs({}); // Clear custom inputs
+
+      return {
+        ...prev,
+        reportType: value,
+        tanggal: newTanggal,
+        periode: newPeriode,
+        kegiatans: newKegiatans,
+      };
+    });
+  };
+
+  const handleLihatLaporanClick = () => {
+    console.log("Tombol 'Lihat Laporan' diklik. Mengarahkan ke /");
+    window.location.href = '/';
   };
 
   if (isLoading) {
@@ -912,13 +1164,13 @@ export const DrainaseForm = () => {
               {id ? 'Edit laporan kegiatan drainase' : 'Isi formulir dengan lengkap untuk menghasilkan laporan'}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
+          <Button variant="outline" onClick={handleLihatLaporanClick} className="gap-2">
             <List className="h-4 w-4" />
             Lihat Laporan
           </Button>
         </div>
 
-        {/* Activity Navigation */}
+        {/* Activity Navigation (Always visible now) */}
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex gap-2 flex-wrap">
@@ -927,14 +1179,14 @@ export const DrainaseForm = () => {
                   key={index}
                   variant={currentKegiatanIndex === index ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setCurrentKegiatanIndex(index)}
+                  onClick={() => handleSetCurrentKegiatanIndex(index)}
                 >
                   Kegiatan {index + 1}
                 </Button>
               ))}
               <Button variant="outline" size="sm" onClick={addKegiatan}>
                 <Plus className="h-4 w-4 mr-1" />
-                Tambah
+                Tambah Kegiatan
               </Button>
             </div>
             {formData.kegiatans.length > 1 && (
@@ -955,7 +1207,7 @@ export const DrainaseForm = () => {
             <Label htmlFor="report-type">Jenis Laporan</Label>
             <Select
               value={formData.reportType}
-              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "bulanan" | "tersier" })}
+              onValueChange={handleReportTypeChange}
             >
               <SelectTrigger id="report-type">
                 <SelectValue placeholder="Pilih jenis laporan" />
@@ -968,60 +1220,97 @@ export const DrainaseForm = () => {
             </Select>
           </div>
 
-          {/* Periode Laporan (Always visible, now the primary time identifier) */}
-          <div className="space-y-2">
-            <Label htmlFor="periode-laporan">Periode Laporan</Label>
-            <Input
-              id="periode-laporan"
-              value={formData.periode}
-              onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
-              placeholder="Contoh: November 2025"
-              disabled={formData.reportType !== "bulanan"} // Only allow manual edit for monthly reports
-            />
-            {formData.reportType !== "bulanan" && (
-              <p className="text-xs text-muted-foreground">
-                Periode laporan otomatis diambil dari Hari/Tanggal Kegiatan pertama.
-              </p>
-            )}
-          </div>
-
-          {/* Hari/Tanggal Kegiatan (Always visible for Harian and Tersier) */}
-          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
+          {/* Periode Laporan (Conditional visibility) */}
+          {formData.reportType === "bulanan" ? (
             <div className="space-y-2">
-              <Label htmlFor={`hari-tanggal-kegiatan-${currentKegiatan.id}`}>Hari/Tanggal Kegiatan</Label>
-              <div className="relative flex items-center">
-                <Input
-                  id={`hari-tanggal-kegiatan-${currentKegiatan.id}`}
-                  value={activityDateInputStrings[currentKegiatanIndex] || ""}
-                  onChange={(e) => handleActivityDateInputChange(e, currentKegiatanIndex)}
-                  placeholder="dd/MM/yyyy"
-                  className={cn(
-                    "w-full justify-start text-left font-normal pr-10",
-                    !currentKegiatan.hariTanggal && "text-muted-foreground"
-                  )}
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
-                    >
-                      <CalendarIcon className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
-                    <Calendar
-                      mode="single"
-                      selected={currentKegiatan.hariTanggal || undefined}
-                      onSelect={(date) => handleActivityDateSelect(date, currentKegiatanIndex)}
-                      initialFocus
-                      locale={idLocale}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <Label htmlFor="periode-laporan">Periode Laporan</Label>
+              <Input
+                id="periode-laporan"
+                value={formData.periode}
+                onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
+                placeholder="Contoh: November 2025"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="periode-laporan">Periode Laporan</Label>
+              <p className="text-sm text-muted-foreground p-2 border rounded-md bg-muted/50">
+                Periode laporan otomatis diambil dari Hari/Tanggal Kegiatan: <span className="font-medium">{formData.periode}</span>
+              </p>
             </div>
           )}
+
+          {/* Main Report Date (Always visible now) */}
+          <div className="space-y-2">
+            <Label htmlFor="tanggal-laporan-utama">Tanggal Laporan Utama</Label>
+            <div className="relative flex items-center">
+              <Input
+                id="tanggal-laporan-utama"
+                value={mainDateInputString}
+                onChange={handleMainDateInputChange}
+                placeholder="dd/MM/yyyy"
+                className={cn(
+                  "w-full justify-start text-left font-normal pr-10",
+                  !formData.tanggal && "text-muted-foreground"
+                )}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
+                  <Calendar
+                    mode="single"
+                    selected={formData.tanggal || undefined}
+                    onSelect={handleMainDateSelect}
+                    initialFocus
+                    locale={idLocale}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Hari/Tanggal Kegiatan (Always visible) */}
+          <div className="space-y-2">
+            <Label htmlFor={`hari-tanggal-kegiatan-${currentKegiatan.id}`}>Hari/Tanggal Kegiatan</Label>
+            <div className="relative flex items-center">
+              <Input
+                id={`hari-tanggal-kegiatan-${currentKegiatan.id}`}
+                value={activityDateInputString}
+                onChange={handleActivityDateInputChange}
+                placeholder="dd/MM/yyyy"
+                className={cn(
+                  "w-full justify-start text-left font-normal pr-10",
+                  !currentKegiatan.hariTanggal && "text-muted-foreground"
+                )}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
+                  <Calendar
+                    mode="single"
+                    selected={currentKegiatan.hariTanggal || undefined}
+                    onSelect={handleActivityDateSelect}
+                    initialFocus
+                    locale={idLocale}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
 
           {/* Lokasi */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -1070,8 +1359,8 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Rencana/Realisasi Panjang/Volume (Conditional for Harian/Tersier) */}
-          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
+          {/* Rencana/Realisasi Panjang/Volume (Conditional visibility) */}
+          {formData.reportType === "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor={`rencana-panjang-${currentKegiatan.id}`}>Rencana Panjang (M)</Label>
@@ -1112,7 +1401,7 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Measurements (Panjang, Lebar, Sedimen, Volume) (Conditional for Harian/Bulanan) */}
+          {/* Measurements (Panjang, Lebar, Sedimen, Volume) (Conditional visibility) */}
           {formData.reportType !== "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -1154,414 +1443,48 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Photos */}
-          <div className="grid gap-4 md:grid-cols-4">
-            {/* Foto 0% */}
-            <div className="space-y-2">
-              <Label htmlFor={`foto-0-${currentKegiatan.id}`}>Foto 0%</Label>
-              <div
-                {...foto0Handlers}
-                className={cn(
-                  "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
-                  isFoto0Dragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
-                )}
-              >
-                <Input
-                  id={`foto-0-${currentKegiatan.id}`}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleFileChange(e, 'foto0')}
-                  className="hidden"
-                />
-                <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
-                <p className="text-xs text-muted-foreground">Foto 0%</p>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.foto0) ? currentKegiatan.foto0 : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    <img 
-                      src={
-                        photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || ''
-                      } 
-                      alt={`Foto 0% ${index + 1}`} 
-                      className="w-full h-24 object-cover rounded border cursor-pointer"
-                      onClick={() => {
-                        const url = photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || '';
-                        setPreviewUrl(url);
-                        setShowPreviewDialog(true);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('foto0', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+          {/* Aktifitas Penanganan Details Section (Conditional visibility) */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
+            {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
+              <PenangananDetailSection
+                key={detail.id}
+                detail={detail}
+                index={detailIndex}
+                updateDetail={updateAktifitasPenangananDetail}
+                removeDetail={removeAktifitasPenangananDetail}
+                isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
+                reportType={formData.reportType} // Pass reportType for internal conditional rendering
+                onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
+              />
+            ))}
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Aktifitas Penanganan
+              </Button>
             </div>
-            {/* Foto 50% (Only for Harian/Bulanan) */}
-            {formData.reportType !== "tersier" && (
-              <div className="space-y-2">
-                <Label htmlFor={`foto-50-${currentKegiatan.id}`}>Foto 50%</Label>
-                <div
-                  {...foto50Handlers}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
-                    isFoto50Dragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
-                  )}
-                >
-                  <Input
-                    id={`foto-50-${currentKegiatan.id}`}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => handleFileChange(e, 'foto50')}
-                    className="hidden"
-                  />
-                  <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
-                  <p className="text-xs text-muted-foreground">Foto 50%</p>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(Array.isArray(currentKegiatan.foto50) ? currentKegiatan.foto50 : []).map((photo, index) => (
-                    <div key={index} className="relative group">
-                      <img 
-                        src={
-                          photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || ''
-                        } 
-                        alt={`Foto 50% ${index + 1}`} 
-                        className="w-full h-24 object-cover rounded border cursor-pointer"
-                        onClick={() => {
-                          const url = photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || '';
-                          setPreviewUrl(url);
-                          setShowPreviewDialog(true);
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removePhoto('foto50', index)}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Foto 100% */}
-            <div className="space-y-2">
-              <Label htmlFor={`foto-100-${currentKegiatan.id}`}>Foto 100%</Label>
-              <div
-                {...foto100Handlers}
-                className={cn(
-                  "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
-                  isFoto100Dragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
-                )}
-              >
-                <Input
-                  id={`foto-100-${currentKegiatan.id}`}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleFileChange(e, 'foto100')}
-                  className="hidden"
-                />
-                <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
-                <p className="text-xs text-muted-foreground">Foto 100%</p>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(Array.isArray(currentKegiatan.foto100) ? currentKegiatan.foto100 : []).map((photo, index) => (
-                  <div key={index} className="relative group">
-                    <img 
-                      src={
-                        photo instanceof File 
-                          ? URL.createObjectURL(photo)
-                          : photo || ''
-                        } 
-                        alt={`Foto 100% ${index + 1}`} 
-                        className="w-full h-24 object-cover rounded border cursor-pointer"
-                        onClick={() => {
-                          const url = photo instanceof File 
-                            ? URL.createObjectURL(photo)
-                            : photo || '';
-                          setPreviewUrl(url);
-                          setShowPreviewDialog(true);
-                        }}
-                      />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removePhoto('foto100', index)}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Foto Sket (Only for Harian/Bulanan) */}
-            {formData.reportType !== "tersier" && (
-              <div className="space-y-2">
-                <Label htmlFor={`foto-sket-${currentKegiatan.id}`}>Gambar Sket</Label>
-                <div
-                  {...fotoSketHandlers}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
-                    isFotoSketDragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
-                  )}
-                >
-                  <Input
-                    id={`foto-sket-${currentKegiatan.id}`}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    multiple
-                    onChange={(e) => handleFileChange(e, 'fotoSket')}
-                    className="hidden"
-                  />
-                  <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
-                  <p className="text-xs text-muted-foreground">Gambar Sket</p>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {(Array.isArray(currentKegiatan.fotoSket) ? currentKegiatan.fotoSket : []).map((photo, index) => (
-                    <div key={index} className="relative group">
-                      {typeof photo === 'string' && photo.endsWith('.pdf') ? (
-                        <a 
-                          href={photo} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
-                        >
-                          <FileText className="h-8 w-8 mr-2" /> PDF {index + 1}
-                        </a>
-                      ) : (
-                        <img 
-                          src={
-                            photo instanceof File 
-                              ? URL.createObjectURL(photo)
-                              : photo || ''
-                          } 
-                          alt={`Gambar Sket ${index + 1}`} 
-                          className="w-full h-24 object-cover rounded border cursor-pointer"
-                          onClick={() => {
-                            const url = photo instanceof File 
-                              ? URL.createObjectURL(photo)
-                              : photo || '';
-                            setPreviewUrl(url);
-                            setShowPreviewDialog(true);
-                          }}
-                        />
-                      )}
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removePhoto('fotoSket', index)}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Jenis Saluran & Sedimen (Conditional for Harian/Bulanan) */}
+          {/* Peralatan Section (Conditional visibility) */}
           {formData.reportType !== "tersier" && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={`jenis-saluran-${currentKegiatan.id}`}>Jenis Saluran</Label>
-                <Select
-                  value={currentKegiatan.jenisSaluran}
-                  onValueChange={(value) => updateCurrentKegiatan({ jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
-                >
-                  <SelectTrigger id={`jenis-saluran-${currentKegiatan.id}`}>
-                    <SelectValue placeholder="Pilih jenis saluran" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Terbuka">Terbuka</SelectItem>
-                    <SelectItem value="Tertutup">Tertutup</SelectItem>
-                    <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`jenis-sedimen-${currentKegiatan.id}`}>Jenis Sedimen</Label>
-                <Select
-                  value={selectedSedimenOption}
-                  onValueChange={(value) => {
-                    setSelectedSedimenOption(value);
-                    if (value === "custom") {
-                      updateCurrentKegiatan({ jenisSedimen: customSedimen });
-                    } else {
-                      updateCurrentKegiatan({ jenisSedimen: value });
-                      setCustomSedimen("");
-                    }
-                  }}
-                >
-                  <SelectTrigger id={`jenis-sedimen-${currentKegiatan.id}`}>
-                    <SelectValue placeholder="Pilih jenis sedimen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {predefinedSedimenOptions.map((jenis) => (
-                      <SelectItem key={jenis} value={jenis}>
-                        {jenis}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">Lainnya</SelectItem>
-                  </SelectContent>
-                </Select>
-                {selectedSedimenOption === "custom" && (
-                  <Input
-                    type="text"
-                    placeholder="Masukkan jenis sedimen manual"
-                    value={customSedimen}
-                    onChange={(e) => {
-                      setCustomSedimen(e.target.value);
-                      updateCurrentKegiatan({ jenisSedimen: e.target.value });
-                    }}
-                    className="mt-2"
-                  />
-                )}
-              </div>
-            </div>
+            <PeralatanSection
+              currentKegiatan={currentKegiatan}
+              updateCurrentKegiatan={updateCurrentKegiatan}
+              peralatanCustomInputs={peralatanCustomInputs}
+              setPeralatanCustomInputs={setPeralatanCustomInputs}
+              reportType={formData.reportType} // Pass reportType for internal conditional rendering
+            />
           )}
 
-          {/* Aktifitas Penanganan (Conditional for Harian/Bulanan) */}
-          {formData.reportType !== "tersier" && (
-            <div className="space-y-2">
-              <Label htmlFor={`aktifitas-${currentKegiatan.id}`}>Aktifitas Penanganan</Label>
-              <Input
-                id={`aktifitas-${currentKegiatan.id}`}
-                value={currentKegiatan.aktifitasPenanganan}
-                onChange={(e) => updateCurrentKegiatan({ aktifitasPenanganan: e.target.value })}
-                placeholder="Contoh: Pembersihan dan Pengerukan"
-              />
-            </div>
-          )}
-
-          {/* Materials (Conditional for Harian/Bulanan) */}
-          {formData.reportType !== "tersier" && (
-            <div className="space-y-4">
-              <Label>Material yang Digunakan</Label>
-              {currentKegiatan.materials.map((material) => (
-                <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
-                  <div className="space-y-2">
-                    <Label>Jenis Material</Label>
-                    <Select
-                      value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
-                      onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih material" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {materialOptions.map((jenis) => (
-                          <SelectItem key={jenis} value={jenis}>
-                            {jenis}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="custom">Lainnya</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {material.jenis === "custom" ? (
-                      <Input
-                        type="text"
-                        placeholder="Masukkan jenis material manual"
-                        value={materialCustomInputs[material.id] || ""}
-                        onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
-                        className="mt-2"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Jumlah</Label>
-                    <Input
-                      value={material.jumlah}
-                      onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Satuan</Label>
-                    <Select
-                      value={material.satuan}
-                      onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {satuanOptions.map((satuan) => (
-                          <SelectItem key={satuan} value={satuan}>
-                            {satuan}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Keterangan</Label>
-                    <Input
-                      value={material.keterangan || ""}
-                      onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
-                      placeholder="Catatan material (opsional)"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => removeMaterial(material.id)}
-                    disabled={currentKegiatan.materials.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Material
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Peralatan */}
-          <PeralatanSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-            peralatanCustomInputs={peralatanCustomInputs}
-            setPeralatanCustomInputs={setPeralatanCustomInputs}
-          />
-
-          {/* Operasional Alat Berat Section (Conditional for Harian/Bulanan) */}
+          {/* Operasional Alat Berat Section (Conditional visibility) */}
           {formData.reportType !== "tersier" && (
             <OperasionalAlatBeratSection
               currentKegiatan={currentKegiatan}
               updateCurrentKegiatan={updateCurrentKegiatan}
               operasionalCustomInputs={operasionalCustomInputs}
               setOperasionalCustomInputs={setOperasionalCustomInputs}
+              reportType={formData.reportType} // Pass reportType for internal conditional rendering
             />
           )}
 
@@ -1584,6 +1507,7 @@ export const DrainaseForm = () => {
                 ))}
               </div>
             </div>
+            {/* Jumlah PHL (Conditional visibility) */}
             {formData.reportType !== "tersier" && (
               <div className="space-y-2">
                 <Label htmlFor={`jumlah-phl-${currentKegiatan.id}`}>Jumlah PHL</Label>
@@ -1604,21 +1528,21 @@ export const DrainaseForm = () => {
             )}
           </div>
 
-          {/* Kebutuhan Tenaga Kerja (UPT & P3SU) - Only for Tersier */}
+          {/* Kebutuhan Tenaga Kerja (Orang) (Conditional visibility) */}
           {formData.reportType === "tersier" && (
             <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
               <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
               <div className="space-y-2">
-                <Label htmlFor={`jumlah-upt-${currentKegiatan.id}`}>UPT</Label>
+                <Label htmlFor={`jumlah-phl-tersier-${currentKegiatan.id}`}>UPT</Label> 
                 <Input
-                  id={`jumlah-upt-${currentKegiatan.id}`}
+                  id={`jumlah-phl-tersier-${currentKegiatan.id}`} 
                   type="text"
                   placeholder="0"
-                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
+                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL?.toString()} 
                   onChange={(e) => {
                     const value = e.target.value;
                     if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahUPT: parseInt(value, 10) || 0 });
+                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) || 0 }); 
                     }
                   }}
                   maxLength={2}
@@ -1643,7 +1567,7 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Sisa Target Penyelesaian Pekerjaan (Hari) - Only for Tersier */}
+          {/* Sisa Target Penyelesaian Pekerjaan (Hari) (Conditional visibility) */}
           {formData.reportType === "tersier" && (
             <div className="space-y-2">
               <Label htmlFor={`sisa-target-hari-${currentKegiatan.id}`}>Sisa Target Penyelesaian Pekerjaan (Hari)</Label>
@@ -1651,11 +1575,11 @@ export const DrainaseForm = () => {
                 id={`sisa-target-hari-${currentKegiatan.id}`}
                 type="text"
                 placeholder="00"
-                value={currentKegiatan.sisaTarget || ""}
+                value={currentKegiatan.sisaTargetHari || ""}
                 onChange={(e) => {
                   const value = e.target.value;
                   if (value === "" || /^\d{0,2}$/.test(value)) {
-                    updateCurrentKegiatan({ sisaTarget: value });
+                    updateCurrentKegiatan({ sisaTargetHari: value });
                   }
                 }}
                 maxLength={2}
@@ -1677,46 +1601,14 @@ export const DrainaseForm = () => {
 
           {/* Actions */}
           <div className="flex flex-wrap gap-4 pt-4">
-            {formData.reportType === "harian" && (
-              <>
-                <Button 
-                  onClick={handlePrintPreview} 
-                  variant="outline" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview PDF Harian
-                </Button>
-                <Button 
-                  onClick={handlePrintDownload} 
-                  variant="default" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF Harian
-                </Button>
-              </>
-            )}
-            {formData.reportType === "tersier" && (
-              <>
-                <Button 
-                  onClick={handlePrintPreview} // This will now use the Tersier PDF generator
-                  variant="outline" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview PDF Tersier
-                </Button>
-                <Button 
-                  onClick={handlePrintDownload} // This will now use the Tersier PDF generator
-                  variant="default" 
-                  className="flex-1 min-w-[150px]"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF Tersier
-                </Button>
-              </>
-            )}
+            <Button
+              onClick={handlePrintDownload}
+              variant="default"
+              className="flex-1 min-w-[150px]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Cetak/ Download PDF
+            </Button>
             <Button onClick={handleSave} disabled={isSaving} className="flex-1 min-w-[150px]">
               {isSaving ? (
                 <>Menyimpan...</>
@@ -1730,21 +1622,29 @@ export const DrainaseForm = () => {
           </div>
         </Card>
 
-        {/* Preview Dialog */}
+        {/* Preview Dialog (still exists for photo preview, but not for PDF preview) */}
         <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
           <DialogContent className="max-w-4xl max-h-[90vh]">
             <DialogHeader>
-              <DialogTitle>Preview PDF</DialogTitle>
+              <DialogTitle>Preview Foto/Dokumen</DialogTitle>
               <DialogDescription>
-                Preview laporan sebelum download
+                Preview gambar atau dokumen yang diunggah.
               </DialogDescription>
             </DialogHeader>
             {previewUrl && (
-              <iframe
-                src={previewUrl}
-                className="w-full h-[70vh] border rounded"
-                title="PDF Preview"
-              />
+              previewUrl.endsWith('.pdf') ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-[70vh] border rounded"
+                  title="PDF Preview"
+                />
+              ) : (
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="w-full h-[70vh] object-contain rounded border"
+                />
+              )
             )}
           </DialogContent>
         </Dialog>
