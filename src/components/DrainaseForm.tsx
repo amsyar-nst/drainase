@@ -265,11 +265,25 @@ export const DrainaseForm = () => {
   // Effect to fetch and prepopulate Tersier data from Harian
   useEffect(() => {
     const fetchAndPrepopulateTersierData = async () => {
-      if (!user || laporanId || formData.reportType !== "tersier") return;
+      if (!user) {
+        console.log("Prepopulation skipped: User not logged in.");
+        return;
+      }
+      if (laporanId) {
+        console.log("Prepopulation skipped: Editing existing report.");
+        return;
+      }
+      if (formData.reportType !== "tersier") {
+        console.log("Prepopulation skipped: Report type is not tersier.");
+        return;
+      }
 
       const { hariTanggal, namaJalan, kecamatan, kelurahan } = currentKegiatan;
 
-      if (!hariTanggal || !namaJalan || !kecamatan || !kelurahan) return;
+      if (!hariTanggal || !namaJalan || !kecamatan || !kelurahan) {
+        console.log("Prepopulation skipped: Key activity fields (date, location) are not fully filled.");
+        return;
+      }
 
       // Check if the current activity is mostly empty, to avoid overwriting user input
       const isCurrentKegiatanMostlyEmpty =
@@ -286,9 +300,17 @@ export const DrainaseForm = () => {
         );
 
       if (!isCurrentKegiatanMostlyEmpty) {
-        // If the current form is already filled, don't auto-prepopulate
+        console.log("Prepopulation skipped: Current activity form is not mostly empty.");
         return;
       }
+
+      console.log("Attempting to fetch and prepopulate Tersier data from Harian...");
+      console.log("Search criteria:", {
+        date: format(hariTanggal, 'yyyy-MM-dd'),
+        namaJalan,
+        kecamatan,
+        kelurahan
+      });
 
       try {
         // 1. Find Harian Laporan for the same date
@@ -300,11 +322,14 @@ export const DrainaseForm = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }); // Get the most recent one
 
-        if (harianLaporanError || !harianLaporans || harianLaporans.length === 0) {
+        if (harianLaporanError) throw harianLaporanError;
+        if (!harianLaporans || harianLaporans.length === 0) {
+          console.log("No matching harian laporan found for the date.");
           return; // No matching harian laporan found
         }
 
         const harianLaporanId = harianLaporans[0].id;
+        console.log("Found Harian Laporan ID:", harianLaporanId);
 
         // 2. Find Harian Kegiatan for the same location
         const { data: harianKegiatans, error: harianKegiatanError } = await supabase
@@ -316,11 +341,14 @@ export const DrainaseForm = () => {
           .eq('kelurahan', kelurahan)
           .order('created_at', { ascending: false }); // Get the most recent one
 
-        if (harianKegiatanError || !harianKegiatans || harianKegiatans.length === 0) {
+        if (harianKegiatanError) throw harianKegiatanError;
+        if (!harianKegiatans || harianKegiatans.length === 0) {
+          console.log("No matching harian kegiatan found for the location.");
           return; // No matching harian kegiatan found
         }
 
         const harianKegiatan = harianKegiatans[0];
+        console.log("Found Harian Kegiatan:", harianKegiatan);
 
         // 3. Fetch all associated details for the Harian Kegiatan
         const [peralatanRes, operasionalRes, aktifitasDetailsRes] = await Promise.all([
@@ -335,6 +363,8 @@ export const DrainaseForm = () => {
           jumlah: p.jumlah,
           satuan: p.satuan || "Unit",
         }));
+        console.log("Copied Peralatans:", peralatans);
+
 
         const operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
           id: "operasional-" + Date.now().toString() + '-' + o.id, // Generate new ID for copied item
@@ -348,6 +378,8 @@ export const DrainaseForm = () => {
           bioSolarSatuan: o.bio_solar_satuan || "Liter",
           keterangan: o.keterangan || "",
         }));
+        console.log("Copied Operasional Alat Berats:", operasionalAlatBerats);
+
 
         const aktifitasPenangananDetails: PenangananDetailFormState[] = await Promise.all(
           (aktifitasDetailsRes.data || []).map(async (detail) => {
@@ -376,7 +408,7 @@ export const DrainaseForm = () => {
               }
             }
 
-            return {
+            const copiedDetail = {
               id: "detail-" + Date.now().toString() + '-' + detail.id, // Generate new ID for copied item
               kegiatanId: undefined, // Reset FK
               jenisSaluran: (detail.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
@@ -391,6 +423,10 @@ export const DrainaseForm = () => {
               customSedimen: customSedimen,
               materialCustomInputs: {}, // Will be re-initialized by child component if needed
             };
+            console.log(`Copied Aktifitas Penanganan Detail ${detail.id}:`, copiedDetail);
+            console.log(`  Foto 0% URLs:`, copiedDetail.foto0);
+            console.log(`  Foto 100% URLs:`, copiedDetail.foto100);
+            return copiedDetail;
           })
         );
 
@@ -1405,29 +1441,27 @@ export const DrainaseForm = () => {
           )}
 
           {/* Aktifitas Penanganan Details Section (Conditional visibility) */}
-          {formData.reportType !== "tersier" && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
-              {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
-                <PenangananDetailSection
-                  key={detail.id}
-                  detail={detail}
-                  index={detailIndex}
-                  updateDetail={updateAktifitasPenangananDetail}
-                  removeDetail={removeAktifitasPenangananDetail}
-                  isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
-                  reportType={formData.reportType} // Pass reportType for internal conditional rendering
-                  onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
-                />
-              ))}
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Aktifitas Penanganan
-                </Button>
-              </div>
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
+            {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
+              <PenangananDetailSection
+                key={detail.id}
+                detail={detail}
+                index={detailIndex}
+                updateDetail={updateAktifitasPenangananDetail}
+                removeDetail={removeAktifitasPenangananDetail}
+                isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
+                reportType={formData.reportType} // Pass reportType for internal conditional rendering
+                onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
+              />
+            ))}
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Aktifitas Penanganan
+              </Button>
             </div>
-          )}
+          </div>
 
           {/* Peralatan Section (Conditional visibility) */}
           {formData.reportType !== "tersier" && (
