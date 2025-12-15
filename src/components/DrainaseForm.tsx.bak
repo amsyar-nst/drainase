@@ -230,37 +230,38 @@ export const DrainaseForm = () => {
   ]);
 
   // Effect for Tersier report type synchronization (Realisasi Panjang/Volume from Panjang Penanganan/Volume Galian)
-  useEffect(() => {
-    if (formData.reportType === "tersier") {
-      const panjangPenanganan = currentKegiatan.panjangPenanganan;
-      const volumeGalian = currentKegiatan.volumeGalian;
+  // THIS EFFECT IS REMOVED TO ALLOW MANUAL EDITING
+  // useEffect(() => {
+  //   if (formData.reportType === "tersier") {
+  //     const panjangPenanganan = currentKegiatan.panjangPenanganan;
+  //     const volumeGalian = currentKegiatan.volumeGalian;
 
-      // Synchronize Realisasi Panjang with Panjang Penanganan
-      if (currentKegiatan.realisasiPanjang !== panjangPenanganan) {
-        updateCurrentKegiatan({ realisasiPanjang: panjangPenanganan });
-      }
-      // Synchronize Realisasi Volume with Volume Galian
-      if (currentKegiatan.realisasiVolume !== volumeGalian) {
-        updateCurrentKegiatan({ realisasiVolume: volumeGalian });
-      }
-      // Also set Rencana Panjang/Volume to match Panjang Penanganan/Volume Galian for Tersier
-      if (currentKegiatan.rencanaPanjang !== panjangPenanganan) {
-        updateCurrentKegiatan({ rencanaPanjang: panjangPenanganan });
-      }
-      if (currentKegiatan.rencanaVolume !== volumeGalian) {
-        updateCurrentKegiatan({ rencanaVolume: volumeGalian });
-      }
-    }
-  }, [
-    currentKegiatan.panjangPenanganan,
-    currentKegiatan.volumeGalian,
-    currentKegiatan.realisasiPanjang,
-    currentKegiatan.realisasiVolume,
-    currentKegiatan.rencanaPanjang,
-    currentKegiatan.rencanaVolume,
-    formData.reportType,
-    currentKegiatanIndex,
-  ]);
+  //     // Synchronize Realisasi Panjang with Panjang Penanganan
+  //     if (currentKegiatan.realisasiPanjang !== panjangPenanganan) {
+  //       updateCurrentKegiatan({ realisasiPanjang: panjangPenanganan });
+  //     }
+  //     // Synchronize Realisasi Volume with Volume Galian
+  //     if (currentKegiatan.realisasiVolume !== volumeGalian) {
+  //       updateCurrentKegiatan({ realisasiVolume: volumeGalian });
+  //     }
+  //     // Also set Rencana Panjang/Volume to match Panjang Penanganan/Volume Galian for Tersier
+  //     if (currentKegiatan.rencanaPanjang !== panjangPenanganan) {
+  //       updateCurrentKegiatan({ rencanaPanjang: panjangPenanganan });
+  //     }
+  //     if (currentKegiatan.rencanaVolume !== volumeGalian) {
+  //       updateCurrentKegiatan({ rencanaVolume: volumeGalian });
+  //     }
+  //   }
+  // }, [
+  //   currentKegiatan.panjangPenanganan,
+  //   currentKegiatan.volumeGalian,
+  //   currentKegiatan.realisasiPanjang,
+  //   currentKegiatan.realisasiVolume,
+  //   currentKegiatan.rencanaPanjang,
+  //   currentKegiatan.rencanaVolume,
+  //   formData.reportType,
+  //   currentKegiatanIndex,
+  // ]);
 
   // Effect to fetch and prepopulate Tersier data from Harian
   useEffect(() => {
@@ -449,10 +450,10 @@ export const DrainaseForm = () => {
           // Tersier specific fields might also be copied if they exist in harianKegiatan
           jumlahUPT: harianKegiatan.jumlah_upt || 0, // Keep this for DB, but UI will use jumlahPHL
           jumlahP3SU: harianKegiatan.jumlah_p3su || 0,
-          rencanaPanjang: harianKegiatan.rencana_panjang || "",
-          rencanaVolume: harianKegiatan.rencana_volume || "",
-          realisasiPanjang: harianKegiatan.realisasi_panjang || "",
-          realisasiVolume: harianKegiatan.realisasi_volume || "",
+          rencanaPanjang: harianKegiatan.panjang_penanganan || "", // Populated from Harian's Panjang Penanganan
+          rencanaVolume: harianKegiatan.volume_galian || "",   // Populated from Harian's Volume Galian
+          realisasiPanjang: harianKegiatan.panjang_penanganan || "", // Populated from Harian's Panjang Penanganan
+          realisasiVolume: harianKegiatan.volume_galian || "",   // Populated from Harian's Volume Galian
           sisaTargetHari: harianKegiatan.sisa_target || "",
         });
         console.log(`Successfully copied Harian PHL (${copiedJumlahPHL}) to Tersier PHL.`);
@@ -724,7 +725,7 @@ export const DrainaseForm = () => {
 
     // Handle custom material inputs within the detail
     if (updates.materialCustomInputs) {
-      updatedDetail.materialCustomInputs = { ...updated.materialCustomInputs, ...updates.materialCustomInputs };
+      updatedDetail.materialCustomInputs = { ...updatedDetail.materialCustomInputs, ...updates.materialCustomInputs };
     }
     if (updates.materials) {
       updatedDetail.materials = updates.materials;
