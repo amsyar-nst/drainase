@@ -169,20 +169,22 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
 
   return (
     <div className="space-y-6 border p-4 rounded-lg bg-muted/10">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Aktifitas Penanganan {index + 1}</h3>
-        {isRemovable && (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() => removeDetail(index)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Hapus Aktifitas
-          </Button>
-        )}
-      </div>
+      {reportType !== "tersier" && ( // Judul dan tombol hapus hanya untuk Harian/Bulanan
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Aktifitas Penanganan {index + 1}</h3>
+          {isRemovable && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => removeDetail(index)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Hapus Aktifitas
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Photos */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -238,7 +240,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
             ))}
           </div>
         </div>
-        {/* Foto 50% (Only for Harian/Bulanan) */}
+        {/* Foto 50% (Hidden for Tersier) */}
         {reportType !== "tersier" && (
           <div className="space-y-2">
             <Label htmlFor={`foto-50-${detail.id}`}>Foto 50%</Label>
@@ -344,7 +346,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
             ))}
           </div>
         </div>
-        {/* Foto Sket (Only for Harian/Bulanan) */}
+        {/* Foto Sket (Hidden for Tersier) */}
         {reportType !== "tersier" && (
           <div className="space-y-2">
             <Label htmlFor={`foto-sket-${detail.id}`}>Gambar Sket</Label>
@@ -411,7 +413,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         )}
       </div>
 
-      {/* Jenis Saluran & Sedimen (Jenis Saluran conditional, Jenis Sedimen always visible) */}
+      {/* Jenis Saluran & Sedimen (Jenis Saluran hidden for Tersier, Jenis Sedimen always visible) */}
       <div className="grid gap-4 md:grid-cols-2">
         {reportType !== "tersier" && (
           <div className="space-y-2">
@@ -470,7 +472,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         </div>
       </div>
 
-      {/* Aktifitas Penanganan (Conditional for Harian/Bulanan) */}
+      {/* Aktifitas Penanganan (Hidden for Tersier) */}
       {reportType !== "tersier" && (
         <div className="space-y-2">
           <Label htmlFor={`aktifitas-${detail.id}`}>Aktifitas Penanganan</Label>

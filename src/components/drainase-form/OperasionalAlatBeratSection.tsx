@@ -161,7 +161,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               maxLength={2}
             />
           </div>
-          {/* Dexlite Jumlah (Conditional) */}
+          {/* Dexlite Jumlah (Hidden for Tersier) */}
           {reportType !== "tersier" && (
             <div className="space-y-2 md:col-span-1">
               <Label>Dexlite</Label>
@@ -173,7 +173,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               />
             </div>
           )}
-          {/* Pertalite Jumlah (Conditional) */}
+          {/* Pertalite Jumlah (Hidden for Tersier) */}
           {reportType !== "tersier" && (
             <div className="space-y-2 md:col-span-1">
               <Label>Pertalite</Label>
@@ -185,7 +185,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               />
             </div>
           )}
-          {/* Bio Solar Jumlah (Conditional) */}
+          {/* Bio Solar Jumlah (Hidden for Tersier) */}
           {reportType !== "tersier" && (
             <div className="space-y-2 md:col-span-1">
               <Label>Bio Solar</Label>
@@ -197,7 +197,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               />
             </div>
           )}
-          {/* Keterangan (Conditional) */}
+          {/* Keterangan (Hidden for Tersier) */}
           {reportType !== "tersier" && (
             <div className="space-y-2 md:col-span-3">
               <Label>Keterangan</Label>

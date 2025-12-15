@@ -64,6 +64,43 @@ const createNewPenangananDetailFormState = (): PenangananDetailFormState => ({
   materialCustomInputs: {},
 });
 
+// Initial state for a new KegiatanDrainase
+const createNewKegiatanDrainase = (): KegiatanDrainase => ({
+  id: "kegiatan-" + Date.now().toString(),
+  namaJalan: "",
+  kecamatan: "",
+  kelurahan: "",
+  panjangPenanganan: "",
+  lebarRataRata: "",
+  rataRataSedimen: "",
+  volumeGalian: "",
+  peralatans: [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
+  operasionalAlatBerats: [{
+    id: "operasional-" + Date.now().toString(),
+    jenis: "",
+    jumlah: 0,
+    dexliteJumlah: "",
+    dexliteSatuan: "Liter",
+    pertaliteJumlah: "",
+    pertaliteSatuan: "Liter",
+    bioSolarJumlah: "",
+    bioSolarSatuan: "Liter",
+    keterangan: "",
+  }],
+  koordinator: [],
+  jumlahPHL: 0,
+  keterangan: "",
+  hariTanggal: new Date(),
+  jumlahUPT: 0,
+  jumlahP3SU: 0,
+  rencanaPanjang: "",
+  rencanaVolume: "",
+  realisasiPanjang: "",
+  realisasiVolume: "",
+  sisaTargetHari: "",
+  aktifitasPenangananDetails: [createNewPenangananDetailFormState()],
+});
+
 export const DrainaseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -74,41 +111,7 @@ export const DrainaseForm = () => {
     tanggal: null,
     periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
     reportType: "harian",
-    kegiatans: [{
-      id: "kegiatan-" + Date.now().toString(),
-      namaJalan: "",
-      kecamatan: "",
-      kelurahan: "",
-      panjangPenanganan: "",
-      lebarRataRata: "",
-      rataRataSedimen: "",
-      volumeGalian: "",
-      peralatans: [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
-      operasionalAlatBerats: [{
-        id: "operasional-" + Date.now().toString(),
-        jenis: "",
-        jumlah: 0,
-        dexliteJumlah: "",
-        dexliteSatuan: "Liter",
-        pertaliteJumlah: "",
-        pertaliteSatuan: "Liter",
-        bioSolarJumlah: "",
-        bioSolarSatuan: "Liter",
-        keterangan: "",
-      }],
-      koordinator: [],
-      jumlahPHL: 0,
-      keterangan: "",
-      hariTanggal: new Date(),
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-      sisaTargetHari: "",
-      aktifitasPenangananDetails: [createNewPenangananDetailFormState()], // Initialize with one detail
-    }]
+    kegiatans: [createNewKegiatanDrainase()]
   });
 
   const [currentKegiatanIndex, setCurrentKegiatanIndex] = useState(0);
@@ -143,7 +146,7 @@ export const DrainaseForm = () => {
       return [value];
     }
     return [];
-  };
+  }
 
   useEffect(() => {
     if (id) {
@@ -288,7 +291,7 @@ export const DrainaseForm = () => {
             bioSolarSatuan: o.bio_solar_satuan || "Liter",
             keterangan: o.keterangan || "",
           }));
-          // Always ensure at least one operasional entry for consistency, even if empty
+          // Always ensure at least one operasional entry for consistency
           if (operasionalAlatBerats.length === 0) {
             operasionalAlatBerats.push({
               id: "operasional-" + Date.now().toString() + '-op',
@@ -324,7 +327,7 @@ export const DrainaseForm = () => {
                 keterangan: m.keterangan || "",
                 aktifitas_detail_id: m.aktifitas_detail_id || null,
               }));
-              // Always ensure at least one material entry for consistency, even if empty
+              // Always ensure at least one material entry for consistency
               if (materials.length === 0) {
                 materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "", aktifitas_detail_id: null });
               }
@@ -407,18 +410,7 @@ export const DrainaseForm = () => {
         tanggal: laporanData.tanggal ? new Date(laporanData.tanggal) : null,
         periode: laporanData.periode,
         reportType: (laporanData.report_type || "harian") as "harian" | "bulanan" | "tersier",
-        kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : [
-          {
-            id: "kegiatan-" + Date.now().toString(),
-            namaJalan: "", kecamatan: "", kelurahan: "",
-            panjangPenanganan: "", lebarRataRata: "", rataRataSedimen: "", volumeGalian: "",
-            peralatans: [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
-            operasionalAlatBerats: [{ id: "operasional-" + Date.now().toString(), jenis: "", jumlah: 0, dexliteJumlah: "", dexliteSatuan: "Liter", pertaliteJumlah: "", pertaliteSatuan: "Liter", bioSolarJumlah: "", bioSolarSatuan: "Liter", keterangan: "" }],
-            koordinator: [], jumlahPHL: 0, keterangan: "", hariTanggal: new Date(),
-            jumlahUPT: 0, jumlahP3SU: 0, rencanaPanjang: "", rencanaVolume: "", realisasiPanjang: "", realisasiVolume: "", sisaTargetHari: "",
-            aktifitasPenangananDetails: [createNewPenangananDetailFormState()],
-          }
-        ]
+        kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : [createNewKegiatanDrainase()]
       });
 
       if (kegiatansWithDetails.length > 0) {
@@ -447,41 +439,7 @@ export const DrainaseForm = () => {
   };
 
   const addKegiatan = () => {
-    const newKegiatan: KegiatanDrainase = {
-      id: "kegiatan-" + Date.now().toString(),
-      namaJalan: "",
-      kecamatan: "",
-      kelurahan: "",
-      panjangPenanganan: "",
-      lebarRataRata: "",
-      rataRataSedimen: "",
-      volumeGalian: "",
-      peralatans: [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
-      operasionalAlatBerats: [{
-        id: "operasional-" + Date.now().toString(),
-        jenis: "",
-        jumlah: 0,
-        dexliteJumlah: "",
-        dexliteSatuan: "Liter",
-        pertaliteJumlah: "",
-        pertaliteSatuan: "Liter",
-        bioSolarJumlah: "",
-        bioSolarSatuan: "Liter",
-        keterangan: "",
-      }],
-      koordinator: [],
-      jumlahPHL: 0,
-      keterangan: "",
-      hariTanggal: new Date(),
-      jumlahUPT: 0,
-      jumlahP3SU: 0,
-      rencanaPanjang: "",
-      rencanaVolume: "",
-      realisasiPanjang: "",
-      realisasiVolume: "",
-      sisaTargetHari: "",
-      aktifitasPenangananDetails: [createNewPenangananDetailFormState()],
-    };
+    const newKegiatan = createNewKegiatanDrainase();
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
     setPeralatanCustomInputs({});
@@ -873,6 +831,7 @@ export const DrainaseForm = () => {
       const parsedDate = parse(value, "dd/MM/yyyy", new Date(), { locale: idLocale });
       if (isValid(parsedDate)) {
         updateCurrentKegiatan({ hariTanggal: parsedDate });
+        // If not editing an existing report, update the main report's period based on activity date
         if (!laporanId) {
           setFormData((prev) => ({ ...prev, periode: format(parsedDate, 'MMMM yyyy', { locale: idLocale }) }));
         }
@@ -884,6 +843,7 @@ export const DrainaseForm = () => {
     if (date) {
       updateCurrentKegiatan({ hariTanggal: date });
       setActivityDateInputString(format(date, "dd/MM/yyyy", { locale: idLocale }));
+      // If not editing an existing report, update the main report's period based on activity date
       if (!laporanId) {
         setFormData((prev) => ({ ...prev, periode: format(date, 'MMMM yyyy', { locale: idLocale }) }));
       }
@@ -891,6 +851,70 @@ export const DrainaseForm = () => {
       updateCurrentKegiatan({ hariTanggal: null });
       setActivityDateInputString("");
     }
+  };
+
+  const handleReportTypeChange = (value: "harian" | "bulanan" | "tersier") => {
+    setFormData((prev) => {
+      let newKegiatans = [...prev.kegiatans];
+      let newTanggal = prev.tanggal;
+      let newPeriode = prev.periode;
+
+      if (value === "tersier") {
+        // For Tersier, ensure only one activity and one detail, clear irrelevant fields
+        const defaultKegiatan = createNewKegiatanDrainase();
+        defaultKegiatan.aktifitasPenangananDetails = [createNewPenangananDetailFormState()];
+        newKegiatans = [defaultKegiatan];
+        
+        // Clear fields not relevant for tersier
+        newKegiatans[0].panjangPenanganan = "";
+        newKegiatans[0].lebarRataRata = "";
+        newKegiatans[0].rataRataSedimen = "";
+        newKegiatans[0].volumeGalian = "";
+        newKegiatans[0].jumlahPHL = 0;
+        newKegiatans[0].aktifitasPenangananDetails[0].foto50 = [];
+        newKegiatans[0].aktifitasPenangananDetails[0].fotoSket = [];
+        newKegiatans[0].aktifitasPenangananDetails[0].jenisSaluran = "";
+        newKegiatans[0].aktifitasPenangananDetails[0].aktifitasPenanganan = "";
+        newKegiatans[0].aktifitasPenangananDetails[0].materials = [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "", keterangan: "" }]; // Clear satuan/keterangan
+        newKegiatans[0].operasionalAlatBerats = [{ id: "operasional-" + Date.now().toString(), jenis: "", jumlah: 0, dexliteJumlah: "", dexliteSatuan: "", pertaliteJumlah: "", pertaliteSatuan: "", bioSolarJumlah: "", bioSolarSatuan: "", keterangan: "" }]; // Clear fuel details
+
+        newTanggal = null; // Hide main date for tersier
+        newPeriode = format(newKegiatans[0].hariTanggal || new Date(), 'MMMM yyyy', { locale: idLocale }); // Period from activity date
+      } else {
+        // For Harian/Bulanan, ensure at least one activity and one detail
+        if (newKegiatans.length === 0) {
+          newKegiatans = [createNewKegiatanDrainase()];
+        }
+        newKegiatans = newKegiatans.map(keg => {
+          if (keg.aktifitasPenangananDetails.length === 0) {
+            keg.aktifitasPenangananDetails = [createNewPenangananDetailFormState()];
+          }
+          // Reset tersier-specific fields
+          keg.jumlahUPT = 0;
+          keg.jumlahP3SU = 0;
+          keg.rencanaPanjang = "";
+          keg.rencanaVolume = "";
+          keg.realisasiPanjang = "";
+          keg.realisasiVolume = "";
+          keg.sisaTargetHari = "";
+          return keg;
+        });
+        newTanggal = prev.tanggal || new Date(); // Show main date for harian/bulanan
+        newPeriode = format(newTanggal, 'MMMM yyyy', { locale: idLocale });
+      }
+
+      setCurrentKegiatanIndex(0); // Reset to first activity
+      setPeralatanCustomInputs({}); // Clear custom inputs
+      setOperasionalCustomInputs({}); // Clear custom inputs
+
+      return {
+        ...prev,
+        reportType: value,
+        tanggal: newTanggal,
+        periode: newPeriode,
+        kegiatans: newKegiatans,
+      };
+    });
   };
 
   const handleLihatLaporanClick = () => {
@@ -924,36 +948,38 @@ export const DrainaseForm = () => {
           </Button>
         </div>
 
-        {/* Activity Navigation */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2 flex-wrap">
-              {formData.kegiatans.map((_, index) => (
-                <Button
-                  key={index}
-                  variant={currentKegiatanIndex === index ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleSetCurrentKegiatanIndex(index)}
-                >
-                  Kegiatan {index + 1}
+        {/* Activity Navigation (Hidden for Tersier, as it's a single activity concept) */}
+        {formData.reportType !== "tersier" && (
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2 flex-wrap">
+                {formData.kegiatans.map((_, index) => (
+                  <Button
+                    key={index}
+                    variant={currentKegiatanIndex === index ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleSetCurrentKegiatanIndex(index)}
+                  >
+                    Kegiatan {index + 1}
+                  </Button>
+                ))}
+                <Button variant="outline" size="sm" onClick={addKegiatan}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah Kegiatan
                 </Button>
-              ))}
-              <Button variant="outline" size="sm" onClick={addKegiatan}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah Kegiatan
-              </Button>
+              </div>
+              {formData.kegiatans.length > 1 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => removeKegiatan(currentKegiatanIndex)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            {formData.kegiatans.length > 1 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => removeKegiatan(currentKegiatanIndex)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </Card>
+          </Card>
+        )}
 
         <Card className="p-6 space-y-6">
           {/* Report Type Selection */}
@@ -961,7 +987,7 @@ export const DrainaseForm = () => {
             <Label htmlFor="report-type">Jenis Laporan</Label>
             <Select
               value={formData.reportType}
-              onValueChange={(value) => setFormData({ ...formData, reportType: value as "harian" | "bulanan" | "tersier" })}
+              onValueChange={handleReportTypeChange}
             >
               <SelectTrigger id="report-type">
                 <SelectValue placeholder="Pilih jenis laporan" />
@@ -994,41 +1020,43 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Main Report Date (Always visible now) */}
-          <div className="space-y-2">
-            <Label htmlFor="tanggal-laporan-utama">Tanggal Laporan Utama</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="tanggal-laporan-utama"
-                value={mainDateInputString}
-                onChange={handleMainDateInputChange}
-                placeholder="dd/MM/yyyy"
-                className={cn(
-                  "w-full justify-start text-left font-normal pr-10",
-                  !formData.tanggal && "text-muted-foreground"
-                )}
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
-                  >
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
-                  <Calendar
-                    mode="single"
-                    selected={formData.tanggal || undefined}
-                    onSelect={handleMainDateSelect}
-                    initialFocus
-                    locale={idLocale}
-                  />
-                </PopoverContent>
-              </Popover>
+          {/* Main Report Date (Hidden for Tersier) */}
+          {formData.reportType !== "tersier" && (
+            <div className="space-y-2">
+              <Label htmlFor="tanggal-laporan-utama">Tanggal Laporan Utama</Label>
+              <div className="relative flex items-center">
+                <Input
+                  id="tanggal-laporan-utama"
+                  value={mainDateInputString}
+                  onChange={handleMainDateInputChange}
+                  placeholder="dd/MM/yyyy"
+                  className={cn(
+                    "w-full justify-start text-left font-normal pr-10",
+                    !formData.tanggal && "text-muted-foreground"
+                  )}
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="absolute right-0 h-full px-3 py-2 rounded-l-none border-y-0 border-r-0"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start" sideOffset={5}>
+                    <Calendar
+                      mode="single"
+                      selected={formData.tanggal || undefined}
+                      onSelect={handleMainDateSelect}
+                      initialFocus
+                      locale={idLocale}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Hari/Tanggal Kegiatan (Always visible for Harian and Tersier) */}
           {(formData.reportType === "harian" || formData.reportType === "tersier") && (
@@ -1157,7 +1185,7 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Measurements (Panjang, Lebar, Sedimen, Volume) (Conditional for Harian/Bulanan) */}
+          {/* Measurements (Panjang, Lebar, Sedimen, Volume) (Hidden for Tersier) */}
           {formData.reportType !== "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -1199,28 +1227,45 @@ export const DrainaseForm = () => {
             </div>
           )}
 
-          {/* Aktifitas Penanganan Details Section (Always rendered, internal fields are conditional) */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
-            {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
+          {/* Aktifitas Penanganan Details Section (Conditional rendering) */}
+          {formData.reportType !== "tersier" ? (
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
+              {currentKegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => (
+                <PenangananDetailSection
+                  key={detail.id}
+                  detail={detail}
+                  index={detailIndex}
+                  updateDetail={updateAktifitasPenangananDetail}
+                  removeDetail={removeAktifitasPenangananDetail}
+                  isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
+                  reportType={formData.reportType}
+                  onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
+                />
+              ))}
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah Aktifitas Penanganan
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Render single PenangananDetailSection directly for Tersier
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold">Detail Aktifitas Penanganan</h2>
               <PenangananDetailSection
-                key={detail.id}
-                detail={detail}
-                index={detailIndex}
+                key={currentKegiatan.aktifitasPenangananDetails[0].id}
+                detail={currentKegiatan.aktifitasPenangananDetails[0]}
+                index={0}
                 updateDetail={updateAktifitasPenangananDetail}
-                removeDetail={removeAktifitasPenangananDetail}
-                isRemovable={currentKegiatan.aktifitasPenangananDetails.length > 1}
+                removeDetail={() => {}} // No remove for single detail in Tersier
+                isRemovable={false} // Not removable for single detail in Tersier
                 reportType={formData.reportType}
                 onPreviewPhoto={(url) => { setPreviewUrl(url); setShowPreviewDialog(true); }}
               />
-            ))}
-            <div className="flex justify-end">
-              <Button type="button" variant="outline" size="sm" onClick={addAktifitasPenangananDetail}>
-                <Plus className="h-4 w-4 mr-1" />
-                Tambah Aktifitas Penanganan
-              </Button>
             </div>
-          </div>
+          )}
 
           {/* Peralatan Section (Always rendered, internal fields are conditional) */}
           <PeralatanSection
@@ -1231,14 +1276,16 @@ export const DrainaseForm = () => {
             reportType={formData.reportType}
           />
 
-          {/* Operasional Alat Berat Section (Always rendered, internal fields are conditional) */}
-          <OperasionalAlatBeratSection
-            currentKegiatan={currentKegiatan}
-            updateCurrentKegiatan={updateCurrentKegiatan}
-            operasionalCustomInputs={operasionalCustomInputs}
-            setOperasionalCustomInputs={setOperasionalCustomInputs}
-            reportType={formData.reportType}
-          />
+          {/* Operasional Alat Berat Section (Hidden for Tersier) */}
+          {formData.reportType !== "tersier" && (
+            <OperasionalAlatBeratSection
+              currentKegiatan={currentKegiatan}
+              updateCurrentKegiatan={updateCurrentKegiatan}
+              operasionalCustomInputs={operasionalCustomInputs}
+              setOperasionalCustomInputs={setOperasionalCustomInputs}
+              reportType={formData.reportType}
+            />
+          )}
 
           {/* Koordinator & PHL */}
           <div className="grid gap-4 md:grid-cols-2">
