@@ -1143,8 +1143,8 @@ export const DrainaseForm = () => {
             </div>
           </div>
 
-          {/* Rencana/Realisasi Panjang/Volume (Conditional for Harian/Tersier) */}
-          {(formData.reportType === "harian" || formData.reportType === "tersier") && (
+          {/* Rencana/Realisasi Panjang/Volume (Only for Tersier) */}
+          {formData.reportType === "tersier" && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor={`rencana-panjang-${currentKegiatan.id}`}>Rencana Panjang (M)</Label>
