@@ -445,7 +445,7 @@ export const DrainaseForm = () => {
           keterangan: harianKegiatan.keterangan || "",
           aktifitasPenangananDetails: aktifitasPenangananDetails.length > 0 ? aktifitasPenangananDetails : [createNewPenangananDetailFormState()],
           // Tersier specific fields might also be copied if they exist in harianKegiatan
-          jumlahUPT: harianKegiatan.jumlah_upt || 0,
+          jumlahUPT: harianKegiatan.jumlah_phl || 0, // <--- CHANGE IS HERE: Copying jumlah_phl to jumlahUPT
           jumlahP3SU: harianKegiatan.jumlah_p3su || 0,
           rencanaPanjang: harianKegiatan.rencana_panjang || "",
           rencanaVolume: harianKegiatan.rencana_volume || "",
@@ -453,6 +453,7 @@ export const DrainaseForm = () => {
           realisasiVolume: harianKegiatan.realisasi_volume || "",
           sisaTargetHari: harianKegiatan.sisa_target || "",
         });
+        console.log(`Copied Harian PHL (${harianKegiatan.jumlah_phl}) to Tersier UPT.`);
         toast.info("Data dari laporan Harian yang cocok telah disalin.");
 
       } catch (error: any) {
