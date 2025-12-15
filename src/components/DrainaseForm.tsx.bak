@@ -724,7 +724,7 @@ export const DrainaseForm = () => {
 
     // Handle custom material inputs within the detail
     if (updates.materialCustomInputs) {
-      updatedDetail.materialCustomInputs = { ...updatedDetail.materialCustomInputs, ...updates.materialCustomInputs };
+      updatedDetail.materialCustomInputs = { ...updated.materialCustomInputs, ...updates.materialCustomInputs };
     }
     if (updates.materials) {
       updatedDetail.materials = updates.materials;
