@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -20,38 +20,78 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Use a ref to store the latest location.pathname to avoid stale closures
+  const locationPathnameRef = useRef(location.pathname);
   useEffect(() => {
-    console.log("SessionContextProvider useEffect running (mount/pathname change)...");
+    locationPathnameRef.current = location.pathname;
+  }, [location.pathname]);
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log(`Auth state change detected: Event=${event}, Session=${currentSession ? 'exists' : 'null'}, Path=${location.pathname}`);
+  // Ref to ensure setLoading(false) is called only once after initial session check
+  const hasCheckedInitialSession = useRef(false);
+
+  useEffect(() => {
+    console.log("SessionContextProvider useEffect running (mount)...");
+
+    const handleAuthStateChange = async (event: string, currentSession: Session | null) => {
+      const currentPath = locationPathnameRef.current; // Use the latest path from ref
+      console.log(`Auth state change detected: Event=${event}, Session=${currentSession ? 'exists' : 'null'}, Current Location Path=${currentPath}`);
       
       setSession(currentSession);
       setUser(currentSession?.user || null);
 
-      if (currentSession) { // User is authenticated or session exists
-        console.log(`User is authenticated. Current path: ${location.pathname}`);
-        if (location.pathname === '/login') {
+      // Only set loading to false once after the initial session check
+      if (!hasCheckedInitialSession.current) {
+        setLoading(false);
+        hasCheckedInitialSession.current = true;
+      }
+
+      // Handle redirects based on auth state and current path
+      if (currentSession) { // User is authenticated
+        if (currentPath === '/login') {
           console.log("SessionContextProvider: Navigating authenticated user from /login to /");
-          navigate('/'); // Redirect authenticated users from login page to home
+          navigate('/');
         }
-      } else { // User is not authenticated or session is null
-        console.log(`User is NOT authenticated. Current path: ${location.pathname}`);
-        if (location.pathname !== '/login') {
+      } else { // User is NOT authenticated
+        if (currentPath !== '/login') {
           console.log("SessionContextProvider: Navigating unauthenticated user from non-/login to /login");
-          navigate('/login'); // Redirect unauthenticated users to login page
+          navigate('/login');
         }
       }
-      
-      setLoading(false); // Set loading to false after the first auth state is determined
-      console.log(`Loading set to false. Current session: ${currentSession ? 'exists' : 'null'}, User: ${currentSession?.user ? 'exists' : 'null'}`);
+    };
+
+    // Initial check for session to set loading state correctly on first render
+    // This is important because onAuthStateChange might not fire 'INITIAL_SESSION' immediately
+    // or consistently across all environments.
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!hasCheckedInitialSession.current) {
+        setSession(initialSession);
+        setUser(initialSession?.user || null);
+        setLoading(false);
+        hasCheckedInitialSession.current = true;
+
+        // Perform initial redirect check here as well
+        const currentPath = locationPathnameRef.current;
+        if (initialSession) {
+          if (currentPath === '/login') {
+            console.log("SessionContextProvider: Initial session check, navigating authenticated user from /login to /");
+            navigate('/');
+          }
+        } else {
+          if (currentPath !== '/login') {
+            console.log("SessionContextProvider: Initial session check, navigating unauthenticated user from non-/login to /login");
+            navigate('/login');
+          }
+        }
+      }
     });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
     return () => {
       console.log("SessionContextProvider useEffect cleanup.");
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, [navigate]); // `location` is not in dependencies, but `locationPathnameRef` is updated by its own effect.
 
   if (loading) {
     console.log("SessionContextProvider is loading...");
