@@ -21,7 +21,7 @@ export const Navigation = () => {
   };
 
   return (
-    <nav className="bg-card border-b border-border sticky top-0 z-50 shadow-sm">
+    <nav className="bg-card border-b border-border sticky top-0 z-[101] shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
@@ -33,7 +33,6 @@ export const Navigation = () => {
               to="/drainase/new"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
               activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
-              // onClick={() => console.log("Navigating to Form Drainase")} // Dihapus
             >
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Form Drainase</span>
@@ -42,7 +41,7 @@ export const Navigation = () => {
               to="/"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
               activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
-              // onClick={() => console.log("Navigating to List Laporan")} // Dihapus
+              onClick={() => console.log("NavLink 'List Laporan' clicked!")}
             >
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">List Laporan</span>
