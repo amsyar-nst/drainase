@@ -570,48 +570,7 @@ export const DrainaseForm = () => {
     return uploadedUrls;
   };
 
-  const handlePrintPreview = async () => {
-    // Aggregate current form data for PDF generation
-    const laporanForPdf: LaporanDrainase = {
-      tanggal: formData.tanggal || currentKegiatan.hariTanggal || new Date(),
-      periode: formData.periode,
-      reportType: formData.reportType,
-      kegiatans: [{
-        ...currentKegiatan,
-        peralatans: currentKegiatan.peralatans.map(p => ({
-          ...p,
-          nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
-        })),
-        operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map(o => ({
-          ...o,
-          jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
-        })),
-        aktifitasPenangananDetails: currentKegiatan.aktifitasPenangananDetails.map(detail => ({
-          ...detail,
-          materials: detail.materials.map(m => ({
-            ...m,
-            jenis: m.jenis === "custom" ? (detail.materialCustomInputs?.[m.id] || "") : m.jenis,
-          })),
-        })),
-      }],
-    };
-
-    try {
-      let blob: Blob;
-      if (laporanForPdf.reportType === "tersier") {
-        blob = await generatePDFTersier(laporanForPdf, false);
-      } else {
-        blob = await generatePDF(laporanForPdf, false);
-      }
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setShowPreviewDialog(true);
-      toast.success("Laporan berhasil dipratinjau.");
-    } catch (error) {
-      console.error("Preview error:", error);
-      toast.error("Gagal membuat pratinjau PDF: " + (error.message || JSON.stringify(error)));
-    }
-  };
+  // Removed handlePrintPreview function as it's no longer needed.
 
   const handlePrintDownload = async () => {
     // Aggregate current form data for PDF generation
@@ -646,7 +605,7 @@ export const DrainaseForm = () => {
         await generatePDF(laporanForPdf, true);
       }
       toast.success("Laporan berhasil diunduh.");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Download error:", error);
       toast.error("Gagal mengunduh PDF: " + (error.message || JSON.stringify(error)));
     }
@@ -1395,20 +1354,12 @@ export const DrainaseForm = () => {
           {/* Actions */}
           <div className="flex flex-wrap gap-4 pt-4">
             <Button
-              onClick={handlePrintPreview}
-              variant="outline"
-              className="flex-1 min-w-[150px]"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Preview PDF {formData.reportType === "tersier" ? "Tersier" : "Harian"}
-            </Button>
-            <Button
-              onClick={handlePrintDownload}
+              onClick={handlePrintDownload} // Menggunakan fungsi download untuk tombol tunggal
               variant="default"
               className="flex-1 min-w-[150px]"
             >
               <Download className="mr-2 h-4 w-4" />
-              Download PDF {formData.reportType === "tersier" ? "Tersier" : "Harian"}
+              Cetak/ Download PDF
             </Button>
             <Button onClick={handleSave} disabled={isSaving} className="flex-1 min-w-[150px]">
               {isSaving ? (
@@ -1423,21 +1374,29 @@ export const DrainaseForm = () => {
           </div>
         </Card>
 
-        {/* Preview Dialog */}
+        {/* Preview Dialog (still exists for photo preview, but not for PDF preview) */}
         <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
           <DialogContent className="max-w-4xl max-h-[90vh]">
             <DialogHeader>
-              <DialogTitle>Preview PDF</DialogTitle>
+              <DialogTitle>Preview Foto/Dokumen</DialogTitle>
               <DialogDescription>
-                Preview laporan sebelum download
+                Preview gambar atau dokumen yang diunggah.
               </DialogDescription>
             </DialogHeader>
             {previewUrl && (
-              <iframe
-                src={previewUrl}
-                className="w-full h-[70vh] border rounded"
-                title="PDF Preview"
-              />
+              previewUrl.endsWith('.pdf') ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-[70vh] border rounded"
+                  title="PDF Preview"
+                />
+              ) : (
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="w-full h-[70vh] object-contain rounded border"
+                />
+              )
             )}
           </DialogContent>
         </Dialog>
