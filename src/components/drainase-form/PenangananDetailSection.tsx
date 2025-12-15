@@ -239,58 +239,60 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
             ))}
           </div>
         </div>
-        {/* Foto 50% (Always visible now) */}
-        <div className="space-y-2">
-          <Label htmlFor={`foto-50-${detail.id}`}>Foto 50%</Label>
-          <div
-            {...foto50Handlers}
-            className={cn(
-              "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
-              isFoto50Dragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
-            )}
-          >
-            <Input
-              id={`foto-50-${detail.id}`}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => handleFileChange(e, 'foto50')}
-              className="hidden"
-            />
-            <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
-            <p className="text-xs text-muted-foreground">Foto 50%</p>
+        {/* Foto 50% (Conditional visibility) */}
+        {reportType !== "tersier" && (
+          <div className="space-y-2">
+            <Label htmlFor={`foto-50-${detail.id}`}>Foto 50%</Label>
+            <div
+              {...foto50Handlers}
+              className={cn(
+                "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
+                isFoto50Dragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
+              )}
+            >
+              <Input
+                id={`foto-50-${detail.id}`}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleFileChange(e, 'foto50')}
+                className="hidden"
+              />
+              <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
+              <p className="text-xs text-muted-foreground">Foto 50%</p>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {(Array.isArray(detail.foto50) ? detail.foto50 : []).map((photo, photoIndex) => (
+                <div key={photoIndex} className="relative group">
+                  <img
+                    src={
+                      photo instanceof File
+                        ? URL.createObjectURL(photo)
+                        : photo || ''
+                    }
+                    alt={`Foto 50% ${photoIndex + 1}`}
+                    className="w-full h-24 object-cover rounded border cursor-pointer"
+                    onClick={() => {
+                      const url = photo instanceof File
+                        ? URL.createObjectURL(photo)
+                        : photo || '';
+                      onPreviewPhoto(url);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removePhoto('foto50', photoIndex)}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {(Array.isArray(detail.foto50) ? detail.foto50 : []).map((photo, photoIndex) => (
-              <div key={photoIndex} className="relative group">
-                <img
-                  src={
-                    photo instanceof File
-                      ? URL.createObjectURL(photo)
-                      : photo || ''
-                  }
-                  alt={`Foto 50% ${photoIndex + 1}`}
-                  className="w-full h-24 object-cover rounded border cursor-pointer"
-                  onClick={() => {
-                    const url = photo instanceof File
-                      ? URL.createObjectURL(photo)
-                      : photo || '';
-                    onPreviewPhoto(url);
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removePhoto('foto50', photoIndex)}
-                >
-                  <XCircle className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
         {/* Foto 100% */}
         <div className="space-y-2">
           <Label htmlFor={`foto-100-${detail.id}`}>Foto 100%</Label>
@@ -343,89 +345,94 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
             ))}
           </div>
         </div>
-        {/* Foto Sket (Always visible now) */}
-        <div className="space-y-2">
-          <Label htmlFor={`foto-sket-${detail.id}`}>Gambar Sket</Label>
-          <div
-            {...fotoSketHandlers}
-            className={cn(
-              "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
-              isFotoSketDragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
-            )}
-          >
-            <Input
-              id={`foto-sket-${detail.id}`}
-              type="file"
-              accept="image/*,application/pdf"
-              multiple
-              onChange={(e) => handleFileChange(e, 'fotoSket')}
-              className="hidden"
-            />
-            <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
-            <p className="text-xs text-muted-foreground">Gambar Sket</p>
-          </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {(Array.isArray(detail.fotoSket) ? detail.fotoSket : []).map((photo, photoIndex) => (
-              <div key={photoIndex} className="relative group">
-                {typeof photo === 'string' && photo.endsWith('.pdf') ? (
-                  <a
-                    href={photo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
+        {/* Foto Sket (Conditional visibility) */}
+        {reportType !== "tersier" && (
+          <div className="space-y-2">
+            <Label htmlFor={`foto-sket-${detail.id}`}>Gambar Sket</Label>
+            <div
+              {...fotoSketHandlers}
+              className={cn(
+                "flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md cursor-pointer",
+                isFotoSketDragging ? "border-primary bg-primary/10" : "border-muted-foreground/20 hover:border-primary/50"
+              )}
+            >
+              <Input
+                id={`foto-sket-${detail.id}`}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                onChange={(e) => handleFileChange(e, 'fotoSket')}
+                className="hidden"
+              />
+              <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
+              <p className="text-xs text-muted-foreground">Gambar Sket</p>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {(Array.isArray(detail.fotoSket) ? detail.fotoSket : []).map((photo, photoIndex) => (
+                <div key={photoIndex} className="relative group">
+                  {typeof photo === 'string' && photo.endsWith('.pdf') ? (
+                    <a
+                      href={photo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center w-full h-24 bg-gray-100 rounded border text-blue-600 hover:underline"
+                    >
+                      <FileText className="h-8 w-8 mr-2" /> PDF {photoIndex + 1}
+                    </a>
+                  ) : (
+                    <img
+                      src={
+                        photo instanceof File
+                          ? URL.createObjectURL(photo)
+                          : photo || ''
+                      }
+                      alt={`Gambar Sket ${photoIndex + 1}`}
+                      className="w-full h-24 object-cover rounded border cursor-pointer"
+                      onClick={() => {
+                        const url = photo instanceof File
+                          ? URL.createObjectURL(photo)
+                          : photo || '';
+                        onPreviewPhoto(url);
+                      }}
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removePhoto('fotoSket', photoIndex)}
                   >
-                    <FileText className="h-8 w-8 mr-2" /> PDF {photoIndex + 1}
-                  </a>
-                ) : (
-                  <img
-                    src={
-                      photo instanceof File
-                        ? URL.createObjectURL(photo)
-                        : photo || ''
-                    }
-                    alt={`Gambar Sket ${photoIndex + 1}`}
-                    className="w-full h-24 object-cover rounded border cursor-pointer"
-                    onClick={() => {
-                      const url = photo instanceof File
-                        ? URL.createObjectURL(photo)
-                        : photo || '';
-                      onPreviewPhoto(url);
-                    }}
-                  />
-                )}
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removePhoto('fotoSket', photoIndex)}
-                >
-                  <XCircle className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Jenis Saluran & Sedimen (Jenis Saluran always visible now) */}
+      {/* Jenis Saluran & Sedimen */}
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor={`jenis-saluran-${detail.id}`}>Jenis Saluran</Label>
-          <Select
-            value={detail.jenisSaluran}
-            onValueChange={(value) => updateDetail(index, { jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
-          >
-            <SelectTrigger id={`jenis-saluran-${detail.id}`}>
-              <SelectValue placeholder="Pilih jenis saluran" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Terbuka">Terbuka</SelectItem>
-              <SelectItem value="Tertutup">Tertutup</SelectItem>
-              <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Jenis Saluran (Conditional visibility) */}
+        {reportType !== "tersier" && (
+          <div className="space-y-2">
+            <Label htmlFor={`jenis-saluran-${detail.id}`}>Jenis Saluran</Label>
+            <Select
+              value={detail.jenisSaluran}
+              onValueChange={(value) => updateDetail(index, { jenisSaluran: value as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "" })}
+            >
+              <SelectTrigger id={`jenis-saluran-${detail.id}`}>
+                <SelectValue placeholder="Pilih jenis saluran" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Terbuka">Terbuka</SelectItem>
+                <SelectItem value="Tertutup">Tertutup</SelectItem>
+                <SelectItem value="Terbuka & Tertutup">Terbuka & Tertutup</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="space-y-2"> {/* Jenis Sedimen is always visible */}
           <Label htmlFor={`jenis-sedimen-${detail.id}`}>Jenis Sedimen</Label>
           <Select
@@ -465,104 +472,108 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         </div>
       </div>
 
-      {/* Aktifitas Penanganan (Always visible now) */}
-      <div className="space-y-2">
-        <Label htmlFor={`aktifitas-${detail.id}`}>Aktifitas Penanganan</Label>
-        <Input
-          id={`aktifitas-${detail.id}`}
-          value={detail.aktifitasPenanganan}
-          onChange={(e) => updateDetail(index, { aktifitasPenanganan: e.target.value })}
-          placeholder="Contoh: Pembersihan dan Pengerukan"
-        />
-      </div>
+      {/* Aktifitas Penanganan (Conditional visibility) */}
+      {reportType !== "tersier" && (
+        <div className="space-y-2">
+          <Label htmlFor={`aktifitas-${detail.id}`}>Aktifitas Penanganan</Label>
+          <Input
+            id={`aktifitas-${detail.id}`}
+            value={detail.aktifitasPenanganan}
+            onChange={(e) => updateDetail(index, { aktifitasPenanganan: e.target.value })}
+            placeholder="Contoh: Pembersihan dan Pengerukan"
+          />
+        </div>
+      )}
 
-      {/* Materials (Always visible, Satuan and Keterangan are also always visible now) */}
-      <div className="space-y-4">
-        <Label>Material yang Digunakan</Label>
-        {detail.materials.map((material) => (
-          <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
-            <div className="space-y-2">
-              <Label>Jenis Material</Label>
-              <Select
-                value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
-                onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih material" />
-                </SelectTrigger>
-                <SelectContent>
-                  {materialOptions.map((jenis) => (
-                    <SelectItem key={jenis} value={jenis}>
-                      {jenis}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Lainnya</SelectItem>
-                </SelectContent>
-              </Select>
-              {material.jenis === "custom" ? (
+      {/* Materials (Conditional visibility) */}
+      {reportType !== "tersier" && (
+        <div className="space-y-4">
+          <Label>Material yang Digunakan</Label>
+          {detail.materials.map((material) => (
+            <div key={material.id} className="grid gap-4 md:grid-cols-5 items-end">
+              <div className="space-y-2">
+                <Label>Jenis Material</Label>
+                <Select
+                  value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
+                  onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih material" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {materialOptions.map((jenis) => (
+                      <SelectItem key={jenis} value={jenis}>
+                        {jenis}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Lainnya</SelectItem>
+                  </SelectContent>
+                </Select>
+                {material.jenis === "custom" ? (
+                  <Input
+                    type="text"
+                    placeholder="Masukkan jenis material manual"
+                    value={detail.materialCustomInputs[material.id] || ""}
+                    onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
+                    className="mt-2"
+                  />
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label>Jumlah</Label>
                 <Input
-                  type="text"
-                  placeholder="Masukkan jenis material manual"
-                  value={detail.materialCustomInputs[material.id] || ""}
-                  onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
-                  className="mt-2"
+                  value={material.jumlah}
+                  onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
+                  placeholder="0"
                 />
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label>Jumlah</Label>
-              <Input
-                value={material.jumlah}
-                onChange={(e) => updateMaterial(material.id, "jumlah", e.target.value)}
-                placeholder="0"
-              />
-            </div>
-            {/* Satuan Material (Always visible now) */}
-            <div className="space-y-2">
-              <Label>Satuan</Label>
-              <Select
-                value={material.satuan}
-                onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
+              </div>
+              {/* Satuan Material */}
+              <div className="space-y-2">
+                <Label>Satuan</Label>
+                <Select
+                  value={material.satuan}
+                  onValueChange={(value) => updateMaterial(material.id, "satuan", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {satuanOptions.map((satuan) => (
+                      <SelectItem key={satuan} value={satuan}>
+                        {satuan}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Keterangan Material */}
+              <div className="space-y-2">
+                <Label>Keterangan</Label>
+                <Input
+                  value={material.keterangan || ""}
+                  onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
+                  placeholder="Catatan material (opsional)"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={() => removeMaterial(material.id)}
+                disabled={detail.materials.length === 1}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {satuanOptions.map((satuan) => (
-                    <SelectItem key={satuan} value={satuan}>
-                      {satuan}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
-            {/* Keterangan Material (Always visible now) */}
-            <div className="space-y-2">
-              <Label>Keterangan</Label>
-              <Input
-                value={material.keterangan || ""}
-                onChange={(e) => updateMaterial(material.id, "keterangan", e.target.value)}
-                placeholder="Catatan material (opsional)"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => removeMaterial(material.id)}
-              disabled={detail.materials.length === 1}
-            >
-              <Trash2 className="h-4 w-4" />
+          ))}
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+              <Plus className="h-4 w-4 mr-1" />
+              Tambah Material
             </Button>
           </div>
-        ))}
-        <div className="flex justify-end">
-          <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-            <Plus className="h-4 w-4 mr-1" />
-            Tambah Material
-          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -128,25 +128,27 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
               onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
             />
           </div>
-          {/* Satuan (Always visible now) */}
-          <div className="space-y-2">
-            <Label>Satuan</Label>
-            <Select
-              value={peralatan.satuan}
-              onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {satuanOptions.map((satuan) => (
-                  <SelectItem key={satuan} value={satuan}>
-                    {satuan}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Satuan (Conditional visibility) */}
+          {reportType !== "tersier" && (
+            <div className="space-y-2">
+              <Label>Satuan</Label>
+              <Select
+                value={peralatan.satuan}
+                onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {satuanOptions.map((satuan) => (
+                    <SelectItem key={satuan} value={satuan}>
+                      {satuan}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Button
             type="button"
             variant="destructive"

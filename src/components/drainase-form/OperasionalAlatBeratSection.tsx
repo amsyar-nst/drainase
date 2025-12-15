@@ -161,46 +161,51 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               maxLength={2}
             />
           </div>
-          {/* Dexlite Jumlah (Always visible now) */}
-          <div className="space-y-2 md:col-span-1">
-            <Label>Dexlite</Label>
-            <Input
-              type="text"
-              placeholder="Jumlah (L)"
-              value={operasional.dexliteJumlah}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
-            />
-          </div>
-          {/* Pertalite Jumlah (Always visible now) */}
-          <div className="space-y-2 md:col-span-1">
-            <Label>Pertalite</Label>
-            <Input
-              type="text"
-              placeholder="Jumlah (L)"
-              value={operasional.pertaliteJumlah}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
-            />
-          </div>
-          {/* Bio Solar Jumlah (Always visible now) */}
-          <div className="space-y-2 md:col-span-1">
-            <Label>Bio Solar</Label>
-            <Input
-              type="text"
-              placeholder="Jumlah (L)"
-              value={operasional.bioSolarJumlah}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
-            />
-          </div>
-          {/* Keterangan (Always visible now) */}
-          <div className="space-y-2 md:col-span-3">
-            <Label>Keterangan</Label>
-            <Textarea
-              placeholder="Catatan tambahan"
-              value={operasional.keterangan}
-              onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
-              rows={1}
-            />
-          </div>
+          {/* Conditional fields for Harian/Bulanan */}
+          {reportType !== "tersier" && (
+            <>
+              {/* Dexlite Jumlah */}
+              <div className="space-y-2 md:col-span-1">
+                <Label>Dexlite</Label>
+                <Input
+                  type="text"
+                  placeholder="Jumlah (L)"
+                  value={operasional.dexliteJumlah}
+                  onChange={(e) => updateOperasionalAlatBerat(operasional.id, "dexliteJumlah", e.target.value)}
+                />
+              </div>
+              {/* Pertalite Jumlah */}
+              <div className="space-y-2 md:col-span-1">
+                <Label>Pertalite</Label>
+                <Input
+                  type="text"
+                  placeholder="Jumlah (L)"
+                  value={operasional.pertaliteJumlah}
+                  onChange={(e) => updateOperasionalAlatBerat(operasional.id, "pertaliteJumlah", e.target.value)}
+                />
+              </div>
+              {/* Bio Solar Jumlah */}
+              <div className="space-y-2 md:col-span-1">
+                <Label>Bio Solar</Label>
+                <Input
+                  type="text"
+                  placeholder="Jumlah (L)"
+                  value={operasional.bioSolarJumlah}
+                  onChange={(e) => updateOperasionalAlatBerat(operasional.id, "bioSolarJumlah", e.target.value)}
+                />
+              </div>
+              {/* Keterangan */}
+              <div className="space-y-2 md:col-span-3">
+                <Label>Keterangan</Label>
+                <Textarea
+                  placeholder="Catatan tambahan"
+                  value={operasional.keterangan}
+                  onChange={(e) => updateOperasionalAlatBerat(operasional.id, "keterangan", e.target.value)}
+                  rows={1}
+                />
+              </div>
+            </>
+          )}
           {/* Remove Button */}
           <div className="md:col-span-1 flex justify-end">
             <Button
