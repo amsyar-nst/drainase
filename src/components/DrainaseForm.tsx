@@ -431,6 +431,8 @@ export const DrainaseForm = () => {
         );
 
         // Update the currentKegiatan with the copied data
+        const copiedJumlahPHL = harianKegiatan.jumlah_phl || 0;
+        console.log(`Attempting to copy Harian PHL (${copiedJumlahPHL}) to Tersier UPT.`);
         updateCurrentKegiatan({
           panjangPenanganan: harianKegiatan.panjang_penanganan || "",
           lebarRataRata: harianKegiatan.lebar_rata_rata || "",
@@ -445,7 +447,7 @@ export const DrainaseForm = () => {
           keterangan: harianKegiatan.keterangan || "",
           aktifitasPenangananDetails: aktifitasPenangananDetails.length > 0 ? aktifitasPenangananDetails : [createNewPenangananDetailFormState()],
           // Tersier specific fields might also be copied if they exist in harianKegiatan
-          jumlahUPT: harianKegiatan.jumlah_phl || 0, // <--- CHANGE IS HERE: Copying jumlah_phl to jumlahUPT
+          jumlahUPT: copiedJumlahPHL, // <--- CHANGE IS HERE: Copying jumlah_phl to jumlahUPT
           jumlahP3SU: harianKegiatan.jumlah_p3su || 0,
           rencanaPanjang: harianKegiatan.rencana_panjang || "",
           rencanaVolume: harianKegiatan.rencana_volume || "",
@@ -453,7 +455,741 @@ export const DrainaseForm = () => {
           realisasiVolume: harianKegiatan.realisasi_volume || "",
           sisaTargetHari: harianKegiatan.sisa_target || "",
         });
-        console.log(`Copied Harian PHL (${harianKegiatan.jumlah_phl}) to Tersier UPT.`);
+        console.log(`Successfully copied Harian PHL (${copiedJumlahPHL}) to Tersier UPT.`);
+        toast.info("Data dari laporan Harian yang cocok telah disalin.");
+
+      } catch (error: any) {
+        console.error("Error fetching and prepopulating Tersier data:", error);
+        toast.error("Gagal menyalin data Harian: " + (error.message || JSON.stringify(error)));
+      }
+    };
+
+    // Trigger data fetching when reportType is tersier and key fields are filled, and it's a new report
+    if (formData.reportType === "tersier" && !laporanId &&
+        currentKegiatan.hariTanggal && currentKegiatan.namaJalan &&
+        currentKegiatan.kecamatan && currentKegiatan.kelurahan) {
+      fetchAndPrepopulateTersierData();
+    }
+  }, [
+    formData.reportType,
+    laporanId,
+    currentKegiatan.hariTanggal,
+    currentKegiatan.namaJalan,
+    currentKegiatan.kecamatan,
+    currentKegiatan.kelurahan,
+    currentKegiatanIndex, // Re-run if activity changes
+    user,
+  ]);
+
+
+  const loadLaporan = async (laporanId: string) => {
+    setIsLoading(true);
+    try {
+      if (!user) {
+        toast.error('Anda harus login untuk memuat laporan.');
+        navigate('/login');
+        return;
+      }
+
+      const { data: laporanData, error: laporanError } = await supabase
+        .from('laporan_drainase')
+        .select('*')
+        .eq('id', laporanId)
+        .eq('user_id', user.id) // Tambahkan filter user_id untuk RLS
+        .single();
+
+      if (laporanError) throw laporanError;
+      if (!laporanData) {
+        toast.error('Laporan tidak ditemukan atau Anda tidak memiliki akses.');
+        navigate('/laporan');
+        return;
+      }
+
+      setLaporanId(laporanId);
+
+      const { data: kegiatanData, error: kegiatanError } = await supabase
+        .from('kegiatan_drainase')
+        .select('*')
+        .eq('laporan_id', laporanId);
+
+      if (kegiatanError) throw kegiatanError;
+
+      const kegiatansWithDetails = await Promise.all(
+        (kegiatanData || []).map(async (kegiatan) => {
+          const [peralatanRes, operasionalRes, aktifitasDetailsRes] = await Promise.all([
+            supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', kegiatan.id),
+            supabase.from('aktifitas_penanganan_detail').select('*').eq('kegiatan_id', kegiatan.id),
+          ]);
+
+          let peralatans = (peralatanRes.data || []).map(p => ({
+            id: p.id,
+            nama: p.nama,
+            jumlah: p.jumlah,
+            satuan: p.satuan || "Unit",
+          }));
+          if (peralatans.length === 0) {
+            peralatans.push({ id: "peralatan-" + Date.now().toString() + '-per', nama: "", jumlah: 1, satuan: "Unit" });
+          }
+
+          let operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
+            id: o.id,
+            jenis: o.jenis,
+            jumlah: o.jumlah,
+            dexliteJumlah: o.dexlite_jumlah || "",
+            dexliteSatuan: o.dexlite_satuan || "Liter",
+            pertaliteJumlah: o.pertalite_jumlah || "",
+            pertaliteSatuan: o.pertalite_satuan || "Liter",
+            bioSolarJumlah: o.bio_solar_jumlah || "",
+            bioSolarSatuan: o.bio_solar_satuan || "Liter",
+            keterangan: o.keterangan || "",
+          }));
+          // Always ensure at least one operasional entry for consistency
+          if (operasionalAlatBerats.length === 0) {
+            operasionalAlatBerats.push({
+              id: "operasional-" + Date.now().toString() + '-op',
+              jenis: "",
+              jumlah: 0,
+              dexliteJumlah: "",
+              dexliteSatuan: "Liter",
+              pertaliteJumlah: "",
+              pertaliteSatuan: "Liter",
+              bioSolarJumlah: "",
+              bioSolarSatuan: "Liter",
+              keterangan: "",
+            });
+          }
+
+          const aktifitasPenangananDetails: PenangananDetailFormState[] = await Promise.all(
+            (aktifitasDetailsRes.data || []).map(async (detail) => {
+              const { data: materialsRes, error: materialsError } = await supabase
+                .from('material_kegiatan')
+                .select('*')
+                .eq('aktifitas_detail_id', detail.id);
+
+              if (materialsError) {
+                console.error("Error fetching materials for aktifitas_detail_id:", detail.id, materialsError);
+                throw materialsError;
+              }
+
+              let materials = (materialsRes || []).map(m => ({
+                id: m.id,
+                jenis: m.jenis,
+                jumlah: m.jumlah,
+                satuan: m.satuan,
+                keterangan: m.keterangan || "",
+                aktifitas_detail_id: m.aktifitas_detail_id || null,
+              }));
+              // Always ensure at least one material entry for consistency
+              if (materials.length === 0) {
+                materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "", aktifitas_detail_id: null });
+              }
+
+              // Initialize UI-specific states
+              const initialMaterialCustomInputs: Record<string, string> = {};
+              materials.forEach(m => {
+                if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
+                  initialMaterialCustomInputs[m.id] = m.jenis;
+                  m.jenis = "custom"; // Set to 'custom' for select component
+                }
+              });
+
+              let selectedSedimenOption: string = "";
+              let customSedimen: string = "";
+              if (detail.jenis_sedimen) {
+                if (predefinedSedimenOptions.includes(detail.jenis_sedimen)) {
+                  selectedSedimenOption = detail.jenis_sedimen;
+                } else {
+                  selectedSedimenOption = "custom";
+                  customSedimen = detail.jenis_sedimen;
+                }
+              }
+
+              return {
+                id: detail.id,
+                kegiatanId: detail.kegiatan_id,
+                jenisSaluran: (detail.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
+                jenisSedimen: (detail.jenis_sedimen || "") as string,
+                aktifitasPenanganan: detail.aktifitas_penanganan || "",
+                foto0: ensureArray(detail.foto_0_url),
+                foto50: ensureArray(detail.foto_50_url),
+                foto100: ensureArray(detail.foto_100_url),
+                fotoSket: ensureArray(detail.foto_sket_url),
+                foto0Url: ensureArray(detail.foto_0_url),
+                foto50Url: ensureArray(detail.foto_50_url),
+                foto100Url: ensureArray(detail.foto_100_url),
+                fotoSketUrl: ensureArray(detail.foto_sket_url),
+                materials: materials,
+                selectedSedimenOption: selectedSedimenOption, // UI state
+                customSedimen: customSedimen, // UI state
+                materialCustomInputs: initialMaterialCustomInputs, // UI state
+              };
+            })
+          );
+
+          // Always ensure at least one aktifitasPenangananDetail for consistency
+          if (aktifitasPenangananDetails.length === 0) {
+            aktifitasPenangananDetails.push(createNewPenangananDetailFormState());
+          }
+
+          return {
+            id: kegiatan.id,
+            namaJalan: kegiatan.nama_jalan,
+            kecamatan: kegiatan.kecamatan,
+            kelurahan: kegiatan.kelurahan,
+            panjangPenanganan: kegiatan.panjang_penanganan || "",
+            lebarRataRata: kegiatan.lebar_rata_rata || "",
+            rataRataSedimen: kegiatan.rata_rata_sedimen || "",
+            volumeGalian: kegiatan.volume_galian || "",
+            peralatans: peralatans,
+            operasionalAlatBerats: operasionalAlatBerats,
+            koordinator: kegiatan.koordinator || [],
+            jumlahPHL: kegiatan.jumlah_phl || 0,
+            keterangan: kegiatan.keterangan || "",
+            hariTanggal: kegiatan.hari_tanggal ? new Date(kegiatan.hari_tanggal) : new Date(),
+            jumlahUPT: kegiatan.jumlah_upt || 0,
+            jumlahP3SU: kegiatan.jumlah_p3su || 0,
+            rencanaPanjang: kegiatan.rencana_panjang || "",
+            rencanaVolume: kegiatan.rencana_volume || "",
+            realisasiPanjang: kegiatan.realisasi_panjang || "",
+            realisasiVolume: kegiatan.realisasi_volume || "",
+            sisaTargetHari: kegiatan.sisa_target || "",
+            aktifitasPenangananDetails: aktifitasPenangananDetails,
+          };
+        })
+      );
+
+      setFormData({
+        tanggal: laporanData.tanggal ? new Date(laporanData.tanggal) : null,
+        periode: laporanData.periode,
+        reportType: (laporanData.report_type || "harian") as "harian" | "bulanan" | "tersier",
+        kegiatans: kegiatansWithDetails.length > 0 ? kegiatansWithDetails : [createNewKegiatanDrainase()]
+      });
+
+      if (kegiatansWithDetails.length > 0) {
+        setCurrentKegiatanIndex(0);
+      } else {
+        setCurrentKegiatanIndex(0);
+      }
+
+      toast.success('Laporan berhasil dimuat');
+    } catch (error: any) {
+      console.error('Error loading laporan:', error);
+      toast.error('Gagal memuat laporan: ' + (error.message || JSON.stringify(error)));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateCurrentKegiatan = (updates: Partial<KegiatanDrainase>) => {
+    const newKegiatans = [...formData.kegiatans];
+    newKegiatans[currentKegiatanIndex] = { ...currentKegiatan, ...updates };
+    setFormData({ ...formData, kegiatans: newKegiatans });
+  };
+
+  const handleSetCurrentKegiatanIndex = (index: number) => {
+    setCurrentKegiatanIndex(index);
+  };
+
+  const addKegiatan = () => {
+    const newKegiatan = createNewKegiatanDrainase();
+    setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
+    setCurrentKegiatanIndex(formData.kegiatans.length);
+    setPeralatanCustomInputs({});
+    setOperasionalCustomInputs({});
+  };
+
+  const removeKegiatan = (index: number) => {
+    if (formData.kegiatans.length > 1) {
+      const newKegiatans = formData.kegiatans.filter((_, i) => i !== index);
+      setFormData({ ...formData, kegiatans: newKegiatans });
+      if (currentKegiatanIndex >= newKegiatans.length) {
+        setCurrentKegiatanIndex(newKegiatans.length - 1);
+      }
+    }
+  };
+
+  const handleKecamatanChange = (value: string) => {
+    setSelectedKecamatan(value);
+    updateCurrentKegiatan({ kecamatan: value, kelurahan: "" });
+  };
+
+  const handleKelurahanChange = (value: string) => {
+    updateCurrentKegiatan({ kelurahan: value });
+  };
+
+  const updateAktifitasPenangananDetail = useCallback((detailIndex: number, updates: Partial<PenangananDetailFormState>) => {
+    const newDetails = [...currentKegiatan.aktifitasPenangananDetails];
+    const updatedDetail = { ...newDetails[detailIndex], ...updates };
+
+    // Handle custom material inputs within the detail
+    if (updates.materialCustomInputs) {
+      updatedDetail.materialCustomInputs = { ...updatedDeta<ctrl60><think>**Resolving the Compile Error**
+
+I've just revisited the compiler error and confirmed it's a direct typo. The error points to "peralataanToInsert," but it should clearly be "peralatanToInsert" according to the suggested fix. I'm implementing the change to resolve the issue swiftly. This correction should eliminate the compile-time error.
+
+
+</think>Anda benar, itu adalah kesalahan ketik. Saya akan memperbaikinya dari `peralataanToInsert` menjadi `peralatanToInsert`.
+
+<dyad-write path="src/components/DrainaseForm.tsx" description="Memperbaiki kesalahan penulisan variabel 'peralataanToInsert' menjadi 'peralatanToInsert'.">
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom"; 
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { format, parse, isValid } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { CalendarIcon, Plus, Trash2, FileText, Eye, Save, List, Download, Check, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { LaporanDrainase, KegiatanDrainase, Material, Peralatan, OperasionalAlatBerat, AktifitasPenangananDetail } from "@/types/laporan";
+import { PenangananDetailFormState } from "@/types/form-types";
+import { kecamatanKelurahanData, koordinatorOptions, satuanOptions, materialDefaultUnits, peralatanOptions, materialOptions, alatBeratOptions } from "@/data/kecamatan-kelurahan";
+import { toast } from "sonner";
+import { generatePDF } from "@/lib/pdf-generator";
+import { generatePDFTersier } from "@/lib/pdf-generator-tersier";
+import { supabase } from "@/integrations/supabase/client";
+import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
+import { PeralatanSection } from "./drainase-form/PeralatanSection";
+import { PenangananDetailSection } from "./drainase-form/PenangananDetailSection";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useSession } from "./SessionContextProvider";
+
+const predefinedSedimenOptions = [
+  "Padat", "Cair", "Padat & Cair", "Batu", "Batu/Padat", "Batu/Cair",
+  "Padat & Batu", "Padat/ Gulma & Sampah", "Padat/ Cair/Sampah", "Gulma/Rumput",
+  "Batu/ Padat & Cair", "Sampah"
+];
+
+// Initial state for a new PenangananDetailFormState
+const createNewPenangananDetailFormState = (): PenangananDetailFormState => ({
+  id: "detail-" + Date.now().toString(),
+  foto0: [],
+  foto50: [],
+  foto100: [],
+  fotoSket: [],
+  jenisSaluran: "",
+  jenisSedimen: "",
+  aktifitasPenanganan: "",
+  materials: [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
+  selectedSedimenOption: "",
+  customSedimen: "",
+  materialCustomInputs: {},
+});
+
+// Initial state for a new KegiatanDrainase
+const createNewKegiatanDrainase = (): KegiatanDrainase => ({
+  id: "kegiatan-" + Date.now().toString(),
+  namaJalan: "",
+  kecamatan: "",
+  kelurahan: "",
+  panjangPenanganan: "",
+  lebarRataRata: "",
+  rataRataSedimen: "",
+  volumeGalian: "",
+  peralatans: [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
+  operasionalAlatBerats: [{
+    id: "operasional-" + Date.now().toString(),
+    jenis: "",
+    jumlah: 0,
+    dexliteJumlah: "",
+    dexliteSatuan: "Liter",
+    pertaliteJumlah: "",
+    pertaliteSatuan: "Liter",
+    bioSolarJumlah: "",
+    bioSolarSatuan: "Liter",
+    keterangan: "",
+  }],
+  koordinator: [],
+  jumlahPHL: 0,
+  keterangan: "",
+  hariTanggal: new Date(),
+  jumlahUPT: 0,
+  jumlahP3SU: 0,
+  rencanaPanjang: "",
+  rencanaVolume: "",
+  realisasiPanjang: "",
+  realisasiVolume: "",
+  sisaTargetHari: "",
+  aktifitasPenangananDetails: [createNewPenangananDetailFormState()],
+});
+
+export const DrainaseForm = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useSession();
+
+  const [formData, setFormData] = useState<LaporanDrainase>({
+    tanggal: null,
+    periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
+    reportType: "harian",
+    kegiatans: [createNewKegiatanDrainase()]
+  });
+
+  const [currentKegiatanIndex, setCurrentKegiatanIndex] = useState(0);
+  const [selectedKecamatan, setSelectedKecamatan] = useState("");
+  const [kelurahanOptions, setKelurahanOptions] = useState<string[]>([]);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [laporanId, setLaporanId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({});
+  const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
+
+  const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
+  const lastCalculatedVolumeRef = useRef<string | null>(null);
+
+  const [mainDateInputString, setMainDateInputString] = useState<string>(
+    formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+  );
+
+  const [activityDateInputString, setActivityDateInputString] = useState<string>(
+    currentKegiatan.hariTanggal ? format(currentKegiatan.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+  );
+
+  // Helper to ensure array of strings for URLs
+  const ensureArray = (value: string | string[] | null | undefined): string[] => {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value) {
+      return [value];
+    }
+    return [];
+  }
+
+  useEffect(() => {
+    if (id) {
+      loadLaporan(id);
+    }
+  }, [id]);
+
+  // Update local state for current activity when currentKegiatanIndex changes
+  useEffect(() => {
+    if (formData.kegiatans.length > 0) {
+      const currentKec = formData.kegiatans[currentKegiatanIndex];
+      setSelectedKecamatan(currentKec.kecamatan);
+      const selected = kecamatanKelurahanData.find((k) => k.kecamatan === currentKec.kecamatan);
+      setKelurahanOptions(selected?.kelurahan || []);
+
+      // Update activity date input string
+      setActivityDateInputString(
+        currentKec.hariTanggal ? format(currentKec.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+      );
+
+      // Initialize custom inputs for Peralatan
+      const initialPeralatanCustomInputs: Record<string, string> = {};
+      currentKec.peralatans.forEach(p => {
+        if (!peralatanOptions.includes(p.nama) && p.nama !== "") {
+          initialPeralatanCustomInputs[p.id] = p.nama;
+          p.nama = "custom";
+        }
+      });
+      setPeralatanCustomInputs(initialPeralatanCustomInputs);
+
+      // Initialize custom inputs for Operasional Alat Berat
+      const initialOperasionalCustomInputs: Record<string, string> = {};
+      currentKec.operasionalAlatBerats.forEach(op => {
+        if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
+          initialOperasionalCustomInputs[op.id] = op.jenis;
+          op.jenis = "custom";
+        }
+      });
+      setOperasionalCustomInputs(initialOperasionalCustomInputs);
+
+    } else {
+      setSelectedKecamatan("");
+      setKelurahanOptions([]);
+      setActivityDateInputString("");
+      setPeralatanCustomInputs({});
+      setOperasionalCustomInputs({});
+    }
+  }, [formData.kegiatans, currentKegiatanIndex]);
+
+  // Update main report date input string
+  useEffect(() => {
+    setMainDateInputString(
+      formData.tanggal ? format(formData.tanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
+    );
+  }, [formData.tanggal]);
+
+  // Effect for Volume Galian calculation (only for Harian/Bulanan)
+  useEffect(() => {
+    if (formData.reportType !== "tersier") {
+      const panjang = parseFloat(currentKegiatan.panjangPenanganan.replace(',', '.')) || 0;
+      const lebar = parseFloat(currentKegiatan.lebarRataRata.replace(',', '.')) || 0;
+      const tinggi = parseFloat(currentKegiatan.rataRataSedimen.replace(',', '.')) || 0;
+
+      const calculatedVolume = (panjang * lebar * tinggi).toFixed(2);
+
+      const isVolumeGalianEmpty = currentKegiatan.volumeGalian === "";
+      const isVolumeGalianSameAsLastCalculated = currentKegiatan.volumeGalian === lastCalculatedVolumeRef.current;
+
+      if (isVolumeGalianEmpty || (isVolumeGalianSameAsLastCalculated && currentKegiatan.volumeGalian !== calculatedVolume)) {
+        updateCurrentKegiatan({ volumeGalian: calculatedVolume });
+      }
+
+      lastCalculatedVolumeRef.current = calculatedVolume;
+    }
+  }, [
+    currentKegiatan.panjangPenanganan,
+    currentKegiatan.lebarRataRata,
+    currentKegiatan.rataRataSedimen,
+    currentKegiatanIndex,
+    formData.reportType,
+  ]);
+
+  // Effect for Tersier report type synchronization (Realisasi Panjang/Volume from Panjang Penanganan/Volume Galian)
+  useEffect(() => {
+    if (formData.reportType === "tersier") {
+      const panjangPenanganan = currentKegiatan.panjangPenanganan;
+      const volumeGalian = currentKegiatan.volumeGalian;
+
+      // Synchronize Realisasi Panjang with Panjang Penanganan
+      if (currentKegiatan.realisasiPanjang !== panjangPenanganan) {
+        updateCurrentKegiatan({ realisasiPanjang: panjangPenanganan });
+      }
+      // Synchronize Realisasi Volume with Volume Galian
+      if (currentKegiatan.realisasiVolume !== volumeGalian) {
+        updateCurrentKegiatan({ realisasiVolume: volumeGalian });
+      }
+      // Also set Rencana Panjang/Volume to match Panjang Penanganan/Volume Galian for Tersier
+      if (currentKegiatan.rencanaPanjang !== panjangPenanganan) {
+        updateCurrentKegiatan({ rencanaPanjang: panjangPenanganan });
+      }
+      if (currentKegiatan.rencanaVolume !== volumeGalian) {
+        updateCurrentKegiatan({ rencanaVolume: volumeGalian });
+      }
+    }
+  }, [
+    currentKegiatan.panjangPenanganan,
+    currentKegiatan.volumeGalian,
+    currentKegiatan.realisasiPanjang,
+    currentKegiatan.realisasiVolume,
+    currentKegiatan.rencanaPanjang,
+    currentKegiatan.rencanaVolume,
+    formData.reportType,
+    currentKegiatanIndex,
+  ]);
+
+  // Effect to fetch and prepopulate Tersier data from Harian
+  useEffect(() => {
+    const fetchAndPrepopulateTersierData = async () => {
+      if (!user) {
+        console.log("Prepopulation skipped: User not logged in.");
+        return;
+      }
+      if (laporanId) {
+        console.log("Prepopulation skipped: Editing existing report.");
+        return;
+      }
+      if (formData.reportType !== "tersier") {
+        console.log("Prepopulation skipped: Report type is not tersier.");
+        return;
+      }
+
+      const { hariTanggal, namaJalan, kecamatan, kelurahan } = currentKegiatan;
+
+      if (!hariTanggal || !namaJalan || !kecamatan || !kelurahan) {
+        console.log("Prepopulation skipped: Key activity fields (date, location) are not fully filled.");
+        return;
+      }
+
+      // Check if the current activity is mostly empty, to avoid overwriting user input
+      const isCurrentKegiatanMostlyEmpty =
+        !currentKegiatan.panjangPenanganan &&
+        !currentKegiatan.lebarRataRata &&
+        !currentKegiatan.rataRataSedimen &&
+        !currentKegiatan.volumeGalian &&
+        currentKegiatan.peralatans.every(p => !p.nama && p.jumlah === 1) &&
+        currentKegiatan.operasionalAlatBerats.every(o => !o.jenis && o.jumlah === 0) &&
+        currentKegiatan.aktifitasPenangananDetails.every(d =>
+          !d.jenisSaluran && !d.jenisSedimen && !d.aktifitasPenanganan &&
+          d.foto0.length === 0 && d.foto50.length === 0 && d.foto100.length === 0 && d.fotoSket.length === 0 &&
+          d.materials.every(m => !m.jenis && !m.jumlah && !m.satuan)
+        );
+
+      if (!isCurrentKegiatanMostlyEmpty) {
+        console.log("Prepopulation skipped: Current activity form is not mostly empty.");
+        return;
+      }
+
+      console.log("Attempting to fetch and prepopulate Tersier data from Harian...");
+      console.log("Search criteria:", {
+        date: format(hariTanggal, 'yyyy-MM-dd'),
+        namaJalan,
+        kecamatan,
+        kelurahan
+      });
+
+      try {
+        // 1. Find Harian Laporan for the same date
+        const { data: harianLaporans, error: harianLaporanError } = await supabase
+          .from('laporan_drainase')
+          .select('id')
+          .eq('tanggal', format(hariTanggal, 'yyyy-MM-dd'))
+          .eq('report_type', 'harian')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }); // Get the most recent one
+
+        if (harianLaporanError) throw harianLaporanError;
+        if (!harianLaporans || harianLaporans.length === 0) {
+          console.log("No matching harian laporan found for the date.");
+          return; // No matching harian laporan found
+        }
+
+        const harianLaporanId = harianLaporans[0].id;
+        console.log("Found Harian Laporan ID:", harianLaporanId);
+
+        // 2. Find Harian Kegiatan for the same location
+        const { data: harianKegiatans, error: harianKegiatanError } = await supabase
+          .from('kegiatan_drainase')
+          .select('*')
+          .eq('laporan_id', harianLaporanId)
+          .eq('nama_jalan', namaJalan)
+          .eq('kecamatan', kecamatan)
+          .eq('kelurahan', kelurahan)
+          .order('created_at', { ascending: false }); // Get the most recent one
+
+        if (harianKegiatanError) throw harianKegiatanError;
+        if (!harianKegiatans || harianKegiatans.length === 0) {
+          console.log("No matching harian kegiatan found for the location.");
+          return; // No matching harian kegiatan found
+        }
+
+        const harianKegiatan = harianKegiatans[0];
+        console.log("Found Harian Kegiatan:", harianKegiatan);
+
+        // 3. Fetch all associated details for the Harian Kegiatan
+        const [peralatanRes, operasionalRes, aktifitasDetailsRes] = await Promise.all([
+          supabase.from('peralatan_kegiatan').select('*').eq('kegiatan_id', harianKegiatan.id),
+          supabase.from('operasional_alat_berat_kegiatan').select('*').eq('kegiatan_id', harianKegiatan.id),
+          supabase.from('aktifitas_penanganan_detail').select('*').eq('kegiatan_id', harianKegiatan.id),
+        ]);
+
+        const peralatans = (peralatanRes.data || []).map(p => ({
+          id: "peralatan-" + Date.now().toString() + '-' + p.id, // Generate new ID for copied item
+          nama: p.nama,
+          jumlah: p.jumlah,
+          satuan: p.satuan || "Unit",
+        }));
+        console.log("Copied Peralatans:", peralatans);
+
+
+        const operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
+          id: "operasional-" + Date.now().toString() + '-' + o.id, // Generate new ID for copied item
+          jenis: o.jenis,
+          jumlah: o.jumlah,
+          dexliteJumlah: o.dexlite_jumlah || "",
+          dexliteSatuan: o.dexlite_satuan || "Liter",
+          pertaliteJumlah: o.pertalite_jumlah || "",
+          pertaliteSatuan: o.pertalite_satuan || "Liter",
+          bioSolarJumlah: o.bio_solar_jumlah || "",
+          bioSolarSatuan: o.bio_solar_satuan || "Liter",
+          keterangan: o.keterangan || "",
+        }));
+        console.log("Copied Operasional Alat Berats:", operasionalAlatBerats);
+
+
+        const aktifitasPenangananDetails: PenangananDetailFormState[] = await Promise.all(
+          (aktifitasDetailsRes.data || []).map(async (detail) => {
+            const { data: materialsRes } = await supabase
+              .from('material_kegiatan')
+              .select('*')
+              .eq('aktifitas_detail_id', detail.id);
+
+            const materials = (materialsRes || []).map(m => ({
+              id: "material-" + Date.now().toString() + '-' + m.id, // Generate new ID for copied item
+              jenis: m.jenis,
+              jumlah: m.jumlah,
+              satuan: m.satuan,
+              keterangan: m.keterangan || "",
+              aktifitas_detail_id: null, // Reset FK as it's a new entry
+            }));
+
+            let selectedSedimenOption: string = "";
+            let customSedimen: string = "";
+            if (detail.jenis_sedimen) {
+              if (predefinedSedimenOptions.includes(detail.jenis_sedimen)) {
+                selectedSedimenOption = detail.jenis_sedimen;
+              } else {
+                selectedSedimenOption = "custom";
+                customSedimen = detail.jenis_sedimen;
+              }
+            }
+
+            const copiedDetail = {
+              id: "detail-" + Date.now().toString() + '-' + detail.id, // Generate new ID for copied item
+              kegiatanId: undefined, // Reset FK
+              jenisSaluran: (detail.jenis_saluran || "") as "Terbuka" | "Tertutup" | "Terbuka & Tertutup" | "",
+              jenisSedimen: (detail.jenis_sedimen || "") as string,
+              aktifitasPenanganan: detail.aktifitas_penanganan || "",
+              foto0: ensureArray(detail.foto_0_url),
+              foto50: ensureArray(detail.foto_50_url), // Copy even if not displayed in Tersier UI
+              foto100: ensureArray(detail.foto_100_url),
+              fotoSket: ensureArray(detail.foto_sket_url), // Copy even if not displayed in Tersier UI
+              materials: materials,
+              selectedSedimenOption: selectedSedimenOption,
+              customSedimen: customSedimen,
+              materialCustomInputs: {}, // Will be re-initialized by child component if needed
+            };
+            console.log(`Copied Aktifitas Penanganan Detail ${detail.id}:`, copiedDetail);
+            console.log(`  Foto 0% URLs:`, copiedDetail.foto0);
+            console.log(`  Foto 100% URLs:`, copiedDetail.foto100);
+            return copiedDetail;
+          })
+        );
+
+        // Update the currentKegiatan with the copied data
+        const copiedJumlahPHL = harianKegiatan.jumlah_phl || 0;
+        console.log(`Attempting to copy Harian PHL (${copiedJumlahPHL}) to Tersier UPT.`);
+        updateCurrentKegiatan({
+          panjangPenanganan: harianKegiatan.panjang_penanganan || "",
+          lebarRataRata: harianKegiatan.lebar_rata_rata || "",
+          rataRataSedimen: harianKegiatan.rata_rata_sedimen || "",
+          volumeGalian: harianKegiatan.volume_galian || "",
+          peralatans: peralatans.length > 0 ? peralatans : [{ id: "peralatan-" + Date.now().toString(), nama: "", jumlah: 1, satuan: "Unit" }],
+          operasionalAlatBerats: operasionalAlatBerats.length > 0 ? operasionalAlatBerats : [{
+            id: "operasional-" + Date.now().toString(), jenis: "", jumlah: 0, dexliteJumlah: "", dexliteSatuan: "Liter", pertaliteJumlah: "", pertaliteSatuan: "Liter", bioSolarJumlah: "", bioSolarSatuan: "Liter", keterangan: "",
+          }],
+          koordinator: harianKegiatan.koordinator || [],
+          jumlahPHL: harianKegiatan.jumlah_phl || 0,
+          keterangan: harianKegiatan.keterangan || "",
+          aktifitasPenangananDetails: aktifitasPenangananDetails.length > 0 ? aktifitasPenangananDetails : [createNewPenangananDetailFormState()],
+          // Tersier specific fields might also be copied if they exist in harianKegiatan
+          jumlahUPT: copiedJumlahPHL, // <--- CHANGE IS HERE: Copying jumlah_phl to jumlahUPT
+          jumlahP3SU: harianKegiatan.jumlah_p3su || 0,
+          rencanaPanjang: harianKegiatan.rencana_panjang || "",
+          rencanaVolume: harianKegiatan.rencana_volume || "",
+          realisasiPanjang: harianKegiatan.realisasi_panjang || "",
+          realisasiVolume: harianKegiatan.realisasi_volume || "",
+          sisaTargetHari: harianKegiatan.sisa_target || "",
+        });
+        console.log(`Successfully copied Harian PHL (${copiedJumlahPHL}) to Tersier UPT.`);
         toast.info("Data dari laporan Harian yang cocok telah disalin.");
 
       } catch (error: any) {
@@ -1536,7 +2272,7 @@ export const DrainaseForm = () => {
                   id={`jumlah-upt-${currentKegiatan.id}`}
                   type="text"
                   placeholder="0"
-                  value={currentKegiatan.jumlahUPT === 0 ? "" : currentKegiatan.jumlahUPT?.toString()}
+                  value={currentKegiatan.jumlahUPT?.toString()} 
                   onChange={(e) => {
                     const value = e.target.value;
                     if (value === "" || /^\d{0,2}$/.test(value)) {
