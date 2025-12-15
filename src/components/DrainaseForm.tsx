@@ -1533,16 +1533,16 @@ export const DrainaseForm = () => {
             <div className="grid gap-4 md:grid-cols-2 border rounded-lg p-4">
               <h3 className="font-semibold text-lg col-span-full">Kebutuhan Tenaga Kerja (Orang)</h3>
               <div className="space-y-2">
-                <Label htmlFor={`jumlah-phl-tersier-${currentKegiatan.id}`}>Jumlah PHL</Label> {/* Changed label and id */}
+                <Label htmlFor={`jumlah-phl-tersier-${currentKegiatan.id}`}>Jumlah PHL</Label> 
                 <Input
-                  id={`jumlah-phl-tersier-${currentKegiatan.id}`} {/* Changed id */}
+                  id={`jumlah-phl-tersier-${currentKegiatan.id}`} 
                   type="text"
                   placeholder="0"
-                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL?.toString()} {/* Use jumlahPHL */}
+                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL?.toString()} 
                   onChange={(e) => {
                     const value = e.target.value;
                     if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) || 0 }); {/* Update jumlahPHL */}
+                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) || 0 }); 
                     }
                   }}
                   maxLength={2}
