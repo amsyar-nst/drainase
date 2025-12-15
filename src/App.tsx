@@ -15,8 +15,6 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <SessionContextProvider>
             <Routes>
@@ -35,6 +33,8 @@ const App = () => {
             </Routes>
           </SessionContextProvider>
         </BrowserRouter>
+        <Toaster />
+        <Sonner />
       </TooltipProvider>
     </QueryClientProvider>
   );
