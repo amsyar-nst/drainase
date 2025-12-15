@@ -64,6 +64,13 @@ const LaporanList = () => {
   const navigate = useNavigate();
   const { user } = useSession(); // Get the current user
 
+  useEffect(() => {
+    console.log("LaporanList component mounted or updated."); // Log ini akan memberi tahu kita jika komponen dimuat
+    if (user) { // Only fetch if user is authenticated
+      fetchLaporans(selectedFilterPeriod);
+    }
+  }, [selectedFilterPeriod, user]); // Re-fetch when filter period or user changes
+
   const fetchLaporans = async (filterPeriod: string | null = null) => {
     if (!user) {
       setLoading(false);
@@ -145,12 +152,6 @@ const LaporanList = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (user) { // Only fetch if user is authenticated
-      fetchLaporans(selectedFilterPeriod);
-    }
-  }, [selectedFilterPeriod, user]); // Re-fetch when filter period or user changes
 
   const handleDelete = async (id: string) => {
     try {
