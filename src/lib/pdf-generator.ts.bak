@@ -240,8 +240,8 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         }
 
         .photo-container img {
-          width: 45px;
-          height: 34px;
+          width: 40px; /* Changed from 45px */
+          height: 40px; /* Changed from 34px */
           object-fit: cover;
           border: 1px solid #ccc;
         }
