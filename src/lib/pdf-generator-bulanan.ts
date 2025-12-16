@@ -410,7 +410,11 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
                       `).join('')}
                     </ul>
                   </td>
-                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.koordinator.join(', ')}</td>
+                  <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+                    <ul class="koordinator-list">
+                      ${kegiatan.koordinator.map(name => `<li>${name}</li>`).join('')}
+                    </ul>
+                  </td>
                   <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahPHL || '-'}</td>
                   <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.keterangan || ''}</td>
                 ` : ''}

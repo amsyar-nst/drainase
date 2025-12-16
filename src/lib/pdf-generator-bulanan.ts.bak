@@ -293,8 +293,10 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
                 <td class="center">${detail.jenisSaluran || '-'}</td>
                 <td class="center">${detail.jenisSedimen || '-'}</td>
                 <td>${detail.aktifitasPenanganan}</td>
-                <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
-                <td class="center">${kegiatan.volumeGalian || '-'}</td>
+                ${detailIndex === 0 ? `
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.panjangPenanganan || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.volumeGalian || '-'}</td>
+                ` : ''}
                 <td>
                   <ul class="material-list">
                     ${detail.materials.filter(m => m.jenis).map(material => `
