@@ -233,25 +233,25 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         }
 
         .photo-container {
-          text-align: center; /* Changed from display: flex */
+          text-align: center;
         }
 
         .photo-container img {
-          width: 47px; /* Adjusted for two images side-by-side */
-          height: 47px; /* Adjusted for two images side-by-side */
+          width: 47px;
+          height: 47px;
           object-fit: cover;
           border: 1px solid #ccc;
-          display: inline-block; /* Added for side-by-side layout */
-          margin: 1px; /* Added for spacing between images */
+          display: inline-block;
+          margin: 0.5px; /* Changed from 1px to 0.5px */
         }
 
-        .material-list, .equipment-list, .koordinator-list { /* Added .koordinator-list */
+        .material-list, .equipment-list, .koordinator-list {
           margin: 0;
           padding: 0;
           list-style: none;
         }
 
-        .material-list li, .equipment-list li, .koordinator-list li { /* Added .koordinator-list li */
+        .material-list li, .equipment-list li, .koordinator-list li {
           margin-bottom: 2px;
           font-size: 6pt;
         }

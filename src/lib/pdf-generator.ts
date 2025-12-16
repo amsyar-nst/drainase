@@ -237,12 +237,12 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         }
 
         .photo-container img {
-          width: 47px;
-          height: 47px;
+          width: 90px; /* Adjusted for two images side-by-side */
+          height: 90px; /* Adjusted for two images side-by-side */
           object-fit: cover;
           border: 1px solid #ccc;
           display: inline-block;
-          margin: 0.5px; /* Changed from 1px to 0.5px */
+          margin: 3px; /* Adjusted for spacing between images */
         }
 
         .material-list, .equipment-list, .koordinator-list {
