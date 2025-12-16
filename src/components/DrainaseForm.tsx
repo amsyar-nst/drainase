@@ -243,21 +243,13 @@ export const DrainaseForm = () => {
       if (currentKegiatan.realisasiVolume !== volumeGalian) {
         updateCurrentKegiatan({ realisasiVolume: volumeGalian });
       }
-      // Also set Rencana Panjang/Volume to match Panjang Penanganan/Volume Galian for Tersier
-      if (currentKegiatan.rencanaPanjang !== panjangPenanganan) {
-        updateCurrentKegiatan({ rencanaPanjang: panjangPenanganan });
-      }
-      if (currentKegiatan.rencanaVolume !== volumeGalian) {
-        updateCurrentKegiatan({ rencanaVolume: volumeGalian });
-      }
+      // Rencana Panjang/Volume are now manual inputs, so no synchronization here.
     }
   }, [
     currentKegiatan.panjangPenanganan,
     currentKegiatan.volumeGalian,
     currentKegiatan.realisasiPanjang,
     currentKegiatan.realisasiVolume,
-    currentKegiatan.rencanaPanjang,
-    currentKegiatan.rencanaVolume,
     formData.reportType,
     currentKegiatanIndex,
   ]);
@@ -449,8 +441,8 @@ export const DrainaseForm = () => {
           // Tersier specific fields might also be copied if they exist in harianKegiatan
           jumlahUPT: harianKegiatan.jumlah_upt || 0, // Keep this for DB, but UI will use jumlahPHL
           jumlahP3SU: harianKegiatan.jumlah_p3su || 0,
-          rencanaPanjang: harianKegiatan.rencana_panjang || "",
-          rencanaVolume: harianKegiatan.rencana_volume || "",
+          rencanaPanjang: harianKegiatan.rencana_panjang || "", // Keep existing value or empty for manual input
+          rencanaVolume: harianKegiatan.rencana_volume || "", // Keep existing value or empty for manual input
           realisasiPanjang: harianKegiatan.realisasi_panjang || "",
           realisasiVolume: harianKegiatan.realisasi_volume || "",
           sisaTargetHari: harianKegiatan.sisa_target || "",
