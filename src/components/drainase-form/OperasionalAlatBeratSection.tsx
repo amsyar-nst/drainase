@@ -103,12 +103,10 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
 
   const updateOperasionalCustomInput = (id: string, value: string) => {
     setOperasionalCustomInputs((prev) => ({ ...prev, [id]: value }));
-    // Also update the actual operasional.jenis in currentKegiatan
-    updateCurrentKegiatan({
-      operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map((o) =>
-        o.id === id ? { ...o, jenis: value } : o
-      ),
-    });
+    // DO NOT update the actual operasional.jenis in currentKegiatan here.
+    // The actual o.jenis in the form state should remain "custom"
+    // when the "Lainnya" option is selected in the dropdown.
+    // The parent component (DrainaseForm) will resolve this when saving.
   };
 
   return (

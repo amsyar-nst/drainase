@@ -60,8 +60,8 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
           const updatedPeralatan = { ...p, [field]: value };
           if (field === "nama") {
             if (value === "custom") {
-              updatedPeralatan.nama = "custom";
-              setPeralatanCustomInputs((prev) => ({ ...prev, [id]: "" }));
+              updatedPeralatan.nama = "custom"; // Keep "custom" for the select
+              setPeralatanCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input
             } else {
               setPeralatanCustomInputs((prev) => {
                 const newInputs = { ...prev };
@@ -86,11 +86,10 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
 
   const updatePeralatanCustomInput = (id: string, value: string) => {
     setPeralatanCustomInputs((prev) => ({ ...prev, [id]: value }));
-    updateCurrentKegiatan({
-      peralatans: currentKegiatan.peralatans.map((p) =>
-        p.id === id ? { ...p, nama: value } : p
-      ),
-    });
+    // DO NOT update p.nama in currentKegiatan.peralatans here.
+    // The actual p.nama in the form state should remain "custom"
+    // when the "Lainnya" option is selected in the dropdown.
+    // The parent component (DrainaseForm) will resolve this when saving.
   };
 
   return (

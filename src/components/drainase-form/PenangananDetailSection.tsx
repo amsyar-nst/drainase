@@ -138,13 +138,15 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         const updatedMaterial = { ...m, [field]: value };
         if (field === "jenis") {
           if (value === "custom") {
-            updatedMaterial.jenis = "custom";
+            updatedMaterial.jenis = "custom"; // Keep "custom" for the select component
             const newCustomInputs = { ...detail.materialCustomInputs, [materialId]: "" };
             updateDetail(index, { materialCustomInputs: newCustomInputs });
           } else {
+            // If a predefined option is selected, clear custom input for this material
             const newCustomInputs = { ...detail.materialCustomInputs };
             delete newCustomInputs[materialId];
             updateDetail(index, { materialCustomInputs: newCustomInputs });
+
             const normalizedJenis = value.toLowerCase().trim();
             const defaultUnit = materialDefaultUnits[normalizedJenis];
             if (defaultUnit) {
@@ -158,15 +160,15 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
       }
       return m;
     });
+    // Only update materials here. materialCustomInputs is handled in the if/else block above.
     updateDetail(index, { materials: newMaterials });
   };
 
   const updateMaterialCustomInput = (materialId: string, value: string) => {
     const newCustomInputs = { ...detail.materialCustomInputs, [materialId]: value };
-    const newMaterials = detail.materials.map((m) =>
-      m.id === materialId ? { ...m, jenis: value } : m
-    );
-    updateDetail(index, { materialCustomInputs: newCustomInputs, materials: newMaterials });
+    // Only update materialCustomInputs. The material.jenis in the materials array
+    // should remain "custom" when "Lainnya" is selected in the dropdown.
+    updateDetail(index, { materialCustomInputs: newCustomInputs });
   };
 
   return (
