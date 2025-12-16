@@ -1115,7 +1115,7 @@ export const DrainaseForm = () => {
       newTanggal = prev.tanggal || new Date(); 
       newPeriode = format(newTanggal, 'MMMM yyyy', { locale: idLocale });
 
-      setCurrentKegiatanIndex(0); // Reset to first activity
+      // setCurrentKegiatanIndex(0); // <--- BARIS INI DIHAPUS
       setPeralatanCustomInputs({}); // Clear custom inputs
       setOperasionalCustomInputs({}); // Clear custom inputs
 
