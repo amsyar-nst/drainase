@@ -59,12 +59,13 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
         if (p.id === id) {
           const updatedPeralatan = { ...p, [field]: value };
           if (field === "nama") {
-            const normalizedNama = (value as string).toLowerCase().trim();
-            const defaultUnit = peralatanDefaultUnits[normalizedNama];
-            if (defaultUnit) {
-              updatedPeralatan.satuan = defaultUnit; // Set default unit
-            } else {
-              updatedPeralatan.satuan = "Unit"; // Fallback default unit
+            if (peralatanOptions.includes(value as string)) {
+              const normalizedNama = (value as string).toLowerCase().trim();
+              const defaultUnit = peralatanDefaultUnits[normalizedNama];
+              updatedPeralatan.satuan = defaultUnit || "Unit";
+            } else if (value === "custom") {
+              updatedPeralatan.nama = ""; // Set to empty string for custom input
+              updatedPeralatan.satuan = "Unit"; // Default unit for custom
             }
           }
           return updatedPeralatan;
@@ -87,7 +88,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
             <Label>Nama Peralatan</Label>
             <Select
               value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
-              onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value === "custom" ? "" : value)}
+              onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih peralatan" />
@@ -101,7 +102,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
                 <SelectItem value="custom">Lainnya</SelectItem>
               </SelectContent>
             </Select>
-            {peralatan.nama === "" && (
+            {!peralatanOptions.includes(peralatan.nama) && (
               <Input
                 type="text"
                 placeholder="Masukkan nama peralatan manual"

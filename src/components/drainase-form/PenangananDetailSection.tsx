@@ -135,13 +135,18 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
       if (m.id === materialId) {
         const updatedMaterial = { ...m, [field]: value };
         if (field === "jenis") {
-          const normalizedJenis = value.toLowerCase().trim();
-          const defaultUnit = materialDefaultUnits[normalizedJenis];
-          if (defaultUnit) {
-            updatedMaterial.satuan = defaultUnit; // Set default unit
-          } else {
-            updatedMaterial.satuan = "M³"; // Fallback default unit
+          // If a predefined option is selected, set the value directly
+          if (materialOptions.includes(value)) {
+            const normalizedJenis = value.toLowerCase().trim();
+            const defaultUnit = materialDefaultUnits[normalizedJenis];
+            updatedMaterial.satuan = defaultUnit || "M³";
+          } else if (value === "custom") {
+            // If "Lainnya" is selected, set jenis to empty string to show custom input
+            updatedMaterial.jenis = ""; 
+            updatedMaterial.satuan = "M³"; // Default unit for custom
           }
+          // If value is not "custom" and not in predefined options, it means user is typing in custom input
+          // In this case, updatedMaterial.jenis already holds the typed value.
         }
         return updatedMaterial;
       }
@@ -478,7 +483,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                 <Label>Jenis Material</Label>
                 <Select
                   value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
-                  onValueChange={(value) => updateMaterial(material.id, "jenis", value === "custom" ? "" : value)}
+                  onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih material" />
@@ -492,7 +497,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                     <SelectItem value="custom">Lainnya</SelectItem>
                   </SelectContent>
                 </Select>
-                {material.jenis === "" && (
+                {!materialOptions.includes(material.jenis) && (
                   <Input
                     type="text"
                     placeholder="Masukkan jenis material manual"

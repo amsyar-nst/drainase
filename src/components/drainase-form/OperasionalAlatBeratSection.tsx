@@ -81,7 +81,13 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map((o) => {
         if (o.id === id) {
           const updatedOperasional = { ...o, [field]: value };
-          return updatedOperasional;
+          if (field === "jenis") {
+            if (alatBeratOptions.includes(value as string)) {
+              // No default unit logic for heavy equipment type, just set the value
+            } else if (value === "custom") {
+              updatedOperasional.jenis = ""; // Set to empty string for custom input
+            }
+          }
         }
         return o;
       }),
@@ -102,7 +108,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             <Label>Jenis Alat Berat</Label>
             <Select
               value={alatBeratOptions.includes(operasional.jenis) ? operasional.jenis : "custom"}
-              onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value === "custom" ? "" : value)}
+              onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Pilih jenis alat berat" />
@@ -116,7 +122,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 <SelectItem value="custom">Lainnya</SelectItem>
               </SelectContent>
             </Select>
-            {operasional.jenis === "" && (
+            {!alatBeratOptions.includes(operasional.jenis) && (
               <Input
                 type="text"
                 placeholder="Masukkan jenis alat berat manual"
