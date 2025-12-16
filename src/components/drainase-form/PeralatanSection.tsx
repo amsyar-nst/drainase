@@ -89,7 +89,6 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
     // DO NOT update p.nama in currentKegiatan.peralatans here.
     // The actual p.nama in the form state should remain "custom"
     // when the "Lainnya" option is selected in the dropdown.
-    // The parent component (DrainaseForm) will resolve this when saving.
   };
 
   return (

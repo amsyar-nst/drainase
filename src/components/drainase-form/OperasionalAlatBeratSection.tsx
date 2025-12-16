@@ -106,7 +106,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
     // DO NOT update the actual operasional.jenis in currentKegiatan here.
     // The actual o.jenis in the form state should remain "custom"
     // when the "Lainnya" option is selected in the dropdown.
-    // The parent component (DrainaseForm) will resolve this when saving.
   };
 
   return (
