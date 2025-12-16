@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area"; // Import ScrollArea
 
 interface OperasionalAlatBeratSectionProps {
   currentKegiatan: KegiatanDrainase;
@@ -115,12 +116,14 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 <SelectValue placeholder="Pilih jenis alat berat" />
               </SelectTrigger>
               <SelectContent>
-                {alatBeratOptions.map((jenis) => (
-                  <SelectItem key={jenis} value={jenis}>
-                    {jenis}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Lainnya</SelectItem>
+                <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
+                  {alatBeratOptions.map((jenis) => (
+                    <SelectItem key={jenis} value={jenis}>
+                      {jenis}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">Lainnya</SelectItem>
+                </ScrollArea>
               </SelectContent>
             </Select>
             {!alatBeratOptions.includes(operasional.jenis) && ( // <--- Perubahan di sini

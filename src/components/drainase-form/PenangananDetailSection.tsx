@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Material } from "@/types/laporan";
 import { materialDefaultUnits, materialOptions, satuanOptions } from "@/data/kecamatan-kelurahan";
 import { PenangananDetailFormState } from "@/types/form-types";
+import { ScrollArea } from "@/components/ui/scroll-area"; // Import ScrollArea
 
 interface PenangananDetailSectionProps {
   detail: PenangananDetailFormState;
@@ -438,12 +439,14 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
               <SelectValue placeholder="Pilih jenis sedimen" />
             </SelectTrigger>
             <SelectContent>
-              {predefinedSedimenOptions.map((jenis) => (
-                <SelectItem key={jenis} value={jenis}>
-                  {jenis}
-                </SelectItem>
-              ))}
-              <SelectItem value="custom">Lainnya</SelectItem>
+              <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
+                {predefinedSedimenOptions.map((jenis) => (
+                  <SelectItem key={jenis} value={jenis}>
+                    {jenis}
+                  </SelectItem>
+                ))}
+                <SelectItem value="custom">Lainnya</SelectItem>
+              </ScrollArea>
             </SelectContent>
           </Select>
           {detail.selectedSedimenOption === "custom" && (
@@ -489,12 +492,14 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                     <SelectValue placeholder="Pilih material" />
                   </SelectTrigger>
                   <SelectContent>
-                    {materialOptions.map((jenis) => (
-                      <SelectItem key={jenis} value={jenis}>
-                        {jenis}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">Lainnya</SelectItem>
+                    <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
+                      {materialOptions.map((jenis) => (
+                        <SelectItem key={jenis} value={jenis}>
+                          {jenis}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">Lainnya</SelectItem>
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
                 {!materialOptions.includes(material.jenis) && (
@@ -526,11 +531,13 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {satuanOptions.map((satuan) => (
-                      <SelectItem key={satuan} value={satuan}>
-                        {satuan}
-                      </SelectItem>
-                    ))}
+                    <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
+                      {satuanOptions.map((satuan) => (
+                        <SelectItem key={satuan} value={satuan}>
+                          {satuan}
+                        </SelectItem>
+                      ))}
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
               </div>

@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area"; // Import ScrollArea
 
 interface PeralatanSectionProps {
   currentKegiatan: KegiatanDrainase;
@@ -94,12 +95,14 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
                 <SelectValue placeholder="Pilih peralatan" />
               </SelectTrigger>
               <SelectContent>
-                {peralatanOptions.map((nama) => (
-                  <SelectItem key={nama} value={nama}>
-                    {nama}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom">Lainnya</SelectItem>
+                <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
+                  {peralatanOptions.map((nama) => (
+                    <SelectItem key={nama} value={nama}>
+                      {nama}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">Lainnya</SelectItem>
+                </ScrollArea>
               </SelectContent>
             </Select>
             {!peralatanOptions.includes(peralatan.nama) && (
@@ -134,11 +137,13 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {satuanOptions.map((satuan) => (
-                    <SelectItem key={satuan} value={satuan}>
-                      {satuan}
-                    </SelectItem>
-                  ))}
+                  <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
+                    {satuanOptions.map((satuan) => (
+                      <SelectItem key={satuan} value={satuan}>
+                        {satuan}
+                      </SelectItem>
+                    ))}
+                  </ScrollArea>
                 </SelectContent>
               </Select>
             </div>
