@@ -129,10 +129,11 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-container img {
-          width: 60px; /* Changed from 90px */
-          height: 60px; /* Changed from 60px */
+          width: 90px; /* Adjusted for two images side-by-side */
+          height: 90px; /* Adjusted for two images side-by-side */
           object-fit: cover;
           border: 1px solid #ccc;
+          margin: 3px; /* Adjusted for spacing between images */
         }
 
         ul {
