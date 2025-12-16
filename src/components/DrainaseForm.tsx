@@ -39,7 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { PeralatanSection } from "./drainase-form/PeralatanSection";
 import { PenangananDetailSection } from "./drainase-form/PenangananDetailSection";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge"; // <--- Missing import added here
 import { useSession } from "./SessionContextProvider";
 
 const predefinedSedimenOptions = [
@@ -125,6 +125,7 @@ export const DrainaseForm = () => {
   
   const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({});
   const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
+  const [newKoordinatorName, setNewKoordinatorName] = useState<string>(""); // State for new coordinator dropdown
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
   const lastCalculatedVolumeRef = useRef<string | null>(null);
@@ -152,7 +153,7 @@ export const DrainaseForm = () => {
     if (id) {
       loadLaporan(id);
     }
-  }, [id]);
+  }, [id, user]); // Add user to dependencies for loadLaporan
 
   // Update local state for current activity when currentKegiatanIndex changes
   useEffect(() => {
@@ -740,17 +741,21 @@ export const DrainaseForm = () => {
     }
   };
 
-  const toggleKoordinator = (koordinatorName: string) => {
-    const currentCoordinators = currentKegiatan.koordinator;
-    if (currentCoordinators.includes(koordinatorName)) {
+  const addKoordinator = () => {
+    if (newKoordinatorName && !currentKegiatan.koordinator.includes(newKoordinatorName)) {
       updateCurrentKegiatan({
-        koordinator: currentCoordinators.filter((name) => name !== koordinatorName),
+        koordinator: [...currentKegiatan.koordinator, newKoordinatorName],
       });
-    } else {
-      updateCurrentKegiatan({
-        koordinator: [...currentCoordinators, koordinatorName],
-      });
+      setNewKoordinatorName(""); // Clear the select input after adding
+    } else if (currentKegiatan.koordinator.includes(newKoordinatorName)) {
+      toast.info("Koordinator ini sudah ditambahkan.");
     }
+  };
+
+  const removeKoordinator = (koordinatorToRemove: string) => {
+    updateCurrentKegiatan({
+      koordinator: currentKegiatan.koordinator.filter((name) => name !== koordinatorToRemove),
+    });
   };
 
   const uploadFiles = async (files: (File | string | null)[], basePath: string): Promise<string[]> => {
@@ -1478,45 +1483,71 @@ export const DrainaseForm = () => {
             />
           )}
 
-          {/* Koordinator & PHL */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`koordinator-${currentKegiatan.id}`}>Koordinator</Label>
-              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-md p-2">
-                {koordinatorOptions.map((koordinator) => (
-                  <div key={koordinator} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`koordinator-${currentKegiatan.id}-${koordinator}`}
-                      checked={currentKegiatan.koordinator.includes(koordinator)}
-                      onCheckedChange={() => toggleKoordinator(koordinator)}
-                    />
-                    <Label htmlFor={`koordinator-${currentKegiatan.id}-${koordinator}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {koordinator}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+          {/* Koordinator Section */}
+          <div className="space-y-2">
+            <Label htmlFor={`koordinator-${currentKegiatan.id}`}>Koordinator</Label>
+            <div className="flex gap-2 mb-2">
+              <Select
+                value={newKoordinatorName}
+                onValueChange={setNewKoordinatorName}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Pilih koordinator" />
+                </SelectTrigger>
+                <SelectContent>
+                  {koordinatorOptions
+                    .filter(
+                      (koordinator) => !currentKegiatan.koordinator.includes(koordinator)
+                    )
+                    .map((koordinator) => (
+                      <SelectItem key={koordinator} value={koordinator}>
+                        {koordinator}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" onClick={addKoordinator} disabled={!newKoordinatorName}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah
+              </Button>
             </div>
-            {/* Jumlah PHL (Conditional visibility) */}
-            {formData.reportType !== "tersier" && (
-              <div className="space-y-2">
-                <Label htmlFor={`jumlah-phl-${currentKegiatan.id}`}>Jumlah PHL</Label>
-                <Input
-                  id={`jumlah-phl-${currentKegiatan.id}`}
-                  type="text"
-                  placeholder="0"
-                  value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "" || /^\d{0,2}$/.test(value)) {
-                      updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
-                    }
-                  }}
-                  maxLength={2}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {currentKegiatan.koordinator.map((koordinator) => (
+                <Badge key={koordinator} variant="secondary" className="flex items-center gap-1">
+                  {koordinator}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => removeKoordinator(koordinator)}
+                  >
+                    <XCircle className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
           </div>
+
+          {/* Jumlah PHL (Conditional visibility) */}
+          {formData.reportType !== "tersier" && (
+            <div className="space-y-2">
+              <Label htmlFor={`jumlah-phl-${currentKegiatan.id}`}>Jumlah PHL</Label>
+              <Input
+                id={`jumlah-phl-${currentKegiatan.id}`}
+                type="text"
+                placeholder="0"
+                value={currentKegiatan.jumlahPHL === 0 ? "" : currentKegiatan.jumlahPHL.toString()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d{0,2}$/.test(value)) {
+                    updateCurrentKegiatan({ jumlahPHL: parseInt(value, 10) });
+                  }
+                }}
+                maxLength={2}
+              />
+            </div>
+          )}
 
           {/* Kebutuhan Tenaga Kerja (Orang) (Conditional visibility) */}
           {formData.reportType === "tersier" && (
