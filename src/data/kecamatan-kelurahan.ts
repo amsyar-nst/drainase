@@ -85,6 +85,17 @@ export const kecamatanKelurahanData = [
   }
 ];
 
+const toTitleCase = (str: string): string => {
+  const degrees = ["S.T", "SH", "AMD", "SM", "SP"]; // Add SP for JAKA LESMANA PUTRA, SP
+  return str.split(' ').map(word => {
+    if (degrees.includes(word.toUpperCase())) {
+      return word.toUpperCase(); // Keep degrees as is (e.g., S.T, SH)
+    }
+    if (word.length === 0) return '';
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
+};
+
 export const koordinatorOptions = [
   "MOCH EKA INDRAWAN K, S.T",
   "SELAMAT, S.T",
@@ -111,7 +122,7 @@ export const koordinatorOptions = [
   "KRISTIANTO",
   "PERDANA JAYA KESUMA",
   "RUKIAH RAHMA RAHMI SIREGAR, SH"
-];
+].map(toTitleCase); // Apply the transformation here
 
 export const satuanOptions = [
   "M³",
