@@ -422,14 +422,14 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <td colspan="9" style="text-align: right;">TOTAL</td>
             <td class="center">${totalPanjangPenanganan.toFixed(2).replace('.', ',')}</td>
             <td class="center">${totalVolumeGalian.toFixed(2).replace('.', ',')}</td>
-            <td colspan="10"></td>
+            <td colspan="9"></td> <!-- Adjusted colspan for Material and Peralatan, and Jenis/Jumlah Operasional Alat Berat -->
             <td class="center">${totalDexlite.toFixed(2).replace('.', ',')}</td>
             <td class="center">Liter</td>
             <td class="center">${totalPertalite.toFixed(2).replace('.', ',')}</td>
             <td class="center">Liter</td>
             <td class="center">${totalBioSolar.toFixed(2).replace('.', ',')}</td>
             <td class="center">Liter</td>
-            <td colspan="3"></td>
+            <td colspan="4"></td> <!-- Adjusted colspan for Keterangan Operasional, Koordinator, PHL, and Keterangan Akhir -->
           </tr>
         </tfoot>
       </table>
