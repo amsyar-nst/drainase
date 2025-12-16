@@ -231,7 +231,7 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="3" class="jenis-saluran-col">JENIS SALURAN<br/>(TERBUKA/<br/>TERTUTUP)</th>
             <th rowspan="3" class="jenis-sedimen-col">JENIS SEDIMEN<br/>(BATU/PADAT/<br/>CAIR)</th>
             <th rowspan="3" class="uraian-kegiatan-col">URAIAN KEGIATAN</th>
-            <th colspan="2">VOLUME</th>
+            <th colspan="2">VOLUM</th>
             <th colspan="4">BAHAN MATERIAL</th>
             <th colspan="3">PERALATAN</th>
             <th colspan="9">OPERASIONAL ALAT BERAT</th>
