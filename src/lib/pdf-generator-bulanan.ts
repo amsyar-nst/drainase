@@ -121,22 +121,21 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
         .photo-cell {
           width: 100px;
           text-align: center;
-          padding: 1px; /* Adjusted from 2px to 1px */
+          padding: 2px;
         }
 
         .photo-container {
           display: flex;
           flex-wrap: wrap;
-          gap: 1px; /* Adjusted from 2px to 1px */
+          gap: 2px;
           justify-content: center;
         }
 
         .photo-container img {
-          width: calc(50% - 1px); /* Adjusted from 45px to fill half the cell width with gap */
-          height: 48px; /* Adjusted from 34px for larger size */
+          width: 45px;
+          height: 34px;
           object-fit: cover;
           border: 1px solid #ccc;
-          margin: 0; /* Removed margin */
         }
 
         ul {
