@@ -43,6 +43,24 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
     }))
   );
 
+  // Calculate totals
+  let totalPanjangPenanganan = 0;
+  let totalVolumeGalian = 0;
+  let totalDexlite = 0;
+  let totalPertalite = 0;
+  let totalBioSolar = 0;
+
+  kegiatansWithImages.forEach(kegiatan => {
+    totalPanjangPenanganan += parseFloat(kegiatan.panjangPenanganan.replace(',', '.')) || 0;
+    totalVolumeGalian += parseFloat(kegiatan.volumeGalian.replace(',', '.')) || 0;
+    
+    kegiatan.operasionalAlatBerats.forEach(op => {
+      totalDexlite += parseFloat(op.dexliteJumlah.replace(',', '.')) || 0;
+      totalPertalite += parseFloat(op.pertaliteJumlah.replace(',', '.')) || 0;
+      totalBioSolar += parseFloat(op.bioSolarJumlah.replace(',', '.')) || 0;
+    });
+  });
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -176,6 +194,11 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
         .koordinator-col { width: 70px; }
         .phl-col { width: 30px; }
         .keterangan-akhir-col { width: 60px; }
+
+        .total-row td {
+          font-weight: bold;
+          background-color: #e0e0e0;
+        }
 
         @media print {
           body {
@@ -394,6 +417,21 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             `).join('')}
           `).join('')}
         </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="9" style="text-align: right;">TOTAL</td>
+            <td class="center">${totalPanjangPenanganan.toFixed(2).replace('.', ',')}</td>
+            <td class="center">${totalVolumeGalian.toFixed(2).replace('.', ',')}</td>
+            <td colspan="9"></td> <!-- Adjusted colspan for Material and Peralatan, and Jenis/Jumlah Operasional Alat Berat -->
+            <td class="center">${totalDexlite.toFixed(2).replace('.', ',')}</td>
+            <td class="center">Liter</td>
+            <td class="center">${totalPertalite.toFixed(2).replace('.', ',')}</td>
+            <td class="center">Liter</td>
+            <td class="center">${totalBioSolar.toFixed(2).replace('.', ',')}</td>
+            <td class="center">Liter</td>
+            <td colspan="4"></td> <!-- Adjusted colspan for Keterangan Operasional, Koordinator, PHL, and Keterangan Akhir -->
+          </tr>
+        </tfoot>
       </table>
 
       <script>
