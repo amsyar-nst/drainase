@@ -90,14 +90,14 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
     <div className="space-y-4">
       <Label>Peralatan yang Digunakan</Label>
       {currentKegiatan.peralatans.map((peralatan) => (
-        <div key={peralatan.id} className="grid gap-4 md:grid-cols-4 items-end">
-          <div className="space-y-2 md:col-span-2">
+        <div key={peralatan.id} className="grid gap-4 md:grid-cols-12 items-end"> {/* Changed to md:grid-cols-12 */}
+          <div className="space-y-2 md:col-span-6"> {/* Nama Peralatan: Takes 6/12 (50%) */}
             <Label>Nama Peralatan</Label>
             <Select
               value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
               onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full"> {/* Ensure it fills its column */}
                 <SelectValue placeholder="Pilih peralatan" />
               </SelectTrigger>
               <SelectContent>
@@ -115,28 +115,29 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
                 placeholder="Masukkan nama peralatan manual"
                 value={peralatanCustomInputs[peralatan.id] || ""}
                 onChange={(e) => updatePeralatanCustomInput(peralatan.id, e.target.value)}
-                className="mt-2"
+                className="mt-2 w-full"
               />
             ) : null}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2"> {/* Jumlah: Takes 2/12 (narrow) */}
             <Label>Jumlah</Label>
             <Input
               type="number"
               min="1"
               value={peralatan.jumlah}
               onChange={(e) => updatePeralatan(peralatan.id, "jumlah", parseInt(e.target.value) || 1)}
+              className="w-full"
             />
           </div>
           {/* Satuan (Conditional visibility) */}
           {reportType !== "tersier" && (
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-2"> {/* Satuan: Takes 2/12 (narrow) */}
               <Label>Satuan</Label>
               <Select
                 value={peralatan.satuan}
                 onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full"> {/* Ensure it fills its column */}
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -149,15 +150,17 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
               </Select>
             </div>
           )}
-          <Button
-            type="button"
-            variant="destructive"
-            size="icon"
-            onClick={() => removePeralatan(peralatan.id)}
-            disabled={currentKegiatan.peralatans.length === 1}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div className="md:col-span-2 flex justify-end"> {/* Button: Takes 2/12, aligned to end */}
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={() => removePeralatan(peralatan.id)}
+              disabled={currentKegiatan.peralatans.length === 1}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       ))}
       <div className="flex justify-end">
