@@ -17,33 +17,32 @@ import { Textarea } from "@/components/ui/textarea";
 interface OperasionalAlatBeratSectionProps {
   currentKegiatan: KegiatanDrainase;
   updateCurrentKegiatan: (updates: Partial<KegiatanDrainase>) => void;
-  operasionalCustomInputs: Record<string, string>; // Added prop
-  setOperasionalCustomInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>; // Added prop
+  // operasionalCustomInputs: Record<string, string>; // Removed
+  // setOperasionalCustomInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>; // Removed
   reportType: "harian" | "bulanan" | "tersier"; // New prop
 }
 
 export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionProps> = ({
   currentKegiatan,
   updateCurrentKegiatan,
-  operasionalCustomInputs, // Destructure from props
-  setOperasionalCustomInputs, // Destructure from props
+  // operasionalCustomInputs, // Removed
+  // setOperasionalCustomInputs, // Removed
   reportType, // Destructure new prop
 }) => {
   // No longer need local state for operasionalCustomInputs here, it's passed via props.
 
   // Effect to initialize custom inputs when currentKegiatan changes (e.g., on load or activity switch)
-  useEffect(() => {
-    const initialOperasionalCustomInputs: Record<string, string> = {};
-    currentKegiatan.operasionalAlatBerats.forEach(op => {
-      if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
-        initialOperasionalCustomInputs[op.id] = op.jenis;
-        // Temporarily set the 'jenis' to 'custom' for the select component to display correctly
-        // The actual value will be stored in operasionalCustomInputs
-        op.jenis = "custom"; 
-      }
-    });
-    setOperasionalCustomInputs(initialOperasionalCustomInputs);
-  }, [currentKegiatan.operasionalAlatBerats, setOperasionalCustomInputs]);
+  // This useEffect is no longer needed as custom inputs are handled directly in the `jenis` field.
+  // useEffect(() => {
+  //   const initialOperasionalCustomInputs: Record<string, string> = {};
+  //   currentKegiatan.operasionalAlatBerats.forEach(op => {
+  //     if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
+  //       initialOperasionalCustomInputs[op.id] = op.jenis;
+  //       op.jenis = "custom"; 
+  //     }
+  //   });
+  //   setOperasionalCustomInputs(initialOperasionalCustomInputs);
+  // }, [currentKegiatan.operasionalAlatBerats, setOperasionalCustomInputs]);
 
 
   const addOperasionalAlatBerat = () => {
@@ -69,11 +68,11 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       updateCurrentKegiatan({
         operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.filter((o) => o.id !== id),
       });
-      setOperasionalCustomInputs((prev) => {
-        const newInputs = { ...prev };
-        delete newInputs[id];
-        return newInputs;
-      });
+      // setOperasionalCustomInputs((prev) => { // Removed
+      //   const newInputs = { ...prev };
+      //   delete newInputs[id];
+      //   return newInputs;
+      // });
     }
   };
 
@@ -82,18 +81,6 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
       operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map((o) => {
         if (o.id === id) {
           const updatedOperasional = { ...o, [field]: value };
-          if (field === "jenis") {
-            if (value === "custom") {
-              updatedOperasional.jenis = "custom"; // Keep 'custom' in operasional.jenis
-              setOperasionalCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input to empty
-            } else {
-              setOperasionalCustomInputs((prev) => {
-                const newInputs = { ...prev };
-                delete newInputs[id];
-                return newInputs;
-              });
-            }
-          }
           return updatedOperasional;
         }
         return o;
@@ -101,12 +88,9 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
     });
   };
 
-  const updateOperasionalCustomInput = (id: string, value: string) => {
-    setOperasionalCustomInputs((prev) => ({ ...prev, [id]: value }));
-    // DO NOT update the actual operasional.jenis in currentKegiatan here.
-    // The actual o.jenis in the form state should remain "custom"
-    // when the "Lainnya" option is selected in the dropdown.
-  };
+  // const updateOperasionalCustomInput = (id: string, value: string) => { // Removed
+  //   setOperasionalCustomInputs((prev) => ({ ...prev, [id]: value }));
+  // };
 
   return (
     <div className="space-y-4">
@@ -118,7 +102,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
             <Label>Jenis Alat Berat</Label>
             <Select
               value={alatBeratOptions.includes(operasional.jenis) ? operasional.jenis : "custom"}
-              onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value)}
+              onValueChange={(value) => updateOperasionalAlatBerat(operasional.id, "jenis", value === "custom" ? "" : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Pilih jenis alat berat" />
@@ -132,15 +116,15 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 <SelectItem value="custom">Lainnya</SelectItem>
               </SelectContent>
             </Select>
-            {operasional.jenis === "custom" ? (
+            {operasional.jenis === "" && (
               <Input
                 type="text"
                 placeholder="Masukkan jenis alat berat manual"
-                value={operasionalCustomInputs[operasional.id] || ""}
-                onChange={(e) => updateOperasionalCustomInput(operasional.id, e.target.value)}
+                value={operasional.jenis}
+                onChange={(e) => updateOperasionalAlatBerat(operasional.id, "jenis", e.target.value)}
                 className="mt-2"
               />
-            ) : null}
+            )}
           </div>
           {/* Jumlah */}
           <div className="space-y-2 md:col-span-1">

@@ -43,7 +43,7 @@ export interface AktifitasPenangananDetail {
   foto100Url?: string[]; // For URLs from DB
   fotoSketUrl?: string[]; // For URLs from DB
   materials: Material[]; // Materials are now nested under AktifitasPenangananDetail
-  materialCustomInputs?: Record<string, string>; // Added for UI state compatibility
+  // materialCustomInputs?: Record<string, string>; // Removed
 }
 
 import { PenangananDetailFormState } from "@/types/form-types"; // Import PenangananDetailFormState

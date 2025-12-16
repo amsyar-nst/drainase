@@ -126,9 +126,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
   const removeMaterial = (materialId: string) => {
     if (detail.materials.length > 1) {
       const newMaterials = detail.materials.filter((m) => m.id !== materialId);
-      const newCustomInputs = { ...detail.materialCustomInputs };
-      delete newCustomInputs[materialId];
-      updateDetail(index, { materials: newMaterials, materialCustomInputs: newCustomInputs });
+      updateDetail(index, { materials: newMaterials });
     }
   };
 
@@ -137,38 +135,19 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
       if (m.id === materialId) {
         const updatedMaterial = { ...m, [field]: value };
         if (field === "jenis") {
-          if (value === "custom") {
-            updatedMaterial.jenis = "custom"; // Keep "custom" for the select component
-            const newCustomInputs = { ...detail.materialCustomInputs, [materialId]: "" };
-            updateDetail(index, { materialCustomInputs: newCustomInputs });
+          const normalizedJenis = value.toLowerCase().trim();
+          const defaultUnit = materialDefaultUnits[normalizedJenis];
+          if (defaultUnit) {
+            updatedMaterial.satuan = defaultUnit; // Set default unit
           } else {
-            // If a predefined option is selected, clear custom input for this material
-            const newCustomInputs = { ...detail.materialCustomInputs };
-            delete newCustomInputs[materialId];
-            updateDetail(index, { materialCustomInputs: newCustomInputs });
-
-            const normalizedJenis = value.toLowerCase().trim();
-            const defaultUnit = materialDefaultUnits[normalizedJenis];
-            if (defaultUnit) {
-              updatedMaterial.satuan = defaultUnit; // Set default unit
-            } else {
-              updatedMaterial.satuan = "M³"; // Fallback default unit
-            }
+            updatedMaterial.satuan = "M³"; // Fallback default unit
           }
         }
         return updatedMaterial;
       }
       return m;
     });
-    // Only update materials here. materialCustomInputs is handled in the if/else block above.
     updateDetail(index, { materials: newMaterials });
-  };
-
-  const updateMaterialCustomInput = (materialId: string, value: string) => {
-    const newCustomInputs = { ...detail.materialCustomInputs, [materialId]: value };
-    // Only update materialCustomInputs. The material.jenis in the materials array
-    // should remain "custom" when "Lainnya" is selected in the dropdown.
-    updateDetail(index, { materialCustomInputs: newCustomInputs });
   };
 
   return (
@@ -499,7 +478,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                 <Label>Jenis Material</Label>
                 <Select
                   value={materialOptions.includes(material.jenis) ? material.jenis : "custom"}
-                  onValueChange={(value) => updateMaterial(material.id, "jenis", value)}
+                  onValueChange={(value) => updateMaterial(material.id, "jenis", value === "custom" ? "" : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih material" />
@@ -513,15 +492,15 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                     <SelectItem value="custom">Lainnya</SelectItem>
                   </SelectContent>
                 </Select>
-                {material.jenis === "custom" ? (
+                {material.jenis === "" && (
                   <Input
                     type="text"
                     placeholder="Masukkan jenis material manual"
-                    value={detail.materialCustomInputs[material.id] || ""}
-                    onChange={(e) => updateMaterialCustomInput(material.id, e.target.value)}
+                    value={material.jenis}
+                    onChange={(e) => updateMaterial(material.id, "jenis", e.target.value)}
                     className="mt-2"
                   />
-                ) : null}
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Jumlah</Label>

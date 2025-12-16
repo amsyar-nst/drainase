@@ -61,7 +61,7 @@ const createNewPenangananDetailFormState = (): PenangananDetailFormState => ({
   materials: [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
   selectedSedimenOption: "",
   customSedimen: "",
-  materialCustomInputs: {},
+  // materialCustomInputs: {}, // Removed
 });
 
 // Initial state for a new KegiatanDrainase
@@ -123,8 +123,8 @@ export const DrainaseForm = () => {
   const [laporanId, setLaporanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({});
-  const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({});
+  // const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({}); // Removed
+  // const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({}); // Removed
   const [newKoordinatorName, setNewKoordinatorName] = useState<string>(""); // State for new coordinator dropdown
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
@@ -168,32 +168,15 @@ export const DrainaseForm = () => {
         currentKec.hariTanggal ? format(currentKec.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
       );
 
-      // Initialize custom inputs for Peralatan
-      const initialPeralatanCustomInputs: Record<string, string> = {};
-      currentKec.peralatans.forEach(p => {
-        if (!peralatanOptions.includes(p.nama) && p.nama !== "") {
-          initialPeralatanCustomInputs[p.id] = p.nama;
-          p.nama = "custom";
-        }
-      });
-      setPeralatanCustomInputs(initialPeralatanCustomInputs);
-
-      // Initialize custom inputs for Operasional Alat Berat
-      const initialOperasionalCustomInputs: Record<string, string> = {};
-      currentKec.operasionalAlatBerats.forEach(op => {
-        if (!alatBeratOptions.includes(op.jenis) && op.jenis !== "") {
-          initialOperasionalCustomInputs[op.id] = op.jenis;
-          op.jenis = "custom";
-        }
-      });
-      setOperasionalCustomInputs(initialOperasionalCustomInputs);
+      // No need to initialize custom inputs states here anymore, as they are removed.
+      // The `nama` and `jenis` fields will directly hold the custom values.
 
     } else {
       setSelectedKecamatan("");
       setKelurahanOptions([]);
       setActivityDateInputString("");
-      setPeralatanCustomInputs({});
-      setOperasionalCustomInputs({});
+      // setPeralatanCustomInputs({}); // Removed
+      // setOperasionalCustomInputs({}); // Removed
     }
   }, [formData.kegiatans, currentKegiatanIndex]);
 
@@ -414,7 +397,7 @@ export const DrainaseForm = () => {
               materials: materials,
               selectedSedimenOption: selectedSedimenOption,
               customSedimen: customSedimen,
-              materialCustomInputs: {}, // Will be re-initialized by child component if needed
+              // materialCustomInputs: {}, // Removed
             };
             console.log(`Copied Aktifitas Penanganan Detail ${detail.id}:`, copiedDetail);
             console.log(`  Foto 0% URLs:`, copiedDetail.foto0);
@@ -517,7 +500,7 @@ export const DrainaseForm = () => {
 
           let peralatans = (peralatanRes.data || []).map(p => ({
             id: p.id,
-            nama: p.nama,
+            nama: p.nama, // Directly use the name from DB
             jumlah: p.jumlah,
             satuan: p.satuan || "Unit",
           }));
@@ -527,7 +510,7 @@ export const DrainaseForm = () => {
 
           let operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
             id: o.id,
-            jenis: o.jenis,
+            jenis: o.jenis, // Directly use the type from DB
             jumlah: o.jumlah,
             dexliteJumlah: o.dexlite_jumlah || "",
             dexliteSatuan: o.dexlite_satuan || "Liter",
@@ -567,7 +550,7 @@ export const DrainaseForm = () => {
 
               let materials = (materialsRes || []).map(m => ({
                 id: m.id,
-                jenis: m.jenis,
+                jenis: m.jenis, // Directly use the type from DB
                 jumlah: m.jumlah,
                 satuan: m.satuan,
                 keterangan: m.keterangan || "",
@@ -578,15 +561,7 @@ export const DrainaseForm = () => {
                 materials.push({ id: "material-" + Date.now().toString() + '-mat', jenis: "", jumlah: "", satuan: "M³", keterangan: "", aktifitas_detail_id: null });
               }
 
-              // Initialize UI-specific states
-              const initialMaterialCustomInputs: Record<string, string> = {};
-              materials.forEach(m => {
-                if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
-                  initialMaterialCustomInputs[m.id] = m.jenis;
-                  m.jenis = "custom"; // Set to 'custom' for select component
-                }
-              });
-
+              // Initialize UI-specific states for sedimen
               let selectedSedimenOption: string = "";
               let customSedimen: string = "";
               if (detail.jenis_sedimen) {
@@ -615,7 +590,7 @@ export const DrainaseForm = () => {
                 materials: materials,
                 selectedSedimenOption: selectedSedimenOption, // UI state
                 customSedimen: customSedimen, // UI state
-                materialCustomInputs: initialMaterialCustomInputs, // UI state
+                // materialCustomInputs: initialMaterialCustomInputs, // Removed
               };
             })
           );
@@ -688,8 +663,8 @@ export const DrainaseForm = () => {
     const newKegiatan = createNewKegiatanDrainase();
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
-    setPeralatanCustomInputs({});
-    setOperasionalCustomInputs({});
+    // setPeralatanCustomInputs({}); // Removed
+    // setOperasionalCustomInputs({}); // Removed
   };
 
   const removeKegiatan = (index: number) => {
@@ -715,10 +690,10 @@ export const DrainaseForm = () => {
     const newDetails = [...currentKegiatan.aktifitasPenangananDetails];
     const updatedDetail = { ...newDetails[detailIndex], ...updates };
 
-    // Handle custom material inputs within the detail
-    if (updates.materialCustomInputs) {
-      updatedDetail.materialCustomInputs = { ...updatedDetail.materialCustomInputs, ...updates.materialCustomInputs };
-    }
+    // Handle custom material inputs within the detail (no longer needed as separate state)
+    // if (updates.materialCustomInputs) {
+    //   updatedDetail.materialCustomInputs = { ...updatedDetail.materialCustomInputs, ...updates.materialCustomInputs };
+    // }
     if (updates.materials) {
       updatedDetail.materials = updates.materials;
     }
@@ -788,19 +763,20 @@ export const DrainaseForm = () => {
       reportType: formData.reportType,
       kegiatans: [{
         ...currentKegiatan,
+        // Now, `nama` and `jenis` fields directly hold the custom values if typed
         peralatans: currentKegiatan.peralatans.map(p => ({
           ...p,
-          nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
+          nama: p.nama, // Use the value directly from state
         })),
         operasionalAlatBerats: currentKegiatan.operasionalAlatBerats.map(o => ({
           ...o,
-          jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
+          jenis: o.jenis, // Use the value directly from state
         })),
         aktifitasPenangananDetails: currentKegiatan.aktifitasPenangananDetails.map(detail => ({
           ...detail,
           materials: detail.materials.map(m => ({
             ...m,
-            jenis: m.jenis === "custom" ? (detail.materialCustomInputs?.[m.id] || "") : m.jenis,
+            jenis: m.jenis, // Use the value directly from state
           })),
         })),
       }],
@@ -925,7 +901,7 @@ export const DrainaseForm = () => {
 
         const peralatanToInsert = kegiatanToProcess.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
           kegiatan_id: kegiatanDbId,
-          nama: p.nama === "custom" ? peralatanCustomInputs[p.id] || "" : p.nama,
+          nama: p.nama, // Directly use the name from state
           jumlah: p.jumlah,
           satuan: p.satuan,
         }));
@@ -936,7 +912,7 @@ export const DrainaseForm = () => {
 
         const operasionalAlatBeratsToInsert = kegiatanToProcess.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
           kegiatan_id: kegiatanDbId,
-          jenis: o.jenis === "custom" ? operasionalCustomInputs[o.id] || "" : o.jenis,
+          jenis: o.jenis, // Directly use the type from state
           jumlah: o.jumlah,
           dexlite_jumlah: o.dexliteJumlah,
           dexlite_satuan: o.dexliteSatuan,
@@ -972,7 +948,7 @@ export const DrainaseForm = () => {
           const detailDataToSave = {
             kegiatan_id: kegiatanDbId,
             jenis_saluran: detailToProcess.jenisSaluran,
-            jenis_sedimen: detailToProcess.jenisSedimen === "custom" ? (detailToProcess.customSedimen || "") : detailToProcess.jenisSedimen,
+            jenis_sedimen: detailToProcess.jenisSedimen, // Directly use the value from state
             aktifitas_penanganan: detailToProcess.aktifitasPenanganan,
             foto_0_url: foto0Urls,
             foto_50_url: foto50Urls,
@@ -1003,7 +979,7 @@ export const DrainaseForm = () => {
           await supabase.from('material_kegiatan').delete().eq('aktifitas_detail_id', detailDbId);
           const materialsToInsert = detailToProcess.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({
             aktifitas_detail_id: detailDbId,
-            jenis: m.jenis === "custom" ? (detailToProcess.materialCustomInputs[m.id] || "") : m.jenis,
+            jenis: m.jenis, // Directly use the type from state
             jumlah: m.jumlah,
             satuan: m.satuan,
             keterangan: m.keterangan,
@@ -1121,8 +1097,8 @@ export const DrainaseForm = () => {
       newPeriode = format(newTanggal, 'MMMM yyyy', { locale: idLocale });
 
       // setCurrentKegiatanIndex(0); // <--- BARIS INI DIHAPUS
-      setPeralatanCustomInputs({}); // Clear custom inputs
-      setOperasionalCustomInputs({}); // Clear custom inputs
+      // setPeralatanCustomInputs({}); // Removed
+      // setOperasionalCustomInputs({}); // Removed
 
       return {
         ...prev,
@@ -1466,8 +1442,8 @@ export const DrainaseForm = () => {
             <PeralatanSection
               currentKegiatan={currentKegiatan}
               updateCurrentKegiatan={updateCurrentKegiatan}
-              peralatanCustomInputs={peralatanCustomInputs}
-              setPeralatanCustomInputs={setPeralatanCustomInputs}
+              // peralatanCustomInputs={peralatanCustomInputs} // Removed
+              // setPeralatanCustomInputs={setPeralatanCustomInputs} // Removed
               reportType={formData.reportType} // Pass reportType for internal conditional rendering
             />
           )}
@@ -1477,8 +1453,8 @@ export const DrainaseForm = () => {
             <OperasionalAlatBeratSection
               currentKegiatan={currentKegiatan}
               updateCurrentKegiatan={updateCurrentKegiatan}
-              operasionalCustomInputs={operasionalCustomInputs}
-              setOperasionalCustomInputs={setOperasionalCustomInputs}
+              // operasionalCustomInputs={operasionalCustomInputs} // Removed
+              // setOperasionalCustomInputs={setOperasionalCustomInputs} // Removed
               reportType={formData.reportType} // Pass reportType for internal conditional rendering
             />
           )}

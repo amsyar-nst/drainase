@@ -15,5 +15,5 @@ export interface PenangananDetailFormState {
   // UI-specific states for custom inputs within this detail block
   selectedSedimenOption: string;
   customSedimen: string;
-  materialCustomInputs: Record<string, string>;
+  // materialCustomInputs: Record<string, string>; // Removed
 }

@@ -16,16 +16,16 @@ import {
 interface PeralatanSectionProps {
   currentKegiatan: KegiatanDrainase;
   updateCurrentKegiatan: (updates: Partial<KegiatanDrainase>) => void;
-  peralatanCustomInputs: Record<string, string>;
-  setPeralatanCustomInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  // peralatanCustomInputs: Record<string, string>; // Removed
+  // setPeralatanCustomInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>; // Removed
   reportType: "harian" | "bulanan" | "tersier"; // New prop
 }
 
 export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
   currentKegiatan,
   updateCurrentKegiatan,
-  peralatanCustomInputs,
-  setPeralatanCustomInputs,
+  // peralatanCustomInputs, // Removed
+  // setPeralatanCustomInputs, // Removed
   reportType, // Destructure new prop
 }) => {
   const addPeralatan = () => {
@@ -45,11 +45,11 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
       updateCurrentKegiatan({
         peralatans: currentKegiatan.peralatans.filter((p) => p.id !== id),
       });
-      setPeralatanCustomInputs((prev) => {
-        const newInputs = { ...prev };
-        delete newInputs[id];
-        return newInputs;
-      });
+      // setPeralatanCustomInputs((prev) => { // Removed
+      //   const newInputs = { ...prev };
+      //   delete newInputs[id];
+      //   return newInputs;
+      // });
     }
   };
 
@@ -59,22 +59,12 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
         if (p.id === id) {
           const updatedPeralatan = { ...p, [field]: value };
           if (field === "nama") {
-            if (value === "custom") {
-              updatedPeralatan.nama = "custom"; // Keep "custom" for the select
-              setPeralatanCustomInputs((prev) => ({ ...prev, [id]: "" })); // Initialize custom input
+            const normalizedNama = (value as string).toLowerCase().trim();
+            const defaultUnit = peralatanDefaultUnits[normalizedNama];
+            if (defaultUnit) {
+              updatedPeralatan.satuan = defaultUnit; // Set default unit
             } else {
-              setPeralatanCustomInputs((prev) => {
-                const newInputs = { ...prev };
-                delete newInputs[id];
-                return newInputs;
-              });
-              const normalizedNama = (value as string).toLowerCase().trim();
-              const defaultUnit = peralatanDefaultUnits[normalizedNama];
-              if (defaultUnit) {
-                updatedPeralatan.satuan = defaultUnit; // Set default unit
-              } else {
-                updatedPeralatan.satuan = "Unit"; // Fallback default unit
-              }
+              updatedPeralatan.satuan = "Unit"; // Fallback default unit
             }
           }
           return updatedPeralatan;
@@ -84,12 +74,9 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
     });
   };
 
-  const updatePeralatanCustomInput = (id: string, value: string) => {
-    setPeralatanCustomInputs((prev) => ({ ...prev, [id]: value }));
-    // DO NOT update p.nama in currentKegiatan.peralatans here.
-    // The actual p.nama in the form state should remain "custom"
-    // when the "Lainnya" option is selected in the dropdown.
-  };
+  // const updatePeralatanCustomInput = (id: string, value: string) => { // Removed
+  //   setPeralatanCustomInputs((prev) => ({ ...prev, [id]: value }));
+  // };
 
   return (
     <div className="space-y-4">
@@ -100,7 +87,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
             <Label>Nama Peralatan</Label>
             <Select
               value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
-              onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
+              onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value === "custom" ? "" : value)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih peralatan" />
@@ -114,15 +101,15 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
                 <SelectItem value="custom">Lainnya</SelectItem>
               </SelectContent>
             </Select>
-            {peralatan.nama === "custom" ? (
+            {peralatan.nama === "" && (
               <Input
                 type="text"
                 placeholder="Masukkan nama peralatan manual"
-                value={peralatanCustomInputs[peralatan.id] || ""}
-                onChange={(e) => updatePeralatanCustomInput(peralatan.id, e.target.value)}
+                value={peralatan.nama}
+                onChange={(e) => updatePeralatan(peralatan.id, "nama", e.target.value)}
                 className="mt-2 w-full"
               />
-            ) : null}
+            )}
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label>Jumlah</Label>

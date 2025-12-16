@@ -196,15 +196,6 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 aktifitas_detail_id: m.aktifitas_detail_id || null,
               }));
 
-              // Initialize materialCustomInputs for printing
-              const initialMaterialCustomInputs: Record<string, string> = {};
-              materials.forEach(m => {
-                if (!materialOptions.includes(m.jenis) && m.jenis !== "") {
-                  initialMaterialCustomInputs[m.id] = m.jenis;
-                  // Note: We don't change m.jenis to "custom" here, as we want the actual name for printing
-                }
-              });
-
               let selectedSedimenOption: string = "";
               let customSedimen: string = "";
               if (detail.jenis_sedimen) {
@@ -233,7 +224,7 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
                 materials: materials,
                 selectedSedimenOption: selectedSedimenOption, // UI state
                 customSedimen: customSedimen, // UI state
-                materialCustomInputs: initialMaterialCustomInputs, // UI state
+                // materialCustomInputs: initialMaterialCustomInputs, // UI state - REMOVED
               };
             })
           );
@@ -327,7 +318,8 @@ const DrainasePrintDialog: React.FC<DrainasePrintDialogProps> = ({
               materials: detail.materials.map(m => ({
                 ...m,
                 // Use the resolved custom material name if it exists, otherwise use the stored name
-                jenis: m.jenis === "custom" ? (detail.materialCustomInputs?.[m.id] || "") : m.jenis,
+                // Now, m.jenis directly holds the custom value if it was typed.
+                jenis: m.jenis, 
               })),
             })),
             // Assuming peralatan and operasional custom inputs are resolved at the form level
