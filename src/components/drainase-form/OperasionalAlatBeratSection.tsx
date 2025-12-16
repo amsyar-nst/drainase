@@ -88,6 +88,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
               updatedOperasional.jenis = ""; // Set to empty string for custom input
             }
           }
+          return updatedOperasional; // Ensure updatedOperasional is returned
         }
         return o;
       }),
@@ -122,7 +123,7 @@ export const OperasionalAlatBeratSection: React.FC<OperasionalAlatBeratSectionPr
                 <SelectItem value="custom">Lainnya</SelectItem>
               </SelectContent>
             </Select>
-            {!alatBeratOptions.includes(operasional.jenis) && (
+            {!alatBeratOptions.includes(operasional.jenis) && ( // <--- Perubahan di sini
               <Input
                 type="text"
                 placeholder="Masukkan jenis alat berat manual"
