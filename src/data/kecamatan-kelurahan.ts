@@ -86,10 +86,18 @@ export const kecamatanKelurahanData = [
 ];
 
 const toTitleCase = (str: string): string => {
-  const degrees = ["S.T", "SH", "AMD", "SM", "SP"]; // Add SP for JAKA LESMANA PUTRA, SP
+  const degreesToPreserve = ["S.T", "SH", "SM", "SP"]; // Degrees that should remain exactly as they are
+  const degreeReplacements: Record<string, string> = {
+    "AMD": "A.Md", // Specific replacement for AMD
+  };
+
   return str.split(' ').map(word => {
-    if (degrees.includes(word.toUpperCase())) {
-      return word.toUpperCase(); // Keep degrees as is (e.g., S.T, SH)
+    const upperWord = word.toUpperCase();
+    if (degreeReplacements[upperWord]) {
+      return degreeReplacements[upperWord];
+    }
+    if (degreesToPreserve.includes(upperWord)) {
+      return upperWord;
     }
     if (word.length === 0) return '';
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
