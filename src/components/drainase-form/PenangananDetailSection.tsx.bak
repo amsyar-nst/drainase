@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,12 +10,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, FileText, XCircle, Eye, Upload } from "lucide-react"; // Import Upload icon
+import { Plus, Trash2, FileText, XCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Material } from "@/types/laporan";
 import { materialDefaultUnits, materialOptions, satuanOptions } from "@/data/kecamatan-kelurahan";
 import { PenangananDetailFormState } from "@/types/form-types";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area"; // Import ScrollArea
 
 interface PenangananDetailSectionProps {
   detail: PenangananDetailFormState;
@@ -46,12 +46,6 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
   const [isFoto50Dragging, setIsFoto50Dragging] = useState(false);
   const [isFoto100Dragging, setIsFoto100Dragging] = useState(false);
   const [isFotoSketDragging, setIsFotoSketDragging] = useState(false);
-
-  // Refs for file inputs
-  const foto0InputRef = useRef<HTMLInputElement>(null);
-  const foto50InputRef = useRef<HTMLInputElement>(null);
-  const foto100InputRef = useRef<HTMLInputElement>(null);
-  const fotoSketInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (detail.jenisSedimen) {
@@ -111,7 +105,6 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       updateDetail(index, { [field]: [...detail[field], ...newFiles] });
-      e.target.value = ''; // Clear the input so the same file can be selected again
     }
   };
 
@@ -186,16 +179,6 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         {/* Foto 0% */}
         <div className="space-y-2">
           <Label htmlFor={`foto-0-${detail.id}`}>Foto 0%</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => foto0InputRef.current?.click()}
-            className="w-full mt-1"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Unggah Foto
-          </Button>
           <div
             {...foto0Handlers}
             className={cn(
@@ -210,9 +193,8 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
               multiple
               onChange={(e) => handleFileChange(e, 'foto0')}
               className="hidden"
-              ref={foto0InputRef}
             />
-            <p className="text-sm text-muted-foreground">Seret & lepas atau tempel</p>
+            <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
             <p className="text-xs text-muted-foreground">Foto 0%</p>
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
@@ -250,16 +232,6 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         {reportType !== "tersier" && (
           <div className="space-y-2">
             <Label htmlFor={`foto-50-${detail.id}`}>Foto 50%</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => foto50InputRef.current?.click()}
-              className="w-full mt-1"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Unggah Foto
-            </Button>
             <div
               {...foto50Handlers}
               className={cn(
@@ -274,56 +246,45 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                 multiple
                 onChange={(e) => handleFileChange(e, 'foto50')}
                 className="hidden"
-                ref={foto50InputRef}
-              />
-              <p className="text-sm text-muted-foreground">Seret & lepas atau tempel</p>
-              <p className="text-xs text-muted-foreground">Foto 50%</p>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {(Array.isArray(detail.foto50) ? detail.foto50 : []).map((photo, photoIndex) => (
-                <div key={photoIndex} className="relative group">
-                  <img
-                    src={
-                      photo instanceof File
-                        ? URL.createObjectURL(photo)
-                        : photo || ''
-                    }
-                    alt={`Foto 50% ${photoIndex + 1}`}
-                    className="w-full h-24 object-cover rounded border cursor-pointer"
-                    onClick={() => {
-                      const url = photo instanceof File
-                        ? URL.createObjectURL(photo)
-                        : photo || '';
-                      onPreviewPhoto(url);
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removePhoto('foto50', photoIndex)}
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            />
+            <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
+            <p className="text-xs text-muted-foreground">Foto 50%</p>
           </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {(Array.isArray(detail.foto50) ? detail.foto50 : []).map((photo, photoIndex) => (
+              <div key={photoIndex} className="relative group">
+                <img
+                  src={
+                    photo instanceof File
+                      ? URL.createObjectURL(photo)
+                      : photo || ''
+                  }
+                  alt={`Foto 50% ${photoIndex + 1}`}
+                  className="w-full h-24 object-cover rounded border cursor-pointer"
+                  onClick={() => {
+                    const url = photo instanceof File
+                      ? URL.createObjectURL(photo)
+                      : photo || '';
+                    onPreviewPhoto(url);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removePhoto('foto50', photoIndex)}
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
         )}
         {/* Foto 100% */}
         <div className="space-y-2">
           <Label htmlFor={`foto-100-${detail.id}`}>Foto 100%</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => foto100InputRef.current?.click()}
-            className="w-full mt-1"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Unggah Foto
-          </Button>
           <div
             {...foto100Handlers}
             className={cn(
@@ -338,9 +299,8 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
               multiple
               onChange={(e) => handleFileChange(e, 'foto100')}
               className="hidden"
-              ref={foto100InputRef}
             />
-            <p className="text-sm text-muted-foreground">Seret & lepas atau tempel</p>
+            <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
             <p className="text-xs text-muted-foreground">Foto 100%</p>
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
@@ -378,16 +338,6 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
         {reportType !== "tersier" && (
           <div className="space-y-2">
             <Label htmlFor={`foto-sket-${detail.id}`}>Gambar Sket</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fotoSketInputRef.current?.click()}
-              className="w-full mt-1"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Unggah Gambar
-            </Button>
             <div
               {...fotoSketHandlers}
               className={cn(
@@ -402,9 +352,8 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                 multiple
                 onChange={(e) => handleFileChange(e, 'fotoSket')}
                 className="hidden"
-                ref={fotoSketInputRef}
               />
-              <p className="text-sm text-muted-foreground">Seret & lepas atau tempel</p>
+              <p className="text-sm text-muted-foreground">Seret & lepas atau klik untuk unggah</p>
               <p className="text-xs text-muted-foreground">Gambar Sket</p>
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -490,7 +439,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
               <SelectValue placeholder="Pilih jenis sedimen" />
             </SelectTrigger>
             <SelectContent>
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
                 {predefinedSedimenOptions.map((jenis) => (
                   <SelectItem key={jenis} value={jenis}>
                     {jenis}
@@ -543,7 +492,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                     <SelectValue placeholder="Pilih material" />
                   </SelectTrigger>
                   <SelectContent>
-                    <ScrollArea className="h-[200px]">
+                    <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
                       {materialOptions.map((jenis) => (
                         <SelectItem key={jenis} value={jenis}>
                           {jenis}
@@ -582,7 +531,7 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <ScrollArea className="h-[200px]">
+                    <ScrollArea className="h-[200px]"> {/* Added ScrollArea */}
                       {satuanOptions.map((satuan) => (
                         <SelectItem key={satuan} value={satuan}>
                           {satuan}
