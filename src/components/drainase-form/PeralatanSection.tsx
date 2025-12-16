@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { KegiatanDrainase, Peralatan } from "@/types/laporan";
-import { peralatanOptions, satuanOptions } from "@/data/kecamatan-kelurahan";
+import { peralatanOptions, satuanOptions, peralatanDefaultUnits } from "@/data/kecamatan-kelurahan";
 import {
   Select,
   SelectContent,
@@ -68,6 +68,13 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
                 delete newInputs[id];
                 return newInputs;
               });
+              const normalizedNama = (value as string).toLowerCase().trim();
+              const defaultUnit = peralatanDefaultUnits[normalizedNama];
+              if (defaultUnit) {
+                updatedPeralatan.satuan = defaultUnit; // Set default unit
+              } else {
+                updatedPeralatan.satuan = "Unit"; // Fallback default unit
+              }
             }
           }
           return updatedPeralatan;
@@ -90,14 +97,14 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
     <div className="space-y-4">
       <Label>Peralatan yang Digunakan</Label>
       {currentKegiatan.peralatans.map((peralatan) => (
-        <div key={peralatan.id} className="grid gap-4 md:grid-cols-12 items-end"> {/* Changed to md:grid-cols-12 */}
-          <div className="space-y-2 md:col-span-6"> {/* Nama Peralatan: Takes 6/12 (50%) */}
+        <div key={peralatan.id} className="grid gap-4 md:grid-cols-12 items-end">
+          <div className="space-y-2 md:col-span-6">
             <Label>Nama Peralatan</Label>
             <Select
               value={peralatanOptions.includes(peralatan.nama) ? peralatan.nama : "custom"}
               onValueChange={(value) => updatePeralatan(peralatan.id, "nama", value)}
             >
-              <SelectTrigger className="w-full"> {/* Ensure it fills its column */}
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih peralatan" />
               </SelectTrigger>
               <SelectContent>
@@ -119,7 +126,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
               />
             ) : null}
           </div>
-          <div className="space-y-2 md:col-span-2"> {/* Jumlah: Takes 2/12 (narrow) */}
+          <div className="space-y-2 md:col-span-2">
             <Label>Jumlah</Label>
             <Input
               type="number"
@@ -131,13 +138,13 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
           </div>
           {/* Satuan (Conditional visibility) */}
           {reportType !== "tersier" && (
-            <div className="space-y-2 md:col-span-2"> {/* Satuan: Takes 2/12 (narrow) */}
+            <div className="space-y-2 md:col-span-2">
               <Label>Satuan</Label>
               <Select
                 value={peralatan.satuan}
                 onValueChange={(value) => updatePeralatan(peralatan.id, "satuan", value)}
               >
-                <SelectTrigger className="w-full"> {/* Ensure it fills its column */}
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,7 +157,7 @@ export const PeralatanSection: React.FC<PeralatanSectionProps> = ({
               </Select>
             </div>
           )}
-          <div className="md:col-span-2 flex justify-end"> {/* Button: Takes 2/12, aligned to end */}
+          <div className="md:col-span-2 flex justify-end">
             <Button
               type="button"
               variant="destructive"

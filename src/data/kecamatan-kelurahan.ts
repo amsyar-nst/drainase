@@ -183,18 +183,6 @@ export const peralatanOptions = [
   "Kakak Tua"
 ];
 
-export const materialOptions = [
-  "Batubata",
-  "Semen",
-  "Pasir",
-  "Batu Pecah",
-  "Besi (Uk.10mm)",
-  "Kayu (Uk.2x2)",
-  "Papan",
-  "Triplek",
-  "Paku (Uk.2½\")"
-];
-
 // Mapping material types to default units (case-insensitive)
 export const materialDefaultUnits: Record<string, string> = {
   "pasir": "M³",
@@ -219,3 +207,48 @@ export const materialDefaultUnits: Record<string, string> = {
   "cor": "M³",
   "beton": "M³",
 };
+
+// Mapping peralatan types to default units (case-insensitive)
+export const peralatanDefaultUnits: Record<string, string> = {
+  "bonjor": "Unit",
+  "cangkul": "Unit",
+  "jack hammer": "Unit",
+  "meteran": "Unit",
+  "sekop": "Unit",
+  "toing": "Unit",
+  "martil": "Unit",
+  "sendok semen": "Unit",
+  "ember": "Unit",
+  "pahat": "Unit",
+  "angkong": "Unit",
+  "linggis": "Unit",
+  "rambu kerucut": "Unit",
+  "parang": "Unit",
+  "sapu lidi": "Unit",
+  "garukan pjg sampah": "Unit",
+  "raskam": "Unit",
+  "ember kecil": "Unit",
+  "kakak tua": "Unit",
+};
+
+export const materialOptions = [
+  "Pasir",
+  "Semen",
+  "Papan",
+  "Batu Bata",
+  "Besi",
+  "Kerikil",
+  "Split",
+  "Cat",
+  "Paku",
+  "Kawat",
+  "Kayu",
+  "Tripleks",
+  "Seng",
+  "Genteng",
+  "Hollow",
+  "Pipa",
+  "Plester",
+  "Cor",
+  "Beton",
+];

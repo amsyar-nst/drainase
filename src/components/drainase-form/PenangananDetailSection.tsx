@@ -147,8 +147,10 @@ export const PenangananDetailSection: React.FC<PenangananDetailSectionProps> = (
             updateDetail(index, { materialCustomInputs: newCustomInputs });
             const normalizedJenis = value.toLowerCase().trim();
             const defaultUnit = materialDefaultUnits[normalizedJenis];
-            if (defaultUnit) { // Always set default unit now
-              updatedMaterial.satuan = defaultUnit;
+            if (defaultUnit) {
+              updatedMaterial.satuan = defaultUnit; // Set default unit
+            } else {
+              updatedMaterial.satuan = "M³"; // Fallback default unit
             }
           }
         }
