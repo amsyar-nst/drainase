@@ -138,7 +138,11 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
               `).join('')}
             </ul>
           </td>
-          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.koordinator.join(', ')}</td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+            <ul class="koordinator-list">
+              ${kegiatan.koordinator.map(name => `<li>${name}</li>`).join('')}
+            </ul>
+          </td>
           <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahPHL || '-'}</td>
           <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.keterangan || ''}</td>
         ` : ''}
@@ -242,13 +246,13 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           border: 1px solid #ccc;
         }
 
-        .material-list, .equipment-list {
+        .material-list, .equipment-list, .koordinator-list { /* Added .koordinator-list */
           margin: 0;
           padding: 0;
           list-style: none;
         }
 
-        .material-list li, .equipment-list li {
+        .material-list li, .equipment-list li, .koordinator-list li { /* Added .koordinator-list li */
           margin-bottom: 2px;
           font-size: 6pt;
         }

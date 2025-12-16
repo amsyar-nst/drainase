@@ -1,10 +1,9 @@
-import { LaporanDrainase } from "@/types/laporan";
+import { LaporanDrainase, KegiatanDrainase, AktifitasPenangananDetail } from "@/types/laporan";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = true): Promise<Blob> => {
 
-  // Convert images to base64
   const getBase64 = async (file: File | string | null): Promise<string> => {
     return new Promise(async (resolve) => {
       if (!file) {
@@ -12,7 +11,6 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         return;
       }
       if (typeof file === 'string') {
-        // If it's a string, assume it's a URL and fetch its content to convert to base64
         try {
           const response = await fetch(file);
           if (!response.ok) throw new Error(`Failed to fetch image from URL: ${file}`);
@@ -22,26 +20,132 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           reader.readAsDataURL(blob);
         } catch (error) {
           console.error("Error converting URL to base64:", error);
-          resolve(""); // Resolve with empty string on error
+          resolve("");
         }
         return;
       }
-      // If it's a File object, read it as Data URL
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(file);
     });
   };
 
-  // Convert all images for all activities
   const kegiatansWithImages = await Promise.all(
     data.kegiatans.map(async (kegiatan) => ({
       ...kegiatan,
-      foto0Base64: await Promise.all(kegiatan.foto0.map(f => getBase64(f))), // Map over array
-      foto50Base64: await Promise.all(kegiatan.foto50.map(f => getBase64(f))), // Map over array
-      foto100Base64: await Promise.all(kegiatan.foto100.map(f => getBase64(f))), // Map over array
+      aktifitasPenangananDetails: await Promise.all(
+        kegiatan.aktifitasPenangananDetails.map(async (detail) => ({
+          ...detail,
+          foto0Base64: await Promise.all(detail.foto0.map(f => getBase64(f))),
+          foto50Base64: await Promise.all(detail.foto50.map(f => getBase64(f))),
+          foto100Base64: await Promise.all(detail.foto100.map(f => getBase64(f))),
+        }))
+      ),
     }))
   );
+
+  // Pre-process the tbody content to avoid complex nested template literals
+  const tbodyContent = kegiatansWithImages.map((kegiatan, kegiatanIndex) => {
+    const combinedEquipment = [
+      ...kegiatan.peralatans.filter(p => p.nama).map(p => ({
+        jenis: p.nama,
+        jumlah: p.jumlah,
+        satuan: p.satuan || '-',
+      })),
+      ...kegiatan.operasionalAlatBerats.filter(o => o.jenis).map(o => ({
+        jenis: o.jenis,
+        jumlah: o.jumlah,
+        satuan: 'Unit', // Default to 'Unit' for heavy equipment operational count
+      })),
+    ];
+
+    return kegiatan.aktifitasPenangananDetails.map((detail, detailIndex) => `
+      <tr>
+        ${detailIndex === 0 ? `
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatanIndex + 1}</td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
+        ` : ''}
+        <td class="photo-cell">
+          <div class="photo-container">
+            ${detail.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
+          </div>
+        </td>
+        <td class="photo-cell">
+          <div class="photo-container">
+            ${detail.foto50Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 50%" />` : '').join('')}
+          </div>
+        </td>
+        <td class="photo-cell">
+          <div class="photo-container">
+            ${detail.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
+          </div>
+        </td>
+        <td class="center">${detail.jenisSaluran || '-'}</td>
+        <td class="center">${detail.jenisSedimen || '-'}</td>
+        <td>${detail.aktifitasPenanganan}</td>
+        <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
+        <td class="center">${kegiatan.lebarRataRata || '-'}</td>
+        <td class="center">${kegiatan.rataRataSedimen || '-'}</td>
+        <td class="center">${kegiatan.volumeGalian || '-'}</td>
+        <td>
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.jenis}</li>
+            `).join('')}
+          </ul>
+        </td>
+        <td class="center">
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.jumlah}</li>
+            `).join('')}
+          </ul>
+        </td>
+        <td class="center">
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.satuan}</li>
+            `).join('')}
+          </ul>
+        </td>
+        <td>
+          <ul class="material-list">
+            ${detail.materials.filter(m => m.jenis).map(material => `
+              <li>${material.keterangan || '-'}</li>
+            `).join('')}
+          </ul>
+        </td>
+        ${detailIndex === 0 ? `
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+            <ul class="equipment-list">
+              ${combinedEquipment.map(item => `
+                <li>${item.jenis}</li>
+              `).join('')}
+            </ul>
+          </td>
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+            <ul class="equipment-list">
+              ${combinedEquipment.map(item => `
+                <li>${item.jumlah}</li>
+              `).join('')}
+            </ul>
+          </td>
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">
+            <ul class="equipment-list">
+              ${combinedEquipment.map(item => `
+                <li>${item.satuan || '-'}</li>
+              `).join('')}
+            </ul>
+          </td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.koordinator.join(', ')}</td>
+          <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahPHL || '-'}</td>
+          <td rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.keterangan || ''}</td>
+        ` : ''}
+      </tr>
+    `).join('')
+  }).join('');
+
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -51,7 +155,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
       <title>Laporan Drainase - ${format(data.tanggal || new Date(), "dd MMMM yyyy", { locale: id })}</title>
       <style>
         @page {
-          size: A3 landscape; /* Changed to A3 landscape */
+          size: A3 landscape;
           margin: 10mm;
         }
         
@@ -119,7 +223,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         }
 
         .photo-cell {
-          width: 100px; /* Adjusted width to accommodate multiple small images */
+          width: 100px;
           text-align: center;
           padding: 2px;
         }
@@ -127,13 +231,13 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
         .photo-container {
           display: flex;
           flex-wrap: wrap;
-          gap: 2px; /* Small gap between images */
+          gap: 2px;
           justify-content: center;
         }
 
         .photo-container img {
-          width: 45px; /* Smaller width for multiple images */
-          height: 34px; /* Smaller height for multiple images */
+          width: 45px;
+          height: 34px;
           object-fit: cover;
           border: 1px solid #ccc;
         }
@@ -190,7 +294,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           }
           
           @page {
-            size: A3 landscape; /* Changed to A3 landscape */
+            size: A3 landscape;
             margin: 10mm;
           }
         }
@@ -240,87 +344,7 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
           </tr>
         </thead>
         <tbody>
-          ${kegiatansWithImages.map((kegiatan, index) => `
-            <tr>
-              <td class="center">${index + 1}</td>
-              <td>${format(data.tanggal || new Date(), "EEEE", { locale: id })}<br/>${format(data.tanggal || new Date(), "dd/MM/yyyy", { locale: id })}</td>
-              <td>${kegiatan.namaJalan}<br/>Kel. ${kegiatan.kelurahan}<br/>Kec. ${kegiatan.kecamatan}</td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.foto0Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 0%" />` : '').join('')}
-                </div>
-              </td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.foto50Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 50%" />` : '').join('')}
-                </div>
-              </td>
-              <td class="photo-cell">
-                <div class="photo-container">
-                  ${kegiatan.foto100Base64.map(base64 => base64 ? `<img src="${base64}" alt="Foto 100%" />` : '').join('')}
-                </div>
-              </td>
-              <td class="center">${kegiatan.jenisSaluran || '-'}</td>
-              <td class="center">${kegiatan.jenisSedimen || '-'}</td>
-              <td>${kegiatan.aktifitasPenanganan}</td>
-              <td class="center">${kegiatan.panjangPenanganan || '-'}</td>
-              <td class="center">${kegiatan.lebarRataRata || '-'}</td>
-              <td class="center">${kegiatan.rataRataSedimen || '-'}</td>
-              <td class="center">${kegiatan.volumeGalian || '-'}</td>
-              <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jenis}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.satuan}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>
-                <ul class="material-list">
-                  ${kegiatan.materials.filter(m => m.jenis).map(material => `
-                    <li>${material.keterangan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.nama}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.jumlah}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td class="center">
-                <ul class="equipment-list">
-                  ${kegiatan.peralatans.filter(p => p.nama).map(peralatan => `
-                    <li>${peralatan.satuan || '-'}</li>
-                  `).join('')}
-                </ul>
-              </td>
-              <td>${kegiatan.koordinator.join(', ')}</td>
-              <td class="center">${kegiatan.jumlahPHL || '-'}</td>
-              <td>${kegiatan.keterangan || ''}</td>
-            </tr>
-          `).join('')}
+          ${tbodyContent}
         </tbody>
       </table>
 
@@ -335,11 +359,9 @@ export const generatePDF = async (data: LaporanDrainase, downloadNow: boolean = 
     </html>
   `;
 
-  // Create blob for preview or download
   const blob = new Blob([htmlContent], { type: 'text/html' });
   
   if (downloadNow) {
-    // Open in new window for printing/downloading
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       throw new Error("Popup blocked. Please allow popups for this site.");
