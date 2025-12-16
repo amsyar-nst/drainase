@@ -254,7 +254,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
                       `).join('')}
                     </ul>
                   </td>
-                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahUPT || '-'}</td>
+                  <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahPHL || '-'}</td>
                   <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.jumlahP3SU || '-'}</td>
                   <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.rencanaPanjang || '-'}</td>
                   <td class="center" rowspan="${kegiatan.aktifitasPenangananDetails.length}">${kegiatan.rencanaVolume || '-'}</td>
