@@ -122,16 +122,16 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-container {
-          text-align: center; /* Changed from display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; */
+          text-align: center;
         }
 
         .photo-container img {
-          width: 90px; /* Adjusted for two images side-by-side */
-          height: 90px; /* Adjusted for two images side-by-side */
+          width: 96px; /* Adjusted to fill cell width (100px - 2*2px padding = 96px) */
+          height: 96px; /* Adjusted to maintain aspect ratio */
           object-fit: cover;
           border: 1px solid #ccc;
-          display: inline-block; /* Added display: inline-block */
-          margin: 3px; /* Adjusted for spacing between images */
+          display: inline-block;
+          margin: 0; /* Removed margin to make it flush with borders */
         }
 
         ul {
