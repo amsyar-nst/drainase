@@ -231,7 +231,7 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="3" class="jenis-saluran-col">JENIS SALURAN<br/>(TERBUKA/<br/>TERTUTUP)</th>
             <th rowspan="3" class="jenis-sedimen-col">JENIS SEDIMEN<br/>(BATU/PADAT/<br/>CAIR)</th>
             <th rowspan="3" class="uraian-kegiatan-col">URAIAN KEGIATAN</th>
-            <!-- Removed colspan="2" VOLUME header -->
+            <th colspan="2">VOLUME</th>
             <th colspan="4">BAHAN MATERIAL</th>
             <th colspan="3">PERALATAN</th>
             <th colspan="9">OPERASIONAL ALAT BERAT</th>
@@ -242,8 +242,8 @@ export const generatePDFBulanan = async (data: LaporanDrainase, downloadNow: boo
             <th rowspan="2" class="photo-cell">0%</th>
             <th rowspan="2" class="photo-cell">50%</th>
             <th rowspan="2" class="photo-cell">100%</th>
-            <th rowspan="3" class="panjang-col">PANJANG<br/>(M)</th> <!-- Changed rowspan to 3 -->
-            <th rowspan="3" class="volume-col">(M³)</th> <!-- Changed rowspan to 3 -->
+            <th rowspan="2" class="panjang-col">PANJANG<br/>(M)</th>
+            <th rowspan="2" class="volume-col">(M³)</th>
             <th rowspan="2" class="material-jenis-col">JENIS</th>
             <th rowspan="2" class="material-jumlah-col">JUMLAH</th>
             <th rowspan="2" class="material-satuan-col">SATUAN</th>
