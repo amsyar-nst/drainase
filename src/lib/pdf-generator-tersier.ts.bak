@@ -118,7 +118,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         .photo-cell {
           width: 100px;
           text-align: center;
-          padding: 2px;
+          padding: 0;
         }
 
         .photo-container {
@@ -126,12 +126,12 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-container img {
-          width: 96px; /* Adjusted to fill cell width (100px - 2*2px padding = 96px) */
-          height: 96px; /* Adjusted to maintain aspect ratio */
+          width: 100%;
+          height: 100%;
           object-fit: cover;
           border: 1px solid #ccc;
           display: inline-block;
-          margin: 0; /* Removed margin to make it flush with borders */
+          margin: 0;
         }
 
         ul {

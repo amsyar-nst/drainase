@@ -102,23 +102,28 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           border-collapse: collapse;
         }
 
-        table th, table td {
+        table th {
           padding: 3px;
           border: 1px solid #000;
           font-size: 6pt;
           vertical-align: middle;
           text-align: center;
-        }
-
-        table th {
           background-color: #f0f0f0;
           font-weight: bold;
+        }
+        
+        table td {
+          padding: 3px;
+          border: 1px solid #000;
+          font-size: 6pt;
+          vertical-align: top; /* Changed from middle to top */
+          text-align: left; /* Changed from center to left */
         }
 
         .photo-cell {
           width: 100px;
           text-align: center;
-          padding: 0; /* Changed from 2px to 0 */
+          padding: 0;
         }
 
         .photo-container {
@@ -126,8 +131,8 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
         }
 
         .photo-container img {
-          width: 100%; /* Changed from 96px to 100% */
-          height: 100%; /* Changed from 96px to 100% */
+          width: 100%;
+          height: 100%;
           object-fit: cover;
           border: 1px solid #ccc;
           display: inline-block;
@@ -143,7 +148,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
           margin: 0;
           padding: 0;
           line-height: 1.1;
-          text-align: center;
+          text-align: left; /* Changed from center to left */
         }
 
         .center {
