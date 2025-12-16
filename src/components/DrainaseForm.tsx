@@ -39,7 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OperasionalAlatBeratSection } from "./drainase-form/OperasionalAlatBeratSection";
 import { PeralatanSection } from "./drainase-form/PeralatanSection";
 import { PenangananDetailSection } from "./drainase-form/PenangananDetailSection";
-import { Badge } from "@/components/ui/badge"; // <--- Missing import added here
+import { Badge } from "@/components/ui/badge";
 import { useSession } from "./SessionContextProvider";
 
 const predefinedSedimenOptions = [
@@ -61,7 +61,6 @@ const createNewPenangananDetailFormState = (): PenangananDetailFormState => ({
   materials: [{ id: "material-" + Date.now().toString(), jenis: "", jumlah: "", satuan: "M³", keterangan: "" }],
   selectedSedimenOption: "",
   customSedimen: "",
-  // materialCustomInputs: {}, // Removed
 });
 
 // Initial state for a new KegiatanDrainase
@@ -101,17 +100,49 @@ const createNewKegiatanDrainase = (): KegiatanDrainase => ({
   aktifitasPenangananDetails: [createNewPenangananDetailFormState()],
 });
 
+const SESSION_STORAGE_KEY = "drainaseFormDraft";
+
 export const DrainaseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSession();
 
-  const [formData, setFormData] = useState<LaporanDrainase>({
-    tanggal: null,
-    periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
-    reportType: "harian",
-    kegiatans: [createNewKegiatanDrainase()]
+  const [formData, setFormData] = useState<LaporanDrainase>(() => {
+    // Try to load from session storage on initial render
+    if (typeof window !== 'undefined' && !id) { // Only load draft if it's a new form (not editing)
+      const savedDraft = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedDraft) {
+        try {
+          const parsedDraft = JSON.parse(savedDraft);
+          // Re-parse dates from string to Date objects
+          parsedDraft.tanggal = parsedDraft.tanggal ? new Date(parsedDraft.tanggal) : null;
+          parsedDraft.kegiatans = parsedDraft.kegiatans.map((keg: KegiatanDrainase) => ({
+            ...keg,
+            hariTanggal: keg.hariTanggal ? new Date(keg.hariTanggal) : null,
+            aktifitasPenangananDetails: keg.aktifitasPenangananDetails.map(detail => ({
+              ...detail,
+              // Ensure foto arrays are handled correctly (they might be URLs or File objects)
+              foto0: detail.foto0 || [],
+              foto50: detail.foto50 || [],
+              foto100: detail.foto100 || [],
+              fotoSket: detail.fotoSket || [],
+            }))
+          }));
+          return parsedDraft;
+        } catch (e) {
+          console.error("Failed to parse session storage draft:", e);
+          sessionStorage.removeItem(SESSION_STORAGE_KEY); // Clear corrupted data
+        }
+      }
+    }
+    // Default initial state if no draft or if editing
+    return {
+      tanggal: null,
+      periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
+      reportType: "harian",
+      kegiatans: [createNewKegiatanDrainase()]
+    };
   });
 
   const [currentKegiatanIndex, setCurrentKegiatanIndex] = useState(0);
@@ -120,12 +151,10 @@ export const DrainaseForm = () => {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [laporanId, setLaporanId] = useState<string | null>(null);
+  const [laporanId, setLaporanId] = useState<string | null>(id || null); // Initialize laporanId from params
   const [isLoading, setIsLoading] = useState(false);
   
-  // const [peralatanCustomInputs, setPeralatanCustomInputs] = useState<Record<string, string>>({}); // Removed
-  // const [operasionalCustomInputs, setOperasionalCustomInputs] = useState<Record<string, string>>({}); // Removed
-  const [newKoordinatorName, setNewKoordinatorName] = useState<string>(""); // State for new coordinator dropdown
+  const [newKoordinatorName, setNewKoordinatorName] = useState<string>("");
 
   const currentKegiatan = formData.kegiatans[currentKegiatanIndex];
   const lastCalculatedVolumeRef = useRef<string | null>(null);
@@ -149,11 +178,52 @@ export const DrainaseForm = () => {
     return [];
   }
 
+  // Effect to save formData to sessionStorage whenever it changes (only for new forms)
+  useEffect(() => {
+    if (!laporanId) { // Only save draft if it's a new form
+      try {
+        // Filter out File objects before saving to session storage
+        const serializableFormData = {
+          ...formData,
+          tanggal: formData.tanggal?.toISOString() || null, // Convert Date to ISO string
+          kegiatans: formData.kegiatans.map(keg => ({
+            ...keg,
+            hariTanggal: keg.hariTanggal?.toISOString() || null, // Convert Date to ISO string
+            aktifitasPenangananDetails: keg.aktifitasPenangananDetails.map(detail => ({
+              ...detail,
+              // Only keep string URLs, discard File objects for session storage
+              foto0: detail.foto0.filter(f => typeof f === 'string'),
+              foto50: detail.foto50.filter(f => typeof f === 'string'),
+              foto100: detail.foto100.filter(f => typeof f === 'string'),
+              fotoSket: detail.fotoSket.filter(f => typeof f === 'string'),
+            }))
+          }))
+        };
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(serializableFormData));
+      } catch (e) {
+        console.error("Failed to save draft to session storage:", e);
+      }
+    }
+  }, [formData, laporanId]);
+
   useEffect(() => {
     if (id) {
       loadLaporan(id);
+    } else {
+      // If navigating to /drainase/new, ensure we start with a fresh form or loaded draft
+      // If a draft was loaded in initial state, keep it. Otherwise, reset to new.
+      const savedDraft = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!savedDraft) {
+        setFormData({
+          tanggal: null,
+          periode: format(new Date(), 'MMMM yyyy', { locale: idLocale }),
+          reportType: "harian",
+          kegiatans: [createNewKegiatanDrainase()]
+        });
+      }
+      setLaporanId(null); // Ensure laporanId is null for new forms
     }
-  }, [id, user]); // Add user to dependencies for loadLaporan
+  }, [id, user?.id]); // Add user.id to dependencies for loadLaporan
 
   // Update local state for current activity when currentKegiatanIndex changes
   useEffect(() => {
@@ -167,16 +237,10 @@ export const DrainaseForm = () => {
       setActivityDateInputString(
         currentKec.hariTanggal ? format(currentKec.hariTanggal, "dd/MM/yyyy", { locale: idLocale }) : ""
       );
-
-      // No need to initialize custom inputs states here anymore, as they are removed.
-      // The `nama` and `jenis` fields will directly hold the custom values.
-
     } else {
       setSelectedKecamatan("");
       setKelurahanOptions([]);
       setActivityDateInputString("");
-      // setPeralatanCustomInputs({}); // Removed
-      // setOperasionalCustomInputs({}); // Removed
     }
   }, [formData.kegiatans, currentKegiatanIndex]);
 
@@ -241,7 +305,7 @@ export const DrainaseForm = () => {
   // Effect to fetch and prepopulate Tersier data from Harian
   useEffect(() => {
     const fetchAndPrepopulateTersierData = async () => {
-      if (!user) {
+      if (!user?.id) {
         console.log("Prepopulation skipped: User not logged in.");
         return;
       }
@@ -397,7 +461,6 @@ export const DrainaseForm = () => {
               materials: materials,
               selectedSedimenOption: selectedSedimenOption,
               customSedimen: customSedimen,
-              // materialCustomInputs: {}, // Removed
             };
             console.log(`Copied Aktifitas Penanganan Detail ${detail.id}:`, copiedDetail);
             console.log(`  Foto 0% URLs:`, copiedDetail.foto0);
@@ -454,14 +517,14 @@ export const DrainaseForm = () => {
     currentKegiatan.kecamatan,
     currentKegiatan.kelurahan,
     currentKegiatanIndex, // Re-run if activity changes
-    user,
+    user?.id,
   ]);
 
 
   const loadLaporan = async (laporanId: string) => {
     setIsLoading(true);
     try {
-      if (!user) {
+      if (!user?.id) {
         toast.error('Anda harus login untuk memuat laporan.');
         navigate('/login');
         return;
@@ -471,7 +534,7 @@ export const DrainaseForm = () => {
         .from('laporan_drainase')
         .select('*')
         .eq('id', laporanId)
-        .eq('user_id', user.id) // Tambahkan filter user_id untuk RLS
+        .eq('user_id', user.id)
         .single();
 
       if (laporanError) throw laporanError;
@@ -500,7 +563,7 @@ export const DrainaseForm = () => {
 
           let peralatans = (peralatanRes.data || []).map(p => ({
             id: p.id,
-            nama: p.nama, // Directly use the name from DB
+            nama: p.nama,
             jumlah: p.jumlah,
             satuan: p.satuan || "Unit",
           }));
@@ -510,7 +573,7 @@ export const DrainaseForm = () => {
 
           let operasionalAlatBerats = (operasionalRes.data || []).map(o => ({
             id: o.id,
-            jenis: o.jenis, // Directly use the type from DB
+            jenis: o.jenis,
             jumlah: o.jumlah,
             dexliteJumlah: o.dexlite_jumlah || "",
             dexliteSatuan: o.dexlite_satuan || "Liter",
@@ -550,7 +613,7 @@ export const DrainaseForm = () => {
 
               let materials = (materialsRes || []).map(m => ({
                 id: m.id,
-                jenis: m.jenis, // Directly use the type from DB
+                jenis: m.jenis,
                 jumlah: m.jumlah,
                 satuan: m.satuan,
                 keterangan: m.keterangan || "",
@@ -590,7 +653,6 @@ export const DrainaseForm = () => {
                 materials: materials,
                 selectedSedimenOption: selectedSedimenOption, // UI state
                 customSedimen: customSedimen, // UI state
-                // materialCustomInputs: initialMaterialCustomInputs, // Removed
               };
             })
           );
@@ -663,8 +725,6 @@ export const DrainaseForm = () => {
     const newKegiatan = createNewKegiatanDrainase();
     setFormData({ ...formData, kegiatans: [...formData.kegiatans, newKegiatan] });
     setCurrentKegiatanIndex(formData.kegiatans.length);
-    // setPeralatanCustomInputs({}); // Removed
-    // setOperasionalCustomInputs({}); // Removed
   };
 
   const removeKegiatan = (index: number) => {
@@ -690,10 +750,6 @@ export const DrainaseForm = () => {
     const newDetails = [...currentKegiatan.aktifitasPenangananDetails];
     const updatedDetail = { ...newDetails[detailIndex], ...updates };
 
-    // Handle custom material inputs within the detail (no longer needed as separate state)
-    // if (updates.materialCustomInputs) {
-    //   updatedDetail.materialCustomInputs = { ...updatedDetail.materialCustomInputs, ...updates.materialCustomInputs };
-    // }
     if (updates.materials) {
       updatedDetail.materials = updates.materials;
     }
@@ -798,7 +854,7 @@ export const DrainaseForm = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      if (!user) {
+      if (!user?.id) {
         toast.error("Anda harus login untuk menyimpan laporan.");
         setIsSaving(false);
         return;
@@ -806,7 +862,7 @@ export const DrainaseForm = () => {
 
       let currentLaporanId = laporanId;
 
-      const finalReportDate = formData.tanggal || formData.kegiatans[0]?.hariTanggal || new Date(); // Use main date if available, otherwise activity date
+      const finalReportDate = formData.tanggal || formData.kegiatans[0]?.hariTanggal || new Date();
 
       const finalPeriode = formData.periode || format(finalReportDate, 'MMMM yyyy', { locale: idLocale });
 
@@ -901,7 +957,7 @@ export const DrainaseForm = () => {
 
         const peralatanToInsert = kegiatanToProcess.peralatans.filter(p => p.nama || p.jumlah).map(p => ({
           kegiatan_id: kegiatanDbId,
-          nama: p.nama, // Directly use the name from state
+          nama: p.nama,
           jumlah: p.jumlah,
           satuan: p.satuan,
         }));
@@ -912,7 +968,7 @@ export const DrainaseForm = () => {
 
         const operasionalAlatBeratsToInsert = kegiatanToProcess.operasionalAlatBerats.filter(o => o.jenis || o.jumlah || o.dexliteJumlah || o.pertaliteJumlah || o.bioSolarJumlah).map(o => ({
           kegiatan_id: kegiatanDbId,
-          jenis: o.jenis, // Directly use the type from state
+          jenis: o.jenis,
           jumlah: o.jumlah,
           dexlite_jumlah: o.dexliteJumlah,
           dexlite_satuan: o.dexliteSatuan,
@@ -948,7 +1004,7 @@ export const DrainaseForm = () => {
           const detailDataToSave = {
             kegiatan_id: kegiatanDbId,
             jenis_saluran: detailToProcess.jenisSaluran,
-            jenis_sedimen: detailToProcess.jenisSedimen, // Directly use the value from state
+            jenis_sedimen: detailToProcess.jenisSedimen,
             aktifitas_penanganan: detailToProcess.aktifitasPenanganan,
             foto_0_url: foto0Urls,
             foto_50_url: foto50Urls,
@@ -979,7 +1035,7 @@ export const DrainaseForm = () => {
           await supabase.from('material_kegiatan').delete().eq('aktifitas_detail_id', detailDbId);
           const materialsToInsert = detailToProcess.materials.filter(m => m.jenis || m.jumlah || m.satuan).map(m => ({
             aktifitas_detail_id: detailDbId,
-            jenis: m.jenis, // Directly use the type from state
+            jenis: m.jenis,
             jumlah: m.jumlah,
             satuan: m.satuan,
             keterangan: m.keterangan,
@@ -1002,7 +1058,7 @@ export const DrainaseForm = () => {
       const idsToDeleteFromDb = Array.from(existingKegiatanIds).filter(id => !kegiatansToKeepInDb.has(id));
       if (idsToDeleteFromDb.length > 0) {
         // Cascade delete should handle sub-records, but explicitly deleting for clarity/safety
-        await supabase.from('material_kegiatan').delete().in('aktifitas_detail_id', idsToDeleteFromDb); // This might need to be more complex if materials are not directly linked to kegiatan_id
+        await supabase.from('material_kegiatan').delete().in('aktifitas_detail_id', idsToDeleteFromDb);
         await supabase.from('aktifitas_penanganan_detail').delete().in('kegiatan_id', idsToDeleteFromDb);
         await supabase.from('peralatan_kegiatan').delete().in('kegiatan_id', idsToDeleteFromDb);
         await supabase.from('operasional_alat_berat_kegiatan').delete().in('kegiatan_id', idsToDeleteFromDb);
@@ -1010,7 +1066,7 @@ export const DrainaseForm = () => {
       }
 
       toast.success(laporanId ? 'Laporan berhasil diperbarui' : 'Laporan berhasil disimpan');
-      // Removed the setTimeout redirect here
+      sessionStorage.removeItem(SESSION_STORAGE_KEY); // Clear draft after successful save
     } catch (error: any) {
       console.error('Save error:', error);
       toast.error('Gagal menyimpan laporan: ' + (error.message || JSON.stringify(error)));
@@ -1092,13 +1148,8 @@ export const DrainaseForm = () => {
         return keg;
       });
       
-      // Main date is always visible, so no need to hide/show based on reportType
       newTanggal = prev.tanggal || new Date(); 
       newPeriode = format(newTanggal, 'MMMM yyyy', { locale: idLocale });
-
-      // setCurrentKegiatanIndex(0); // <--- BARIS INI DIHAPUS
-      // setPeralatanCustomInputs({}); // Removed
-      // setOperasionalCustomInputs({}); // Removed
 
       return {
         ...prev,
@@ -1442,8 +1493,6 @@ export const DrainaseForm = () => {
             <PeralatanSection
               currentKegiatan={currentKegiatan}
               updateCurrentKegiatan={updateCurrentKegiatan}
-              // peralatanCustomInputs={peralatanCustomInputs} // Removed
-              // setPeralatanCustomInputs={setPeralatanCustomInputs} // Removed
               reportType={formData.reportType} // Pass reportType for internal conditional rendering
             />
           )}
@@ -1453,8 +1502,6 @@ export const DrainaseForm = () => {
             <OperasionalAlatBeratSection
               currentKegiatan={currentKegiatan}
               updateCurrentKegiatan={updateCurrentKegiatan}
-              // operasionalCustomInputs={operasionalCustomInputs} // Removed
-              // setOperasionalCustomInputs={setOperasionalCustomInputs} // Removed
               reportType={formData.reportType} // Pass reportType for internal conditional rendering
             />
           )}

@@ -66,13 +66,17 @@ const LaporanList = () => {
 
   useEffect(() => {
     console.log("LaporanList component mounted or updated."); // Log ini akan memberi tahu kita jika komponen dimuat
-    if (user) { // Only fetch if user is authenticated
+    if (user?.id) { // Only fetch if user is authenticated and user.id exists
       fetchLaporans(selectedFilterPeriod);
+    } else {
+      setLoading(false);
+      setLaporans([]);
+      setUniquePeriods([]);
     }
-  }, [selectedFilterPeriod, user]); // Re-fetch when filter period or user changes
+  }, [selectedFilterPeriod, user?.id]); // Re-fetch when filter period or user.id changes
 
   const fetchLaporans = async (filterPeriod: string | null = null) => {
-    if (!user) {
+    if (!user?.id) { // Ensure user.id exists before fetching
       setLoading(false);
       setLaporans([]);
       setUniquePeriods([]);
