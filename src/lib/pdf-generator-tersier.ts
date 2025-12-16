@@ -183,7 +183,7 @@ export const generatePDFTersier = async (data: LaporanDrainase, downloadNow: boo
       <div class="header">
         <div class="office">UPT OPERASIONAL PEMELIHARAAN JALAN DAN DRAINASE MEDAN KOTA</div>
         <div class="address">Jl. Garu I No.101, Kelurahan Sitirejo III, Kecamatan Medan Amplas</div>
-        <div class="report-title">Form Laporan Pemeliharaan Drainase Tersier (Drainase Lingkungan) oleh P3SU dibantu oleh UPT Dinas SDABMBK Kota Medan</div>
+        <div class="report-title">FORM LAPORAN PEMELIHARAAN DRAINASE TERSIER (DRAINASE LINGKUNGAN) OLEH P3SU DIBANTU OLEH UPT DINAS SDABMBK KOTA MEDAN</div>
       </div>
 
       <div class="period">Bulan : ${data.periode}</div>
